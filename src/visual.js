@@ -52,3 +52,36 @@ export function renderLoop(){
   }
   requestAnimationFrame(render);
 }
+// ===== 情绪色温：低频暖 · 高频冷 =====
+let colorTemp = 0.5; // 0=暖 1=冷
+
+/**
+ * 根据频谱重心计算色温
+ * 重心低 → 暖橙，重心高 → 冷青
+ */
+function updateColorTemp(){
+  if(!analyser)return;
+  const sum = dataArray.reduce((a,v)=>a+v,0);
+  const centroid = sum / dataArray.length / 255; // 0-1
+  colorTemp = Math.max(0,Math.min(1,centroid)); // 锁 0-1
+}
+
+/**
+ * 色温 → 色相映射
+ * 0(暖) = 20°橙, 1(冷) = 220°青
+ */
+function tempToHue(temp){
+  return 20 + temp * 200; // 20→220
+}
+
+/**
+ * 情绪色温 → 最终颜色
+ * 返回 [r,g,b] 供 WebGL 使用
+ */
+function emotionColor(temp){
+  const hue = tempToHue(temp);
+  const sat = 0.7 + temp * 0.1; // 冷色稍艳
+  const light = 0.6 + temp * 0.1;
+  return hslToRgb(hue,sat,light);
+}
+
