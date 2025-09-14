@@ -163,7 +163,8 @@ canvas.addEventListener('click',async()=>{
     osc.start();osc.stop(actx.currentTime+0.001);
   }
   const el=document.createElement('input');
-  el.type='file';el.accept='audio/*,video/mp4';el.multiple=true;
+  el.type='file';el.accept = 'audio/mp3,audio/m4a,audio/wav,audio/flac,audio/*,video/mp4';
+  el.multiple=true;
   el.onchange=async(e)=>{
     for(const f of [...el.files]){
       if(!isAudio(f))continue;
