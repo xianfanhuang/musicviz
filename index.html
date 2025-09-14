@@ -9,6 +9,12 @@
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="color-scheme" content="dark">
 <style>
+html::before{
+  content:'';position:fixed;inset:0;background:#fff;
+  opacity:var(--flash,0);pointer-events:none;z-index:999;
+  transition:opacity .1s ease-out;
+}
+
   :root{--bg:#000;--brand-hue:200;--glow:0}
   *,*:before,*:after{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;touch-action:none}
