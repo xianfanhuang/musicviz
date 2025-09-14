@@ -3,152 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonoria - The Realm of Music</title>
+    <title>Sonoria - 声音的境界</title>
     <meta name="color-scheme" content="dark">
     <style>
-        :root {
-            --bg: #000;
-            --brand-hue: 200;
-            --glow: 0;
-            --scale: 1;
-            --state-pulse: 1;
-            --state-brightness: 1;
-            --state-saturation: 1;
-        }
-
-        *, *:before, *:after {
-            box-sizing: border-box;
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
-
-        html, body {
-            margin: 0;
-            height: 100%;
-            background: var(--bg);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        
+        body {
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
             overflow: hidden;
-            touch-action: none;
-            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.8);
         }
-
+        
         #app {
+            position: relative;
             width: 100%;
             height: 100%;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            position: relative;
-            overflow: hidden;
+            align-items: center;
         }
-
+        
         canvas {
             position: absolute;
-            inset: 0;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             z-index: 1;
         }
-
-        .overlay {
-            position: absolute;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s ease;
-        }
-
-        /* 光晕Logo */
-        #logoUpload {
+        
+        /* 光晕容器 */
+        #halo-container {
             position: relative;
-            width: 240px;
-            height: 240px;
-            border-radius: 50%;
-            cursor: pointer;
-            transform: scale(var(--scale));
-            transition: transform 0.3s;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
+            width: 280px;
+            height: 280px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+            transition: transform 0.3s ease;
         }
-
-        #logoUpload::before {
+        
+        /* 光晕效果 */
+        #halo {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: scale(var(--scale, 1));
+        }
+        
+        #halo::before {
             content: "";
             position: absolute;
-            inset: -30%;
+            inset: -20%;
             background: radial-gradient(
                 circle at 50% 50%,
-                hsl(var(--brand-hue), 80%, 60%, calc(0.3 * var(--glow))) 0%,
+                hsl(var(--hue, 200), 80%, 60%, calc(0.3 * var(--glow, 0))) 0%,
                 transparent 70%
             );
-            pointer-events: none;
-            opacity: var(--state-brightness);
-            animation: pulse calc(1s / var(--state-pulse)) infinite alternate;
+            animation: pulse calc(1s / var(--pulse, 1)) infinite alternate;
+            opacity: var(--brightness, 1);
         }
-
-        @keyframes pulse {
-            from { opacity: 0.7; }
-            to { opacity: 1; }
-        }
-
-        #logoUpload::after {
+        
+        #halo::after {
             content: "";
             position: absolute;
             inset: 0;
             border-radius: 50%;
             background: radial-gradient(
                 circle at 50% 50%,
-                hsl(var(--brand-hue), 80%, 60%, 0.9) 0%,
-                hsl(var(--brand-hue), 80%, 40%, 0.6) 50%,
+                hsl(var(--hue, 200), 80%, 60%, 0.9) 0%,
+                hsl(var(--hue, 200), 80%, 40%, 0.6) 50%,
                 transparent 70%
             );
-            pointer-events: none;
+            filter: saturate(var(--saturation, 1));
         }
-
-        #brandDot {
+        
+        /* 光晕中心点 */
+        #halo-core {
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            background: hsl(var(--brand-hue), 80%, 60%);
+            background: hsl(var(--hue, 200), 80%, 60%);
             position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 30px hsl(var(--brand-hue), 80%, 60%), inset 0 0 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 
+                0 0 30px hsl(var(--hue, 200), 80%, 60%),
+                inset 0 0 10px rgba(0, 0, 0, 0.3);
             animation: breath 2s infinite alternate;
-            filter: saturate(var(--state-saturation));
+            z-index: 3;
         }
-
-        @keyframes breath {
-            from { transform: translate(-50%, -50%) scale(0.95); }
-            to { transform: translate(-50%, -50%) scale(1.05); }
-        }
-
-        #trackTitle {
-            margin-top: 30px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 1.1rem;
-            letter-spacing: 0.05em;
-            text-align: center;
-            max-width: 80%;
-            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .controls {
+        
+        /* 初始品牌文字 */
+        #brand {
             position: absolute;
-            bottom: 30px;
+            text-align: center;
+            opacity: var(--brand-opacity, 1);
+            transition: opacity 1.5s ease-in-out;
+            z-index: 4;
+        }
+        
+        #brand h1 {
+            font-size: 2.8rem;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 15px rgba(100, 200, 255, 0.5);
+        }
+        
+        #brand p {
+            font-size: 1rem;
+            opacity: 0.7;
+            letter-spacing: 0.05em;
+        }
+        
+        /* 状态提示 */
+        #status {
+            position: absolute;
+            bottom: 30%;
+            text-align: center;
+            font-size: 1rem;
+            opacity: 0.7;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+        
+        /* 控制面板 - 默认隐藏 */
+        #controls {
+            position: absolute;
+            bottom: 20%;
             display: flex;
             gap: 20px;
-            opacity: 0.7;
-            transition: opacity 0.3s;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
         }
-
-        .controls:hover {
+        
+        #controls.visible {
+            opacity: 0.8;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+        
+        #controls:hover {
             opacity: 1;
         }
-
+        
         .control-btn {
             background: rgba(255, 255, 255, 0.1);
             border: none;
@@ -159,62 +171,35 @@
             font-size: 1.2rem;
             cursor: pointer;
             backdrop-filter: blur(5px);
-            transition: all 0.2s;
+            transition: all 0.3s ease;
         }
-
+        
         .control-btn:hover {
             background: rgba(255, 255, 255, 0.2);
             transform: scale(1.1);
         }
-
-        input[type="file"] {
-            display: none;
-        }
-
-        #unlock-hint {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            flex-direction: column;
-            text-align: center;
-            padding: 20px;
-        }
-
-        #unlock-hint p {
-            margin: 10px 0;
-            font-size: 1.2rem;
-        }
-
-        #unlock-hint .icon {
-            font-size: 3rem;
-            margin-bottom: 20px;
-        }
-
-        #rotateHint {
-            position: fixed;
-            inset: 0;
-            background: #000;
-            z-index: 999;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        .theme-selector {
+        
+        /* 主题选择器 - 默认隐藏 */
+        #themes {
             position: absolute;
             top: 20px;
             right: 20px;
-            z-index: 3;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.4s ease;
+            pointer-events: none;
         }
-
+        
+        #themes.visible {
+            opacity: 0.7;
+            transform: translateX(0);
+            pointer-events: all;
+        }
+        
+        #themes:hover {
+            opacity: 1;
+        }
+        
         .theme-btn {
             background: rgba(255, 255, 255, 0.1);
             border: none;
@@ -223,34 +208,48 @@
             color: white;
             cursor: pointer;
             backdrop-filter: blur(5px);
-            transition: all 0.2s;
+            transition: all 0.3s ease;
         }
-
+        
         .theme-btn:hover {
             background: rgba(255, 255, 255, 0.2);
         }
-
-        .intro-text {
-            text-align: center;
-            max-width: 500px;
-            margin-bottom: 30px;
-            opacity: 0.8;
-            line-height: 1.6;
+        
+        /* 文件输入 */
+        #file-input {
+            display: none;
         }
-
+        
+        /* 动画 */
+        @keyframes pulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes breath {
+            from { transform: scale(0.95); }
+            to { transform: scale(1.05); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* 响应式调整 */
         @media (max-width: 768px) {
-            #logoUpload {
-                width: 180px;
-                height: 180px;
+            #halo-container {
+                width: 220px;
+                height: 220px;
             }
             
-            #brandDot {
-                width: 40px;
-                height: 40px;
+            #halo-core {
+                width: 50px;
+                height: 50px;
             }
             
-            .controls {
-                bottom: 20px;
+            #brand h1 {
+                font-size: 2.2rem;
             }
             
             .control-btn {
@@ -262,630 +261,446 @@
 </head>
 <body>
     <div id="app">
-        <canvas id="glcanvas"></canvas>
+        <canvas id="visualizer"></canvas>
         
-        <div class="overlay" id="mainUI">
-            <div class="intro-text">
-                <h1>Sonoria</h1>
-                <p>声音的境界 · 沉浸式音乐可视化体验</p>
+        <div id="halo-container">
+            <div id="brand">
+                <h1>SONORIA</h1>
+                <p>声音的境界</p>
             </div>
             
-            <label id="logoUpload" for="fileInput">
-                <div id="brandDot"></div>
-            </label>
-            
-            <div id="trackTitle">拖放或点击选择音乐文件</div>
-            
-            <div class="controls">
-                <button class="control-btn" id="prevBtn">⏮</button>
-                <button class="control-btn" id="playBtn">▶</button>
-                <button class="control-btn" id="nextBtn">⏭</button>
+            <div id="halo">
+                <div id="halo-core"></div>
             </div>
             
-            <div class="theme-selector">
-                <button class="theme-btn" id="themeBtn">切换主题</button>
+            <div id="status">点击光晕选择音乐</div>
+            
+            <div id="controls">
+                <button class="control-btn" id="prev-btn">⏮</button>
+                <button class="control-btn" id="play-btn">▶</button>
+                <button class="control-btn" id="next-btn">⏭</button>
+            </div>
+            
+            <div id="themes">
+                <button class="theme-btn" id="theme-btn">主题</button>
             </div>
         </div>
         
-        <input id="fileInput" type="file" accept="audio/mp3,audio/wav,audio/m4a,audio/flac,audio/*" multiple>
-        
-        <div id="rotateHint">请旋转至竖屏以获得最佳体验</div>
+        <input type="file" id="file-input" accept="audio/*">
     </div>
 
     <script>
-        // 状态常量
+        // 状态管理
         const APP_STATE = {
             IDLE: 'idle',
             LOADING: 'loading',
             PLAYING: 'playing',
-            ERROR: 'error'
+            PAUSED: 'paused'
         };
-
-        // 主题定义
-        const themes = {
-            default: {
-                name: "脉冲光晕",
-                hue: 200,
-                particleColorMode: "complementary",
-                particleDensity: 1.0
-            },
-            fire: {
-                name: "火焰之舞",
-                hue: 20,
-                particleColorMode: "analogous",
-                particleDensity: 1.5
-            },
-            ocean: {
-                name: "深海韵律", 
-                hue: 220,
-                particleColorMode: "monochromatic",
-                particleDensity: 0.8
-            },
-            forest: {
-                name: "森林呼吸",
-                hue: 120,
-                particleColorMode: "complementary",
-                particleDensity: 0.7
-            }
-        };
-
-        // 全局状态
+        
         let currentState = APP_STATE.IDLE;
-        let currentTheme = "default";
-        const themeKeys = Object.keys(themes);
-        let themeIndex = 0;
-
-        // WebGL变量
-        let gl, program, partBuf, posArr;
-        let uTime, uRes, uColA, uColB, uStr, uBreathe;
-        let particleCount = 900;
-        let breath = 1;
-        let start = 0, last = 0, fps = 0, fc = 0;
-
+        
+        // 主题定义
+        const themes = [
+            { name: '脉冲光晕', hue: 200 },
+            { name: '火焰之舞', hue: 20 },
+            { name: '深海韵律', hue: 220 },
+            { name: '森林呼吸', hue: 120 }
+        ];
+        
+        let currentThemeIndex = 0;
+        
         // 音频状态
-        const state = {
-            audioCtx: null,
+        const audioState = {
+            ctx: null,
             analyser: null,
-            gain: null,
-            src: null,
-            queue: [],
-            playingIndex: -1,
-            bpm: 120,
-            lastTap: 0,
-            analysis: null,
-            isPlaying: false,
-            isWaiting: false
+            source: null,
+            data: null,
+            tracks: [],
+            currentTrackIndex: -1,
+            isPlaying: false
         };
-
-        // DOM 加载完成后初始化
-        window.addEventListener('DOMContentLoaded', () => {
-            initGL();
-            resize();
+        
+        // 可视化变量
+        let canvas, ctx;
+        let particles = [];
+        let animationId;
+        
+        // DOM 元素
+        const halo = document.getElementById('halo');
+        const haloCore = document.getElementById('halo-core');
+        const brand = document.getElementById('brand');
+        const status = document.getElementById('status');
+        const controls = document.getElementById('controls');
+        const themesPanel = document.getElementById('themes');
+        const fileInput = document.getElementById('file-input');
+        const playBtn = document.getElementById('play-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const themeBtn = document.getElementById('theme-btn');
+        
+        // 初始化
+        function init() {
+            setupCanvas();
             setupEventListeners();
-            requestAnimationFrame(render);
             setAppState(APP_STATE.IDLE);
-        });
-
-        // 初始化WebGL
-        function initGL() {
-            const canvas = document.getElementById('glcanvas');
-            gl = canvas.getContext('webgl2', { antialias: true, preserveDrawingBuffer: false });
             
-            if (!gl) {
-                console.warn('WebGL2不可用，将使用备用渲染');
-                return;
-            }
-
-            // 顶点着色器
-            const vs = `#version 300 es
-                precision highp float;
-                in vec2 a_pos;
-                in float a_rand;
-                uniform float u_time, u_breathe;
-                out float v_rand;
+            // 初始动画 - 品牌文字渐隐，光晕保持
+            setTimeout(() => {
+                document.documentElement.style.setProperty('--brand-opacity', '0');
                 
-                void main() {
-                    float t = u_time * 0.002;
-                    float s = 0.7 + 0.3 * cos(t + u_breathe * 6.28);
-                    vec2 p = a_pos * s;
-                    gl_PointSize = 4.0 + 3.0 * (1.0 + sin(t * 5.0 + a_rand * 10.0));
-                    gl_Position = vec4(p, 0.0, 1.0);
-                    v_rand = a_rand;
+                setTimeout(() => {
+                    brand.style.display = 'none';
+                }, 1500);
+            }, 2500);
+            
+            // 初始渲染
+            render();
+        }
+        
+        // 设置画布
+        function setupCanvas() {
+            canvas = document.getElementById('visualizer');
+            ctx = canvas.getContext('2d');
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+        }
+        
+        // 调整画布大小
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 光晕点击 - 选择文件
+            halo.addEventListener('click', () => {
+                if (currentState === APP_STATE.IDLE) {
+                    fileInput.click();
                 }
-            `;
-
-            // 片段着色器
-            const fs = `#version 300 es
-                precision highp float;
-                in float v_rand;
-                out vec4 outColor;
-                uniform vec3 u_colA, u_colB;
-                uniform float u_str;
-                uniform float u_time;
-                
-                void main() {
-                    float d = length(gl_PointCoord - vec2(0.5));
-                    float alpha = smoothstep(0.5, 0.1, d);
-                    
-                    vec3 baseColor = mix(u_colA, u_colB, v_rand);
-                    
-                    float pulse = 0.9 + 0.1 * sin(u_time * 0.01);
-                    
-                    outColor = vec4(baseColor * u_str * pulse, alpha);
-                }
-            `;
-
-            // 编译着色器
-            function compile(src, type) {
-                const shader = gl.createShader(type);
-                gl.shaderSource(shader, src);
-                gl.compileShader(shader);
-                
-                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                    console.error(gl.getShaderInfoLog(shader));
-                }
-                
-                return shader;
-            }
-
-            // 创建程序
-            program = gl.createProgram();
-            gl.attachShader(program, compile(vs, gl.VERTEX_SHADER));
-            gl.attachShader(program, compile(fs, gl.FRAGMENT_SHADER));
-            gl.linkProgram(program);
+            });
             
-            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-                console.error(gl.getProgramInfoLog(program));
-            }
+            // 文件选择
+            fileInput.addEventListener('change', handleFileSelect);
             
-            gl.useProgram(program);
-
-            // 获取uniform位置
-            uTime = gl.getUniformLocation(program, 'u_time');
-            uRes = gl.getUniformLocation(program, 'u_resolution');
-            uColA = gl.getUniformLocation(program, 'u_colA');
-            uColB = gl.getUniformLocation(program, 'u_colB');
-            uStr = gl.getUniformLocation(program, 'u_str');
-            uBreathe = gl.getUniformLocation(program, 'u_breathe');
-
-            // 创建粒子
-            rebuildParticles(particleCount);
-            gl.enable(gl.BLEND);
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+            // 控制按钮
+            playBtn.addEventListener('click', togglePlayback);
+            prevBtn.addEventListener('click', playPrevious);
+            nextBtn.addEventListener('click', playNext);
+            
+            // 主题切换
+            themeBtn.addEventListener('click', cycleTheme);
+            
+            // 显示/隐藏控制面板
+            halo.addEventListener('mouseenter', showControls);
+            halo.addEventListener('mouseleave', hideControls);
+            
+            // 触摸设备支持
+            halo.addEventListener('touchstart', handleTouch, { passive: true });
         }
-
-        // 重建粒子系统
-        function rebuildParticles(n) {
-            particleCount = n;
-            posArr = new Float32Array(n * 3);
+        
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length === 0) return;
             
-            // 创建从光晕中心向外发散的粒子
-            for (let i = 0; i < n; i++) {
-                const distance = 0.2 + 0.8 * Math.sqrt(Math.random());
-                const angle = Math.random() * Math.PI * 2;
-                const x = Math.cos(angle) * distance;
-                const y = Math.sin(angle) * distance;
-                
-                posArr[i * 3] = x;
-                posArr[i * 3 + 1] = y;
-                posArr[i * 3 + 2] = Math.random();
-            }
+            audioState.tracks = Array.from(files);
+            audioState.currentTrackIndex = 0;
             
-            if (!gl) return;
-            
-            partBuf = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, partBuf);
-            gl.bufferData(gl.ARRAY_BUFFER, posArr, gl.STATIC_DRAW);
-            
-            const aPos = gl.getAttribLocation(program, 'a_pos');
-            const aRand = gl.getAttribLocation(program, 'a_rand');
-            
-            gl.enableVertexAttribArray(aPos);
-            gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 12, 0);
-            
-            gl.enableVertexAttribArray(aRand);
-            gl.vertexAttribPointer(aRand, 1, gl.FLOAT, false, 12, 8);
+            loadAndPlayTrack(audioState.tracks[0]);
         }
-
-        // HSL转RGB
-        function hslToRgb(h, s, l) {
-            h /= 360;
-            let r, g, b;
-            
-            if (s === 0) {
-                r = g = b = l;
-            } else {
-                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                const p = 2 * l - q;
-                
-                const hue2rgb = (t) => {
-                    if (t < 0) t += 1;
-                    if (t > 1) t -= 1;
-                    if (t < 1/6) return p + (q - p) * 6 * t;
-                    if (t < 1/2) return q;
-                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                    return p;
-                };
-                
-                r = hue2rgb(h + 1/3);
-                g = hue2rgb(h);
-                b = hue2rgb(h - 1/3);
-            }
-            
-            return [r, g, b];
-        }
-
-        // 设置应用状态
-        function setAppState(newState) {
-            currentState = newState;
-            updateVisualState();
-        }
-
-        // 更新视觉状态
-        function updateVisualState() {
-            const root = document.documentElement;
-            
-            switch(currentState) {
-                case APP_STATE.IDLE:
-                    root.style.setProperty('--state-pulse', '1');
-                    root.style.setProperty('--state-brightness', '1');
-                    root.style.setProperty('--state-saturation', '1');
-                    break;
-                    
-                case APP_STATE.LOADING:
-                    root.style.setProperty('--state-pulse', '1.5');
-                    root.style.setProperty('--state-brightness', '1.2');
-                    break;
-                    
-                case APP_STATE.PLAYING:
-                    root.style.setProperty('--state-pulse', '1');
-                    root.style.setProperty('--state-brightness', '1');
-                    break;
-                    
-                case APP_STATE.ERROR:
-                    root.style.setProperty('--state-pulse', '2');
-                    root.style.setProperty('--state-saturation', '0.5');
-                    break;
-            }
-        }
-
-        // 渲染循环
-        function render(ts) {
-            if (!start) start = ts;
-            if (last && ((ts - last) < (1000/60))) {
-                requestAnimationFrame(render);
-                return;
-            }
-            
-            last = ts;
-            fc++;
-            
-            // 音频分析
-            if (state.analyser) {
-                const freq = new Uint8Array(state.analyser.frequencyBinCount);
-                state.analyser.getByteFrequencyData(freq);
-                
-                let sum = 0, peak = 0;
-                for (const v of freq) {
-                    sum += v;
-                    if (v > peak) peak = v;
-                }
-                
-                state.analysis = { avg: sum / freq.length, peak };
-                
-                const low = freq.slice(0, Math.floor(freq.length * 0.1));
-                state.analysis.low = low.reduce((a, b) => a + b, 0) / low.length;
-                
-                breath = 0.7 + 0.3 * (peak / 255);
-                document.documentElement.style.setProperty('--glow', (state.analysis.low / 255 * 0.8).toFixed(2));
-            }
-            
-            // 根据音乐分析结果更新视觉效果
-            let hue = themes[currentTheme].hue;
-            if (state.analysis) {
-                hue = (hue + (state.analysis.peak / 255) * 60) % 360;
-                
-                // 使用低频信息驱动光晕脉搏
-                const pulseIntensity = 0.7 + 0.3 * (state.analysis.low / 255);
-                const breathRate = 0.5 + 1.5 * (state.analysis.peak / 255);
-                
-                document.documentElement.style.setProperty('--state-pulse', pulseIntensity);
-                
-                // 更新光晕大小 - 与音乐节律同步
-                const scale = 0.95 + 0.05 * Math.sin(ts * 0.002 * breathRate);
-                document.documentElement.style.setProperty('--scale', scale);
-                
-                // 更新光晕发光强度
-                const glow = 0.2 + 0.8 * (state.analysis.avg / 255);
-                document.documentElement.style.setProperty('--glow', glow);
-            }
-            
-            // 颜色计算
-            const colA = hslToRgb((hue + 10) % 360, 0.7, 0.6);
-            const colB = hslToRgb((hue + 140) % 360, 0.8, 0.5);
-            const strength = 0.7 + (state.analysis ? state.analysis.avg / 255 : 0.5) * 1.2;
-            
-            // WebGL渲染
-            if (gl) {
-                gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-                gl.clearColor(0, 0, 0, 0);
-                gl.clear(gl.COLOR_BUFFER_BIT);
-                
-                gl.useProgram(program);
-                gl.uniform1f(uTime, ts);
-                gl.uniform1f(uBreathe, breath);
-                gl.uniform2f(uRes, canvas.width, canvas.height);
-                gl.uniform3f(uColA, colA[0], colA[1], colA[2]);
-                gl.uniform3f(uColB, colB[0], colB[1], colB[2]);
-                gl.uniform1f(uStr, strength);
-                
-                gl.bindBuffer(gl.ARRAY_BUFFER, partBuf);
-                gl.drawArrays(gl.POINTS, 0, particleCount);
-            }
-            
-            // FPS计算
-            if (fc % 30 === 0) {
-                fps = Math.round(30 * 1000 / (ts - start));
-                start = ts;
-                fc = 0;
-            }
-            
-            requestAnimationFrame(render);
-        }
-
-        // 调整大小
-        function resize() {
-            const canvas = document.getElementById('glcanvas');
-            const r = Math.min(window.devicePixelRatio || 1, 2);
-            canvas.width = Math.floor(canvas.clientWidth * r);
-            canvas.height = Math.floor(canvas.clientHeight * r);
-            
-            if (gl) {
-                gl.viewport(0, 0, canvas.width, canvas.height);
-            }
-        }
-
-        // 初始化音频
-        async function initAudio() {
-            if (state.audioCtx) return;
-            
-            const C = window.AudioContext || window.webkitAudioContext;
-            state.audioCtx = new C({ sampleRate: 44100 });
-            
-            state.analyser = state.audioCtx.createAnalyser();
-            state.analyser.fftSize = 2048;
-            state.analyser.smoothingTimeConstant = 0.85;
-            
-            state.gain = state.audioCtx.createGain();
-            state.gain.gain.value = 1;
-            state.analyser.connect(state.gain);
-            state.gain.connect(state.audioCtx.destination);
-        }
-
-        // 确保音频播放
-        async function ensureAudioPlayback() {
-            if (!state.audioCtx) {
-                await initAudio();
-            }
-            
-            if (state.audioCtx.state === 'suspended') {
-                // 显示解锁提示
-                const unlockOverlay = document.createElement('div');
-                unlockOverlay.id = 'unlock-hint';
-                unlockOverlay.innerHTML = `
-                    <div class="icon">🔊</div>
-                    <p>点击解锁音频</p>
-                    <p style="font-size: 0.9rem; opacity: 0.7;">(请确保设备未静音)</p>
-                `;
-                
-                document.body.appendChild(unlockOverlay);
-                
-                return new Promise((resolve) => {
-                    const unlock = async () => {
-                        await state.audioCtx.resume();
-                        document.body.removeChild(unlockOverlay);
-                        resolve();
-                    };
-                    
-                    unlockOverlay.addEventListener('click', unlock, { once: true });
-                    unlockOverlay.addEventListener('touchstart', unlock, { once: true });
-                });
-            }
-            return Promise.resolve();
-        }
-
-        // 解码并播放音频
-        async function decodeAndPlay(buf, name) {
+        
+        // 加载并播放音轨
+        async function loadAndPlayTrack(file) {
             setAppState(APP_STATE.LOADING);
             
             try {
-                await ensureAudioPlayback();
+                const arrayBuffer = await file.arrayBuffer();
                 
-                if (state.src) {
-                    try { state.src.stop(); } catch (e) {}
-                    state.src = null;
+                if (!audioState.ctx) {
+                    await setupAudioContext();
                 }
                 
-                const decoded = await state.audioCtx.decodeAudioData(buf.slice(0));
-                state.src = state.audioCtx.createBufferSource();
-                state.src.buffer = decoded;
-                state.src.connect(state.analyser);
+                const audioBuffer = await audioState.ctx.decodeAudioData(arrayBuffer);
                 
-                // 添加播放结束事件
-                state.src.onended = () => {
+                if (audioState.source) {
+                    audioState.source.stop();
+                }
+                
+                audioState.source = audioState.ctx.createBufferSource();
+                audioState.source.buffer = audioBuffer;
+                audioState.source.connect(audioState.analyser);
+                audioState.source.start(0);
+                
+                audioState.source.onended = () => {
                     playNext();
                 };
                 
-                state.src.start(0);
-                state.isPlaying = true;
+                audioState.isPlaying = true;
                 setAppState(APP_STATE.PLAYING);
                 
-                document.getElementById('trackTitle').textContent = name || '未知曲目';
+                // 更新状态提示
+                status.textContent = file.name.replace(/\.[^/.]+$/, ""); // 移除扩展名
                 
-                // 更新媒体会话
-                if ('mediaSession' in navigator) {
-                    navigator.mediaSession.metadata = new MediaMetadata({
-                        title: name || '未知曲目'
-                    });
-                    
-                    navigator.mediaSession.setActionHandler('play', () => togglePlay());
-                    navigator.mediaSession.setActionHandler('pause', () => togglePlay());
-                }
-            } catch (e) {
-                console.error('播放错误:', e);
-                setAppState(APP_STATE.ERROR);
-                setTimeout(() => setAppState(APP_STATE.IDLE), 2000);
-            }
-        }
-
-        // 切换播放状态
-        function togglePlay() {
-            if (!state.audioCtx) return;
-            
-            if (state.isPlaying) {
-                state.src.stop();
-                state.src = null;
-                state.isPlaying = false;
+            } catch (error) {
+                console.error('Error playing audio:', error);
                 setAppState(APP_STATE.IDLE);
-            } else {
-                if (state.queue.length === 0) return;
-                const idx = Math.max(0, state.playingIndex);
-                decodeAndPlay(state.queue[idx].buffer, state.queue[idx].name);
+                status.textContent = '无法播放该文件';
             }
         }
-
+        
+        // 设置音频上下文
+        async function setupAudioContext() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioState.ctx = new AudioContext();
+            
+            // 创建分析器
+            audioState.analyser = audioState.ctx.createAnalyser();
+            audioState.analyser.fftSize = 256;
+            audioState.data = new Uint8Array(audioState.analyser.frequencyBinCount);
+            
+            // 连接到目的地
+            audioState.analyser.connect(audioState.ctx.destination);
+            
+            // 恢复音频上下文（针对浏览器自动暂停策略）
+            if (audioState.ctx.state === 'suspended') {
+                await audioState.ctx.resume();
+            }
+        }
+        
+        // 切换播放状态
+        function togglePlayback() {
+            if (!audioState.ctx) return;
+            
+            if (audioState.isPlaying) {
+                audioState.ctx.suspend().then(() => {
+                    audioState.isPlaying = false;
+                    setAppState(APP_STATE.PAUSED);
+                    playBtn.textContent = '▶';
+                });
+            } else {
+                audioState.ctx.resume().then(() => {
+                    audioState.isPlaying = true;
+                    setAppState(APP_STATE.PLAYING);
+                    playBtn.textContent = '⏸';
+                });
+            }
+        }
+        
+        // 播放上一首
+        function playPrevious() {
+            if (audioState.tracks.length === 0) return;
+            
+            audioState.currentTrackIndex = 
+                (audioState.currentTrackIndex - 1 + audioState.tracks.length) % audioState.tracks.length;
+            
+            loadAndPlayTrack(audioState.tracks[audioState.currentTrackIndex]);
+        }
+        
         // 播放下一首
         function playNext() {
-            if (state.queue.length === 0) return;
-            state.playingIndex = (state.playingIndex + 1) % state.queue.length;
+            if (audioState.tracks.length === 0) return;
             
-            if (state.isPlaying) {
-                togglePlay();
-                setTimeout(() => togglePlay(), 100);
-            }
-        }
-
-        // 播放上一首
-        function playPrev() {
-            if (state.queue.length === 0) return;
-            state.playingIndex = (state.playingIndex - 1 + state.queue.length) % state.queue.length;
+            audioState.currentTrackIndex = 
+                (audioState.currentTrackIndex + 1) % audioState.tracks.length;
             
-            if (state.isPlaying) {
-                togglePlay();
-                setTimeout(() => togglePlay(), 100);
-            }
+            loadAndPlayTrack(audioState.tracks[audioState.currentTrackIndex]);
         }
-
-        // 设置主题
-        function setTheme(themeName) {
-            if (themes[themeName]) {
-                currentTheme = themeName;
-                applyTheme(themes[themeName]);
-            }
-        }
-
-        // 应用主题
-        function applyTheme(theme) {
-            document.documentElement.style.setProperty('--brand-hue', theme.hue);
-            rebuildParticles(Math.floor(particleCount * theme.particleDensity));
-            document.getElementById('trackTitle').textContent = theme.name;
-        }
-
-        // 切换主题
+        
+        // 循环主题
         function cycleTheme() {
-            themeIndex = (themeIndex + 1) % themeKeys.length;
-            setTheme(themeKeys[themeIndex]);
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            const theme = themes[currentThemeIndex];
+            
+            document.documentElement.style.setProperty('--hue', theme.hue);
+            status.textContent = theme.name;
+            
+            setTimeout(() => {
+                if (currentState === APP_STATE.IDLE) {
+                    status.textContent = '点击光晕选择音乐';
+                }
+            }, 2000);
         }
-
-        // 设置事件监听器
-        function setupEventListeners() {
-            const canvas = document.getElementById('glcanvas');
-            const fileInput = document.getElementById('fileInput');
-            const logoUpload = document.getElementById('logoUpload');
-            const playBtn = document.getElementById('playBtn');
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            const themeBtn = document.getElementById('themeBtn');
-            
-            // 窗口调整大小
-            window.addEventListener('resize', resize);
-            
-            // 文件输入变化
-            fileInput.addEventListener('change', async (e) => {
-                for (const f of Array.from(e.target.files)) {
-                    const buf = await f.arrayBuffer();
-                    state.queue.push({ name: f.name, buffer: buf });
-                }
-                
-                if (state.playingIndex === -1) {
-                    state.playingIndex = 0;
-                    await decodeAndPlay(state.queue[0].buffer, state.queue[0].name);
-                }
-            });
-            
-            // 拖放文件
-            window.addEventListener('dragover', (e) => e.preventDefault());
-            window.addEventListener('drop', async (e) => {
-                e.preventDefault();
-                
-                for (const f of Array.from(e.dataTransfer.files)) {
-                    if (f.type.startsWith('audio') || /\.(mp3|wav|flac|m4a)$/i.test(f.name)) {
-                        const buf = await f.arrayBuffer();
-                        state.queue.push({ name: f.name, buffer: buf });
-                    }
-                }
-                
-                if (state.playingIndex === -1 && state.queue.length > 0) {
-                    state.playingIndex = 0;
-                    await decodeAndPlay(state.queue[0].buffer, state.queue[0].name);
-                }
-            });
-            
-            // 点击Logo上传文件
-            logoUpload.addEventListener('click', (e) => {
-                if (e.defaultPrevented) return;
-                fileInput.click();
-            });
-            
-            // 播放按钮
-            playBtn.addEventListener('click', togglePlay);
-            
-            // 上一首按钮
-            prevBtn.addEventListener('click', playPrev);
-            
-            // 下一首按钮
-            nextBtn.addEventListener('click', playNext);
-            
-            // 主题切换按钮
-            themeBtn.addEventListener('click', cycleTheme);
-            
-            // 双击下一首
-            let lastTap = 0;
-            logoUpload.addEventListener('click', (e) => {
-                const currentTime = new Date().getTime();
-                const tapLength = currentTime - lastTap;
-                
-                if (tapLength < 300 && tapLength > 0) {
-                    e.preventDefault();
-                    playNext();
-                }
-                
-                lastTap = currentTime;
-            });
-            
-            // 移动端方向检测
-            const hint = document.getElementById('rotateHint');
-            function checkOrient() {
-                if (window.innerWidth > window.innerHeight && window.innerWidth <= 900) {
-                    hint.style.display = 'flex';
-                } else {
-                    hint.style.display = 'none';
-                }
+        
+        // 显示控制面板
+        function showControls() {
+            if (audioState.tracks.length > 0) {
+                controls.classList.add('visible');
+                themesPanel.classList.add('visible');
+            }
+        }
+        
+        // 隐藏控制面板
+        function hideControls() {
+            controls.classList.remove('visible');
+            themesPanel.classList.remove('visible');
+        }
+        
+        // 处理触摸事件
+        function handleTouch(e) {
+            if (audioState.tracks.length > 0) {
+                controls.classList.toggle('visible');
+                themesPanel.classList.toggle('visible');
             }
             
-            window.addEventListener('resize', checkOrient);
-            checkOrient();
+            e.preventDefault();
         }
+        
+        // 设置应用状态
+        function setAppState(state) {
+            currentState = state;
+            
+            switch (state) {
+                case APP_STATE.IDLE:
+                    document.documentElement.style.setProperty('--pulse', '1');
+                    document.documentElement.style.setProperty('--brightness', '1');
+                    document.documentElement.style.setProperty('--saturation', '1');
+                    document.documentElement.style.setProperty('--scale', '1');
+                    playBtn.textContent = '▶';
+                    break;
+                    
+                case APP_STATE.LOADING:
+                    document.documentElement.style.setProperty('--pulse', '1.5');
+                    document.documentElement.style.setProperty('--brightness', '1.2');
+                    document.documentElement.style.setProperty('--scale', '0.95');
+                    status.textContent = '加载中...';
+                    break;
+                    
+                case APP_STATE.PLAYING:
+                    document.documentElement.style.setProperty('--pulse', '1');
+                    document.documentElement.style.setProperty('--brightness', '1');
+                    document.documentElement.style.setProperty('--scale', '1');
+                    playBtn.textContent = '⏸';
+                    break;
+                    
+                case APP_STATE.PAUSED:
+                    document.documentElement.style.setProperty('--pulse', '1.2');
+                    document.documentElement.style.setProperty('--brightness', '0.8');
+                    document.documentElement.style.setProperty('--saturation', '0.7');
+                    playBtn.textContent = '▶';
+                    break;
+            }
+        }
+        
+        // 创建粒子
+        function createParticles() {
+            particles = [];
+            
+            for (let i = 0; i < 150; i++) {
+                particles.push({
+                    x: 0,
+                    y: 0,
+                    size: Math.random() * 3 + 1,
+                    speed: Math.random() * 2 + 1,
+                    angle: Math.random() * Math.PI * 2,
+                    distance: Math.random() * 150 + 50,
+                    hue: Math.random() * 60 + (themes[currentThemeIndex].hue - 30)
+                });
+            }
+        }
+        
+        // 渲染循环
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 获取音频数据（如果正在播放）
+            if (audioState.isPlaying && audioState.analyser) {
+                audioState.analyser.getByteFrequencyData(audioState.data);
+                
+                // 更新光晕效果
+                const average = Array.from(audioState.data).reduce((a, b) => a + b) / audioState.data.length;
+                const intensity = average / 256;
+                
+                document.documentElement.style.setProperty('--glow', intensity);
+                document.documentElement.style.setProperty('--scale', 1 + intensity * 0.1);
+                
+                // 更新和渲染粒子
+                updateParticles(intensity);
+            } else if (currentState === APP_STATE.IDLE || currentState === APP_STATE.PAUSED) {
+                // 空闲状态下的柔和动画
+                renderIdleAnimation();
+            }
+            
+            animationId = requestAnimationFrame(render);
+        }
+        
+        // 更新粒子
+        function updateParticles(intensity) {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                
+                // 根据音频强度调整粒子距离
+                const pulseDistance = p.distance * (1 + intensity * 0.5);
+                
+                // 计算粒子位置
+                p.x = centerX + Math.cos(p.angle) * pulseDistance;
+                p.y = centerY + Math.sin(p.angle) * pulseDistance;
+                
+                // 根据音频数据调整粒子大小和透明度
+                const sizeMod = audioState.data[Math.floor(i / particles.length * audioState.data.length)] / 256;
+                const alpha = 0.3 + sizeMod * 0.7;
+                
+                // 绘制粒子
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * (1 + sizeMod), 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${p.hue}, 80%, 60%, ${alpha})`;
+                ctx.fill();
+                
+                // 更新粒子角度
+                p.angle += 0.005 * p.speed;
+            }
+        }
+        
+        // 空闲状态动画
+        function renderIdleAnimation() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const time = Date.now() * 0.001;
+            
+            // 绘制柔和的光晕效果
+            const gradient = ctx.createRadialGradient(
+                centerX, centerY, 50,
+                centerX, centerY, 250
+            );
+            
+            gradient.addColorStop(0, `hsla(${themes[currentThemeIndex].hue}, 80%, 60%, 0.3)`);
+            gradient.addColorStop(1, 'hsla(200, 80%, 60%, 0)');
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 250, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // 绘制缓慢移动的粒子
+            if (particles.length === 0) {
+                createParticles();
+            }
+            
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                
+                // 计算粒子位置
+                p.x = centerX + Math.cos(p.angle + time * 0.2) * p.distance;
+                p.y = centerY + Math.sin(p.angle + time * 0.2) * p.distance;
+                
+                // 绘制粒子
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${p.hue}, 80%, 60%, 0.5)`;
+                ctx.fill();
+                
+                // 缓慢更新粒子角度
+                p.angle += 0.001 * p.speed;
+            }
+        }
+        
+        // 初始化应用
+        init();
     </script>
 </body>
 </html>
