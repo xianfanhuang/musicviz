@@ -1,4 +1,4 @@
-// main.js —— 光环 + 粒子 + 拖歌 + FFT
+// main.js 节拍闪光 + 陀螺仪共振版
 const canvas = document.getElementById('gl');
 const gl = canvas.getContext('webgl2', { antialias: true });
 if (!gl) { alert('WebGL2 不支持'); }
@@ -12,6 +12,14 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
+// ===== 陀螺仪 =====
+let tilt = 0;
+if (window.DeviceOrientationEvent) {
+  window.addEventListener('deviceorientation', e => {
+    tilt = Math.max(-1, Math.min(1, (e.gamma || 0) / 45));
+  });
+}
+
 // ===== 着色器 =====
 const vs = `#version 300 es
 in vec2 a_pos;
@@ -20,7 +28,7 @@ uniform float u_time,u_breathe;
 out float v_rand;
 void main(){
   float t=u_time*0.002;
-  float s=0.7+0.3*cos(t+u_breathe*6.28);
+  float s=0.7+0.3*cos(t+u_breathe*6.28)+0.08*tilt;
   vec2 p=a_pos*s;
   gl_PointSize=6.+4.*(1.+sin(t*5.+a_rand*10.));
   gl_Position=vec4(p,0,1);
@@ -50,7 +58,7 @@ gl.attachShader(prog, compile(fs, gl.FRAGMENT_SHADER));
 gl.linkProgram(prog); gl.useProgram(prog);
 
 // ===== 粒子 =====
-let particleCount = 800;
+const particleCount = 800;
 const posArr = new Float32Array(particleCount * 3);
 for (let i = 0; i < particleCount; i++) {
   const r = Math.sqrt(Math.random()) * 0.85, a = Math.random() * Math.PI * 2;
@@ -84,8 +92,7 @@ async function initAudio() {
   analyser = actx.createAnalyser();
   analyser.fftSize = 512;
   dataArray = new Uint8Array(analyser.frequencyBinCount);
-analyser.connect(actx.destination); // 别漏
-
+  analyser.connect(actx.destination);
 }
 
 function hslToRgb(h, s, l) {
@@ -110,43 +117,41 @@ function hslToRgb(h, s, l) {
 async function loadAudio(buf, name) {
   await initAudio();
   if (actx.state === 'suspended') await actx.resume();
-
   const decoded = await actx.decodeAudioData(buf.slice(0));
-  // ===== 必须紧跟用户事件 =====
   const src = actx.createBufferSource();
   src.buffer = decoded;
   src.connect(analyser);
-  src.start(0); // ← 立即 start，别延迟
+  src.start(0);
   document.getElementById('hint').textContent = name || 'Playing';
 }
 
-// 拖拽事件
 window.addEventListener('dragover', e => e.preventDefault());
 window.addEventListener('drop', async (e) => {
   e.preventDefault();
   for (const f of [...e.dataTransfer.files]) {
-    if (!f.type.startsWith('audio')) continue;
+    if (!f.type.startsWith('audio') && !f.name.match(/\.(mp3|m4a|wav|flac|mp4)$/i)) continue;
     const buf = await f.arrayBuffer();
     loadAudio(buf, f.name);
   }
 });
 
-// 点击选歌（移动端）
 canvas.addEventListener('click', () => {
   const el = document.createElement('input');
   el.type = 'file';
-  el.accept = 'audio/mp3,audio/m4a,.mp3';
+  el.accept = 'audio/*,video/mp4';
   el.multiple = true;
   el.onchange = async (e) => {
     for (const f of [...el.files]) {
+      if (!f.type.startsWith('audio') && !f.name.match(/\.(mp3|m4a|wav|flac|mp4)$/i)) continue;
       const buf = await f.arrayBuffer();
       loadAudio(buf, f.name);
     }
   };
   el.click();
-}, { once: true });
+}, { once: false });
 
-// ===== 渲染 =====
+// ===== 节拍闪光 =====
+let lastPeak = 0;
 function render(t) {
   if (analyser) {
     analyser.getByteFrequencyData(dataArray);
@@ -154,13 +159,20 @@ function render(t) {
     for (const v of dataArray) { sum += v; if (v > peak) peak = v; }
     breathe = 0.7 + 0.3 * (peak / 255);
     str = 0.5 + 0.5 * (sum / dataArray.length / 255);
-    // 色相随频心漂移
     const centroid = (sum / dataArray.length) / 255;
     const hue = 200 + centroid * 120;
     const colA = hslToRgb(hue, 0.7, 0.6);
     const colB = hslToRgb((hue + 140) % 360, 0.8, 0.5);
     gl.uniform3f(u_colA, colA[0], colA[1], colA[2]);
     gl.uniform3f(u_colB, colB[0], colB[1], colB[2]);
+
+    // 闪光触发
+    const beat = (peak > 200 && peak > lastPeak + 30);
+    if (beat) {
+      document.documentElement.style.setProperty('--flash', '1');
+      setTimeout(() => document.documentElement.style.setProperty('--flash', '0'), 100);
+    }
+    lastPeak = peak;
   }
   gl.clearColor(0, 0, 0, 1);
   gl.clear(gl.COLOR_BUFFER_BIT);
