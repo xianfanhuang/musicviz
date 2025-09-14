@@ -1,109 +1,170 @@
-// 最简 WebGL2 光环 + 音频上下文骨架
-const canvas=document.getElementById('gl');
-const gl=canvas.getContext('webgl2',{antialias:true});
-if(!gl){alert('WebGL2 不支持');}
+// main.js —— 光环 + 粒子 + 拖歌 + FFT
+const canvas = document.getElementById('gl');
+const gl = canvas.getContext('webgl2', { antialias: true });
+if (!gl) { alert('WebGL2 不支持'); }
 
-// 适配屏幕
-function resize(){
-  const dpr=Math.min(window.devicePixelRatio||1,2);
-  canvas.width=Math.floor(canvas.clientWidth*dpr);
-  canvas.height=Math.floor(canvas.clientHeight*dpr);
-  gl.viewport(0,0,canvas.width,canvas.height);
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(canvas.clientWidth * dpr);
+  canvas.height = Math.floor(canvas.clientHeight * dpr);
+  gl.viewport(0, 0, canvas.width, canvas.height);
 }
-window.addEventListener('resize',resize);
+window.addEventListener('resize', resize);
 resize();
 
-// 极简单元着色器：光环呼吸
-const vs=`#version 300 es
+// ===== 着色器 =====
+const vs = `#version 300 es
 in vec2 a_pos;
+in float a_rand;
 uniform float u_time,u_breathe;
+out float v_rand;
 void main(){
-  float s=0.7+0.3*sin(u_time*0.001+u_breathe*6.28);
-  gl_Position=vec4(a_pos*s,0,1);
+  float t=u_time*0.002;
+  float s=0.7+0.3*cos(t+u_breathe*6.28);
+  vec2 p=a_pos*s;
+  gl_PointSize=6.+4.*(1.+sin(t*5.+a_rand*10.));
+  gl_Position=vec4(p,0,1);
+  v_rand=a_rand;
 }`;
-const fs=`#version 300 es
+const fs = `#version 300 es
 precision highp float;
+in float v_rand;
 out vec4 outColor;
-uniform float u_str;
+uniform vec3 u_colA,u_colB; uniform float u_str;
 void main(){
-  vec2 uv=gl_FragCoord.xy/vec2(390,844);
-  float d=length(uv-0.5);
-  float ring=smoothstep(0.35,0.33,d)*smoothstep(0.25,0.27,d);
-  outColor=vec4(vec3(0,0.7,1)*u_str,ring);
+  float d=length(gl_PointCoord-vec2(0.5));
+  float alpha=smoothstep(0.5,0.1,d);
+  vec3 c=mix(u_colA,u_colB,v_rand);
+  outColor=vec4(c*u_str,alpha);
 }`;
 
-// 编译链
-function compile(s,type){
-  const sh=gl.createShader(type);
-  gl.shaderSource(sh,s);gl.compileShader(sh);
-  if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(sh));
+function compile(s, type) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, s); gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(sh));
   return sh;
 }
-const prog=gl.createProgram();
-gl.attachShader(prog,compile(vs,gl.VERTEX_SHADER));
-gl.attachShader(prog,compile(fs,gl.FRAGMENT_SHADER));
-gl.linkProgram(prog);
-gl.useProgram(prog);
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(vs, gl.VERTEX_SHADER));
+gl.attachShader(prog, compile(fs, gl.FRAGMENT_SHADER));
+gl.linkProgram(prog); gl.useProgram(prog);
 
-// 光环几何
-const verts=new Float32Array(1024);
-for(let i=0;i<1024;i++){
-  const a=i/512*Math.PI*2;
-  verts[i*2]=Math.cos(a)*0.9;
-  verts[i*2+1]=Math.sin(a)*0.9;
+// ===== 粒子 =====
+let particleCount = 800;
+const posArr = new Float32Array(particleCount * 3);
+for (let i = 0; i < particleCount; i++) {
+  const r = Math.sqrt(Math.random()) * 0.85, a = Math.random() * Math.PI * 2;
+  posArr[i * 3] = Math.cos(a) * r;
+  posArr[i * 3 + 1] = Math.sin(a) * r;
+  posArr[i * 3 + 2] = Math.random();
 }
-const buf=gl.createBuffer();
-gl.bindBuffer(gl.ARRAY_BUFFER,buf);
-gl.bufferData(gl.ARRAY_BUFFER,verts,gl.STATIC_DRAW);
-const loc=gl.getAttribLocation(prog,'a_pos');
-gl.enableVertexAttribArray(loc);
-gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, posArr, gl.STATIC_DRAW);
+const a_pos = gl.getAttribLocation(prog, 'a_pos');
+const a_rand = gl.getAttribLocation(prog, 'a_rand');
+gl.enableVertexAttribArray(a_pos);
+gl.vertexAttribPointer(a_pos, 2, gl.FLOAT, false, 12, 0);
+gl.enableVertexAttribArray(a_rand);
+gl.vertexAttribPointer(a_rand, 1, gl.FLOAT, false, 12, 8);
 
-// 统一变量
-const u_time=gl.getUniformLocation(prog,'u_time');
-const u_breathe=gl.getUniformLocation(prog,'u_breathe');
-const u_str=gl.getUniformLocation(prog,'u_str');
+// ===== 统一变量 =====
+const u_time = gl.getUniformLocation(prog, 'u_time');
+const u_breathe = gl.getUniformLocation(prog, 'u_breathe');
+const u_str = gl.getUniformLocation(prog, 'u_str');
+const u_colA = gl.getUniformLocation(prog, 'u_colA');
+const u_colB = gl.getUniformLocation(prog, 'u_colB');
 
-// 音频全局
-let actx,analyser,source,bufferLength,dataArray,breathe=1,str=1;
+// ===== 音频 =====
+let actx, analyser, dataArray, breathe = 1, str = 1;
 
-// 初始化音频（必须用户手势）
-canvas.addEventListener('click',async()=>{
-  if(actx)return;
-  document.getElementById('hint').remove();
-  actx=new (window.AudioContext||window.webkitAudioContext)();
-  analyser=actx.createAnalyser();
-  analyser.fftSize=512;
-  bufferLength=analyser.frequencyBinCount;
-  dataArray=new Uint8Array(bufferLength);
-  // 先放一段 1 秒粉红噪声当占位
-  const noiseBuffer=actx.createBuffer(1,actx.sampleRate,actx.sampleRate);
-  const data=noiseBuffer.getChannelData(0);
-  for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
-  source=actx.createBufferSource();
-  source.buffer=noiseBuffer;
-  source.loop=true;
-  source.connect(analyser);
-  analyser.connect(actx.destination);
-  source.start();
-},{once:true});
+async function initAudio() {
+  if (actx) return;
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = actx.createAnalyser();
+  analyser.fftSize = 512;
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
+}
 
-// 渲染循环
-function render(t){
-  if(analyser){
-    analyser.getByteFrequencyData(dataArray);
-    let sum=0,peak=0;
-    for(const v of dataArray){sum+=v;if(v>peak)peak=v;}
-    breathe=0.7+0.3*(peak/255);
-    str=0.5+0.5*(sum/bufferLength/255);
+function hslToRgb(h, s, l) {
+  h /= 360;
+  let r, g, b;
+  if (s === 0) { r = g = b = l; } else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    const ht = t => {
+      if (t < 0) t += 1; if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    r = ht(h + 1 / 3); g = ht(h); b = ht(h - 1 / 3);
   }
-  gl.clearColor(0,0,0,1);
+  return [r, g, b];
+}
+
+// ===== 拖歌 =====
+async function loadAudio(buf, name) {
+  await initAudio();
+  if (actx.state === 'suspended') await actx.resume();
+  const decoded = await actx.decodeAudioData(buf.slice(0));
+  const src = actx.createBufferSource();
+  src.buffer = decoded;
+  src.connect(analyser);
+  src.start(0);
+  document.getElementById('hint').textContent = name || 'Playing';
+}
+
+// 拖拽事件
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  for (const f of [...e.dataTransfer.files]) {
+    if (!f.type.startsWith('audio')) continue;
+    const buf = await f.arrayBuffer();
+    loadAudio(buf, f.name);
+  }
+});
+
+// 点击选歌（移动端）
+canvas.addEventListener('click', () => {
+  const el = document.createElement('input');
+  el.type = 'file';
+  el.accept = 'audio/*';
+  el.multiple = true;
+  el.onchange = async (e) => {
+    for (const f of [...el.files]) {
+      const buf = await f.arrayBuffer();
+      loadAudio(buf, f.name);
+    }
+  };
+  el.click();
+}, { once: true });
+
+// ===== 渲染 =====
+function render(t) {
+  if (analyser) {
+    analyser.getByteFrequencyData(dataArray);
+    let sum = 0, peak = 0;
+    for (const v of dataArray) { sum += v; if (v > peak) peak = v; }
+    breathe = 0.7 + 0.3 * (peak / 255);
+    str = 0.5 + 0.5 * (sum / dataArray.length / 255);
+    // 色相随频心漂移
+    const centroid = (sum / dataArray.length) / 255;
+    const hue = 200 + centroid * 120;
+    const colA = hslToRgb(hue, 0.7, 0.6);
+    const colB = hslToRgb((hue + 140) % 360, 0.8, 0.5);
+    gl.uniform3f(u_colA, colA[0], colA[1], colA[2]);
+    gl.uniform3f(u_colB, colB[0], colB[1], colB[2]);
+  }
+  gl.clearColor(0, 0, 0, 1);
   gl.clear(gl.COLOR_BUFFER_BIT);
   gl.useProgram(prog);
-  gl.uniform1f(u_time,t);
-  gl.uniform1f(u_breathe,breathe);
-  gl.uniform1f(u_str,str);
-  gl.drawArrays(gl.LINE_LOOP,0,512);
+  gl.uniform1f(u_time, t);
+  gl.uniform1f(u_breathe, breathe);
+  gl.uniform1f(u_str, str);
+  gl.drawArrays(gl.POINTS, 0, particleCount);
   requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
