@@ -84,6 +84,8 @@ async function initAudio() {
   analyser = actx.createAnalyser();
   analyser.fftSize = 512;
   dataArray = new Uint8Array(analyser.frequencyBinCount);
+analyser.connect(actx.destination); // 别漏
+
 }
 
 function hslToRgb(h, s, l) {
