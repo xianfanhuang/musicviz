@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>呼吸光晕 Icon</title>
+<style>
+  body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh}
+  canvas{border-radius:18%;box-shadow:0 0 40px #00c0ff}
+  #save{background:#00c0ff;color:#000;border:none;padding:12px 24px;font-size:16px;border-radius:20px;margin-top:20px}
+</style>
+</head>
+<body>
+<canvas id="cv" width="512" height="512"></canvas>
+<br><button id="save">保存到相册</button>
+
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const brandHue=200; // 品牌核
+
+function draw(t){
+  ctx.clearRect(0,0,512,512);
+  // 外呼吸光晕
+  const breathe=0.5+0.5*Math.sin(t*0.002);
+  const grad1=ctx.createRadialGradient(256,256,0,256,256,256);
+  grad1.addColorStop(0,`hsl(${brandHue},90%,${65+breathe*10}%)`);
+  grad1.addColorStop(0.4,`hsl(${brandHue},80%,${50+breathe*8}%)`);
+  grad1.addColorStop(1,'transparent');
+  ctx.fillStyle=grad1;ctx.fillRect(0,0,512,512);
+
+  // 中环
+  const grad2=ctx.createRadialGradient(256,256,0,256,256,180);
+  grad2.addColorStop(0,`hsl(${brandHue},100%,${75+breathe*5}%)`);
+  grad2.addColorStop(0.6,`hsl(${brandHue},90%,${60+breathe*5}%)`);
+  grad2.addColorStop(1,'transparent');
+  ctx.fillStyle=grad2;ctx.fillRect(0,0,512,512);
+
+  // 星屑闪点
+  for(let i=0;i<60;i++){
+    const ang=i/60*Math.PI*2+Math.sin(t*0.003+i)*0.2;
+    const r=120+Math.sin(t*0.004+i*0.5)*20;
+    const x=256+Math.cos(ang)*r;
+    const y=256+Math.sin(ang)*r;
+    const flash=0.3+0.7*Math.sin(t*0.01+i*7);
+    ctx.beginPath();ctx.arc(x,y,2*flash,0,Math.PI*2);
+    ctx.fillStyle=`hsla(${brandHue+20},80%,80%,${flash})`;
+    ctx.fill();
+  }
+
+  // 中心核
+  ctx.beginPath();ctx.arc(256,256,50*breathe+30,0,Math.PI*2);
+  ctx.fillStyle=`hsl(${brandHue},100%,${80+breathe*10}%)`;
+  ctx.fill();
+}
+(function anim(t){draw(t);requestAnimationFrame(anim);})(0);
+
+// 保存
+document.getElementById('save').onclick=()=>{
+  canvas.toBlob(blob=>{
+    const item=new ClipboardItem({'image/png':blob});
+    navigator.clipboard.write([item]).then(()=>{
+      alert('已保存到相册，请在「照片」中找到并设为 icon.png');
+    });
+  });
+};
+</script>
+</body>
+</html>
