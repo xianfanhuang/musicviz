@@ -131,7 +131,7 @@ window.addEventListener('drop', async (e) => {
 canvas.addEventListener('click', () => {
   const el = document.createElement('input');
   el.type = 'file';
-  el.accept = 'audio/*';
+  el.accept = 'audio/mp3,audio/m4a,.mp3';
   el.multiple = true;
   el.onchange = async (e) => {
     for (const f of [...el.files]) {
