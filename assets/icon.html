@@ -1,18 +1,18 @@
 <!doctype html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>呼吸光晕 Icon</title>
+<title>呼吸光晕 Icon 生成器</title>
 <style>
-  body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh}
+  body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column}
   canvas{border-radius:18%;box-shadow:0 0 40px #00c0ff}
   #save{background:#00c0ff;color:#000;border:none;padding:12px 24px;font-size:16px;border-radius:20px;margin-top:20px}
 </style>
 </head>
 <body>
 <canvas id="cv" width="512" height="512"></canvas>
-<br><button id="save">保存到相册</button>
+<button id="save">下载到文件</button>
 
 <script>
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
@@ -54,13 +54,19 @@ function draw(t){
 }
 (function anim(t){draw(t);requestAnimationFrame(anim);})(0);
 
-// 保存
+// 下载到文件（iOS 可用）
 document.getElementById('save').onclick=()=>{
   canvas.toBlob(blob=>{
-    const item=new ClipboardItem({'image/png':blob});
-    navigator.clipboard.write([item]).then(()=>{
-      alert('已保存到相册，请在「照片」中找到并设为 icon.png');
-    });
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='icon.png';
+    a.style.display='none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('已下载，请到「文件」App查看「下载项」→ icon.png');
   });
 };
 </script>
