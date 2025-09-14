@@ -31,6 +31,10 @@ export function renderLoop(){
       const hue=200+centroid*120;
       const colA=hslToRgb(hue,0.7,0.6);
       const colB=hslToRgb((hue+140)%360,0.8,0.5);
+    // 原有：centroid → hue
+    updateColorTemp(); // ← 新增：情绪色温
+    const colA = emotionColor(colorTemp);
+    const colB = emotionColor(Math.min(1,colorTemp+0.2)); // 副色偏移
       gl.uniform3f(u_colA,colA[0],colA[1],colA[2]);
       gl.uniform3f(u_colB,colB[0],colB[1],colB[2]);
 
