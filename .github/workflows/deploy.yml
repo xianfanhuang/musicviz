@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [test]
+    branches: [tes]
 
 permissions:                 # 显式声明
   contents: write            # 必须有写权限
