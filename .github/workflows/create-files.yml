@@ -1,0 +1,36 @@
+name: Create Project Skeleton on test branch
+
+on:
+  push:
+    branches: [ test ]
+    paths: [ '.github/workflows/create-files.yml' ]
+
+jobs:
+  create-skeleton:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout test branch
+        uses: actions/checkout@v3
+        with:
+          ref: test
+
+      - name: Create directory structure & empty files
+        run: |
+          # 根目录
+          touch index.html
+          # css
+          mkdir -p css && touch css/main.css
+          # assets
+          mkdir -p assets && touch assets/icon.png assets/drop.json
+          # src
+          mkdir -p src && touch src/main.js src/audio.js src/visual.js src/utils.js
+          # build
+          mkdir -p build && touch build/sw.js
+
+      - name: Commit & Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: create empty project skeleton on test branch" || exit 0
+          git push origin test
