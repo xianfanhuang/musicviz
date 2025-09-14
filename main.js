@@ -108,11 +108,13 @@ function hslToRgb(h, s, l) {
 async function loadAudio(buf, name) {
   await initAudio();
   if (actx.state === 'suspended') await actx.resume();
+
   const decoded = await actx.decodeAudioData(buf.slice(0));
+  // ===== 必须紧跟用户事件 =====
   const src = actx.createBufferSource();
   src.buffer = decoded;
   src.connect(analyser);
-  src.start(0);
+  src.start(0); // ← 立即 start，别延迟
   document.getElementById('hint').textContent = name || 'Playing';
 }
 
