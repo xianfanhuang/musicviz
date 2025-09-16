@@ -24,7 +24,6 @@ class MusicPlayer {
         this.setupEventListeners();
         this.setupVisualizer();
         this.updateUI();
-        this.loadState();
     }
 
     async initializeAudioContext() {
@@ -74,16 +73,20 @@ class MusicPlayer {
             }
         });
 
+        // 新增功能事件监听
+        document.getElementById('fullscreenBtn').addEventListener('click', this.toggleFullscreen.bind(this));
+        document.getElementById('shuffleAllBtn').addEventListener('click', this.shuffleAll.bind(this));
+        document.getElementById('clearPlaylistBtn').addEventListener('click', this.clearPlaylist.bind(this));
+        
+        // 键盘快捷键
+        document.addEventListener('keydown', this.handleKeyboardShortcuts.bind(this));
+
         // 音频元素事件
         this.audioElement.addEventListener('loadedmetadata', this.onLoadedMetadata.bind(this));
         this.audioElement.addEventListener('timeupdate', this.onTimeUpdate.bind(this));
         this.audioElement.addEventListener('ended', this.onTrackEnded.bind(this));
         this.audioElement.addEventListener('play', this.onPlay.bind(this));
         this.audioElement.addEventListener('pause', this.onPause.bind(this));
-
-        // 播放列表管理
-        document.getElementById('clearPlaylistBtn').addEventListener('click', this.clearPlaylist.bind(this));
-        document.getElementById('playlist').addEventListener('click', this.handlePlaylistClick.bind(this));
     }
 
     setupVisualizer() {
@@ -93,6 +96,9 @@ class MusicPlayer {
         if (this.audioContext && this.audioElement) {
             this.visualizer.connectAudio(this.audioElement);
         }
+        
+        // 启动性能监控显示
+        this.startPerformanceMonitor();
     }
 
     handleDragOver(e) {
@@ -113,8 +119,8 @@ class MusicPlayer {
     }
 
     async processFiles(files) {
-        const audioFiles = files.filter(file =>
-            file.type.startsWith('audio/') ||
+        const audioFiles = files.filter(file => 
+            file.type.startsWith('audio/') || 
             window.audioDecoder.detectFormat(file)
         );
 
@@ -157,7 +163,7 @@ class MusicPlayer {
                 };
 
                 this.playlist.push(track);
-                this.addToPlaylistUI(track, this.playlist.length - 1);
+                this.addToPlaylistUI(track);
 
                 console.log(`文件处理完成: ${track.metadata.title} (${result.originalFormat} → ${result.decodedFormat})`);
                 processed++;
@@ -180,7 +186,6 @@ class MusicPlayer {
             this.loadTrack(0);
         }
 
-        this.saveState();
         this.showNotification(`成功处理 ${this.playlist.length} 个音频文件`, 'success');
     }
 
@@ -201,10 +206,10 @@ class MusicPlayer {
 
         try {
             console.log('开始探嗅URL:', url);
-
+            
             // 使用网络探嗅器解析音频
             const audioList = await window.networkSniffer.sniffAudio(url);
-
+            
             console.log('探嗅成功，找到音频:', audioList.length);
 
             // 将探嗅到的音频添加到播放列表
@@ -228,7 +233,7 @@ class MusicPlayer {
                     };
 
                     this.playlist.push(track);
-                    this.addToPlaylistUI(track, this.playlist.length - 1);
+                    this.addToPlaylistUI(track);
                     addedCount++;
 
                     console.log(`已添加: ${track.metadata.title} - ${track.metadata.artist}`);
@@ -238,9 +243,8 @@ class MusicPlayer {
             }
 
             if (addedCount > 0) {
-                this.saveState();
                 this.showNotification(`成功添加 ${addedCount} 首音频到播放列表`, 'success');
-
+                
                 // 如果当前没有播放音频，加载第一首
                 if (!this.isPlaying && this.playlist.length > 0) {
                     await this.loadTrack(this.playlist.length - addedCount);
@@ -263,21 +267,21 @@ class MusicPlayer {
         }
     }
 
-    addToPlaylistUI(track, index) {
+    addToPlaylistUI(track) {
         const playlist = document.getElementById('playlist');
         const item = document.createElement('div');
         item.className = 'playlist-item';
         item.dataset.trackId = track.id;
 
         // 添加格式标识和来源信息
-        const formatBadge = track.originalFormat !== track.decodedFormat ?
+        const formatBadge = track.originalFormat !== track.decodedFormat ? 
             `<span class="format-badge" title="原格式: ${track.originalFormat}">${track.originalFormat.toUpperCase()}</span>` : '';
-
-        const sourceBadge = track.originalFormat ?
+        
+        const sourceBadge = track.originalFormat ? 
             `<span class="format-badge" title="来源: ${track.originalFormat}">${track.originalFormat.toUpperCase()}</span>` : '';
 
         item.innerHTML = `
-            <div class="track-number">${index + 1}</div>
+            <div class="track-number">${this.playlist.length}</div>
             <div class="track-details">
                 <div class="track-name">
                     ${track.metadata.title}
@@ -288,7 +292,6 @@ class MusicPlayer {
                     <span class="track-duration">${this.formatTime(track.metadata.duration)}</span>
                 </div>
             </div>
-            <button class="remove-track-btn" data-track-id="${track.id}">✕</button>
         `;
 
         item.addEventListener('click', () => {
@@ -312,21 +315,24 @@ class MusicPlayer {
 
         try {
             console.log('正在加载音频:', track.metadata.title, track.url);
-
+            
             // 验证音频URL
             if (!track.url || track.url.includes('undefined')) {
                 throw new Error('音频URL无效');
             }
-
+            
+            // 清理之前的音频元素资源（但保留播放列表blob引用）
+            this.cleanupAudioElement();
+            
             // 设置音频源
             this.audioElement.src = track.url;
-
+            
             // 添加加载完成处理
             const loadHandler = () => {
                 console.log('音频加载成功:', track.metadata.title);
                 this.showNotification(`已加载: ${track.metadata.title}`, 'success');
             };
-
+            
             // 添加错误处理
             const errorHandler = (error) => {
                 console.error('音频加载失败:', error);
@@ -335,14 +341,13 @@ class MusicPlayer {
 
             this.audioElement.addEventListener('loadeddata', loadHandler, { once: true });
             this.audioElement.addEventListener('error', errorHandler, { once: true });
-
+            
             // 尝试预加载
             this.audioElement.load();
-
+            
             this.updateTrackInfo(track.metadata);
             this.updatePlaylistUI();
-            this.saveState();
-
+            
         } catch (error) {
             console.error('加载音频失败:', error);
             this.showNotification(`加载失败: ${error.message}`, 'error');
@@ -359,110 +364,6 @@ class MusicPlayer {
         items.forEach((item, index) => {
             item.classList.toggle('active', index === this.currentTrackIndex);
         });
-    }
-
-    rerenderPlaylistUI() {
-        const playlistContainer = document.getElementById('playlist');
-        playlistContainer.innerHTML = '';
-        this.playlist.forEach((track, index) => this.addToPlaylistUI(track, index));
-        this.updatePlaylistUI();
-    }
-
-    removeTrack(trackId) {
-        const indexToRemove = this.playlist.findIndex(t => t.id === trackId);
-        if (indexToRemove === -1) return;
-
-        // If removing the currently playing track
-        if (indexToRemove === this.currentTrackIndex) {
-            if (this.playlist.length === 1) {
-                this.clearPlaylist();
-                return;
-            }
-            // Play the next track without disrupting the removal logic
-            this.currentTrackIndex = (this.currentTrackIndex) % (this.playlist.length - 1);
-            this.loadTrack(this.currentTrackIndex);
-        }
-
-        // Remove from the playlist array
-        this.playlist.splice(indexToRemove, 1);
-
-        // Adjust the current track index if a preceding track was removed
-        if (indexToRemove < this.currentTrackIndex) {
-            this.currentTrackIndex--;
-        }
-
-        this.rerenderPlaylistUI();
-        this.saveState();
-    }
-
-    clearPlaylist() {
-        this.playlist = [];
-        this.currentTrackIndex = 0;
-        this.isPlaying = false;
-        this.audioElement.src = '';
-        this.audioElement.pause();
-        this.rerenderPlaylistUI();
-        this.updateTrackInfo({ title: '选择音频文件开始播放', artist: '' });
-        this.updateUI();
-        this.saveState();
-    }
-
-    handlePlaylistClick(e) {
-        if (e.target.classList.contains('remove-track-btn')) {
-            e.stopPropagation(); // Prevent the track from playing when clicking remove
-            const trackId = e.target.dataset.trackId;
-            this.removeTrack(trackId);
-        }
-    }
-
-    saveState() {
-        // Filter out tracks from local files (blob URLs) as they can't be persisted
-        const persistablePlaylist = this.playlist.filter(track => !track.url.startsWith('blob:'));
-
-        if (persistablePlaylist.length === 0 && this.playlist.length > 0) {
-            // Don't save state if it would wipe out a local-only playlist
-            return;
-        }
-
-        const state = {
-            playlist: persistablePlaylist,
-            currentTrackIndex: this.currentTrackIndex,
-            isShuffleOn: this.isShuffleOn,
-            repeatMode: this.repeatMode,
-            volume: this.audioElement.volume
-        };
-        localStorage.setItem('musicPlayerState', JSON.stringify(state));
-    }
-
-    loadState() {
-        const savedState = localStorage.getItem('musicPlayerState');
-        if (savedState) {
-            const state = JSON.parse(savedState);
-            this.playlist = state.playlist || [];
-            this.isShuffleOn = state.isShuffleOn || false;
-            this.repeatMode = state.repeatMode || 0;
-            this.audioElement.volume = state.volume || 0.8;
-            document.getElementById('volumeSlider').value = (state.volume || 0.8) * 100;
-
-            // Restore UI for settings
-            this.updateVolumeIcon();
-            if (this.isShuffleOn) {
-                document.getElementById('shuffleBtn').style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
-            }
-            const repeatBtn = document.getElementById('repeatBtn');
-            const repeatModes = ['🔁', '🔂', '🔁'];
-            const repeatColors = ['rgba(255, 255, 255, 0.2)', 'linear-gradient(135deg, #667eea, #764ba2)', 'linear-gradient(135deg, #ff6b6b, #ee5a24)'];
-            repeatBtn.textContent = repeatModes[this.repeatMode];
-            repeatBtn.style.background = repeatColors[this.repeatMode];
-
-
-            if (this.playlist.length > 0) {
-                this.currentTrackIndex = state.currentTrackIndex || 0;
-                this.rerenderPlaylistUI();
-                // Load the track metadata, but don't play automatically
-                this.loadTrack(this.currentTrackIndex);
-            }
-        }
     }
 
     async togglePlay() {
@@ -526,10 +427,9 @@ class MusicPlayer {
     toggleShuffle() {
         this.isShuffleOn = !this.isShuffleOn;
         const btn = document.getElementById('shuffleBtn');
-        btn.style.background = this.isShuffleOn ?
-            'linear-gradient(135deg, #667eea, #764ba2)' :
+        btn.style.background = this.isShuffleOn ? 
+            'linear-gradient(135deg, #667eea, #764ba2)' : 
             'rgba(255, 255, 255, 0.2)';
-        this.saveState();
     }
 
     toggleRepeat() {
@@ -544,7 +444,6 @@ class MusicPlayer {
 
         btn.textContent = modes[this.repeatMode];
         btn.style.background = colors[this.repeatMode];
-        this.saveState();
     }
 
     seekTo(e) {
@@ -561,7 +460,6 @@ class MusicPlayer {
         this.volume = e.target.value / 100;
         this.audioElement.volume = this.volume;
         this.updateVolumeIcon();
-        this.saveState();
     }
 
     toggleMute() {
@@ -654,9 +552,9 @@ class MusicPlayer {
         const percentage = (this.audioElement.currentTime / this.audioElement.duration) * 100;
         document.getElementById('progressFill').style.width = percentage + '%';
 
-        document.getElementById('currentTime').textContent =
+        document.getElementById('currentTime').textContent = 
             this.formatTime(this.audioElement.currentTime);
-        document.getElementById('totalTime').textContent =
+        document.getElementById('totalTime').textContent = 
             this.formatTime(this.audioElement.duration);
     }
 
@@ -725,6 +623,212 @@ class MusicPlayer {
             notification.style.transform = 'translateX(100%)';
             setTimeout(() => notification.remove(), 300);
         }, 3000);
+    }
+    
+    cleanupAudioElement() {
+        // 安全清理：只清理audio元素的当前src，不影响播放列表
+        const oldSrc = this.audioElement.src;
+        
+        // 暂停当前音频
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+        
+        // 只有当前音频元素使用的blob URL才清理，且确保不是即将播放的
+        if (oldSrc && oldSrc.startsWith('blob:')) {
+            // 检查这个blob是否还在播放列表中被使用
+            const stillInUse = this.playlist.some(track => track.url === oldSrc);
+            if (!stillInUse) {
+                try {
+                    URL.revokeObjectURL(oldSrc);
+                    console.log('清理未使用的音频blob URL');
+                } catch (e) {
+                    console.warn('清理blob URL时出错:', e);
+                }
+            }
+        }
+    }
+    
+    // 可选的轻量级内存管理（仅在用户明确触发时使用）
+    optimizeMemoryUsage() {
+        // 这个方法可以在将来需要时手动调用，例如用户上传大量文件后
+        console.log('执行内存优化...');
+        
+        // 移除重复的blob URL
+        const urlMap = new Map();
+        this.playlist.forEach(track => {
+            if (track.url && track.url.startsWith('blob:')) {
+                if (urlMap.has(track.url)) {
+                    console.log(`发现重复的音频URL: ${track.metadata.title}`);
+                } else {
+                    urlMap.set(track.url, track);
+                }
+            }
+        });
+        
+        console.log(`内存优化完成，管理中的唯一音频文件: ${urlMap.size}`);
+    }
+    
+    // 键盘快捷键处理
+    handleKeyboardShortcuts(e) {
+        // 避免在输入框中触发快捷键
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        
+        switch (e.key.toLowerCase()) {
+            case ' ':
+                e.preventDefault();
+                this.togglePlay();
+                break;
+            case 'arrowleft':
+                e.preventDefault();
+                this.previousTrack();
+                break;
+            case 'arrowright':
+                e.preventDefault();
+                this.nextTrack();
+                break;
+            case 'arrowup':
+                e.preventDefault();
+                this.adjustVolume(0.1);
+                break;
+            case 'arrowdown':
+                e.preventDefault();
+                this.adjustVolume(-0.1);
+                break;
+            case 'f':
+                e.preventDefault();
+                this.toggleFullscreen();
+                break;
+            case 's':
+                e.preventDefault();
+                this.shuffleAll();
+                break;
+            case 'r':
+                e.preventDefault();
+                this.toggleRepeat();
+                break;
+            case '?':
+                e.preventDefault();
+                this.toggleKeyboardShortcuts();
+                break;
+        }
+    }
+    
+    // 调整音量
+    adjustVolume(delta) {
+        const volumeSlider = document.getElementById('volumeSlider');
+        const newVolume = Math.max(0, Math.min(100, parseInt(volumeSlider.value) + (delta * 100)));
+        volumeSlider.value = newVolume;
+        this.setVolume({ target: { value: newVolume } });
+    }
+    
+    // 全屏模式切换
+    toggleFullscreen() {
+        const visualizerSection = document.querySelector('.visualizer-section');
+        if (visualizerSection.classList.contains('fullscreen')) {
+            visualizerSection.classList.remove('fullscreen');
+            document.exitFullscreen?.();
+        } else {
+            visualizerSection.classList.add('fullscreen');
+            visualizerSection.requestFullscreen?.();
+        }
+    }
+    
+    // 随机播放全部
+    shuffleAll() {
+        if (this.playlist.length === 0) {
+            this.showNotification('播放列表为空', 'warning');
+            return;
+        }
+        
+        this.isShuffleOn = true;
+        this.updateUI();
+        
+        // 随机选择一首歌开始播放
+        const randomIndex = Math.floor(Math.random() * this.playlist.length);
+        this.loadTrack(randomIndex);
+        if (!this.isPlaying) {
+            this.togglePlay();
+        }
+        
+        this.showNotification('已开启随机播放全部', 'success');
+    }
+    
+    // 清空播放列表
+    clearPlaylist() {
+        if (this.playlist.length === 0) {
+            this.showNotification('播放列表已为空', 'info');
+            return;
+        }
+        
+        // 停止播放
+        if (this.isPlaying) {
+            this.togglePlay();
+        }
+        
+        // 清理所有blob URL
+        this.playlist.forEach(track => {
+            if (track.url && track.url.startsWith('blob:')) {
+                try {
+                    URL.revokeObjectURL(track.url);
+                } catch (e) {
+                    console.warn('清理blob URL失败:', e);
+                }
+            }
+        });
+        
+        // 清空列表
+        this.playlist = [];
+        this.currentTrackIndex = 0;
+        
+        // 更新UI
+        document.getElementById('playlist').innerHTML = '';
+        document.getElementById('trackTitle').textContent = '选择音频文件开始播放';
+        document.getElementById('trackArtist').textContent = '';
+        
+        this.updateUI();
+        this.showNotification('播放列表已清空', 'success');
+    }
+    
+    // 切换快捷键显示
+    toggleKeyboardShortcuts() {
+        const shortcuts = document.getElementById('keyboardShortcuts');
+        if (shortcuts.style.display === 'none') {
+            shortcuts.style.display = 'block';
+        } else {
+            shortcuts.style.display = 'none';
+        }
+    }
+    
+    // 启动性能监控显示
+    startPerformanceMonitor() {
+        const fpsDisplay = document.getElementById('fpsDisplay');
+        const perfLevel = document.getElementById('perfLevel');
+        
+        if (fpsDisplay && perfLevel && this.visualizer) {
+            setInterval(() => {
+                // 从可视化器获取性能数据
+                const fps = Math.round(this.visualizer.fps || 60);
+                const level = this.visualizer.performanceLevel || 'medium';
+                
+                fpsDisplay.textContent = `FPS: ${fps}`;
+                
+                const levelNames = {
+                    'low': '省电模式',
+                    'medium': '标准模式', 
+                    'high': '高性能'
+                };
+                perfLevel.textContent = levelNames[level] || '标准模式';
+                
+                // 根据FPS设置颜色
+                if (fps < 30) {
+                    fpsDisplay.style.color = '#ff6b6b';
+                } else if (fps < 50) {
+                    fpsDisplay.style.color = '#ffd93d';
+                } else {
+                    fpsDisplay.style.color = '#4facfe';
+                }
+            }, 1000);
+        }
     }
 }
 

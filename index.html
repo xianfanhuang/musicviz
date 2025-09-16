@@ -26,7 +26,7 @@
                 </div>
                 <input type="file" id="fileInput" accept=".mp3,.flac,.wav,.ogg,.m4a,.aac,.qmc0,.qmc3,.qmcflac,.qmcogg,.ncm,.kcm,.xm,.tm0,.tm2,.tm3,.tm6,.kgm,.vpr,.mflac,.mgg" multiple style="display: none;">
             </div>
-
+            
             <!-- URL输入 -->
             <div class="url-input-section">
                 <div class="url-input-container">
@@ -45,7 +45,7 @@
                 <div class="track-title" id="trackTitle">选择音频文件开始播放</div>
                 <div class="track-artist" id="trackArtist"></div>
             </div>
-
+            
             <div class="player-controls">
                 <button class="control-btn" id="prevBtn">⏮</button>
                 <button class="control-btn play-btn" id="playBtn">▶</button>
@@ -72,22 +72,34 @@
         <div class="visualizer-section">
             <canvas id="visualizerCanvas"></canvas>
             <div class="visualizer-controls">
-                <label>可视化模式:</label>
-                <select id="visualizerMode">
-                    <option value="cosmic">宇宙星云</option>
-                    <option value="neural">神经网络</option>
-                    <option value="liquid">液体变形</option>
-                    <option value="quantum">量子场</option>
-                    <option value="aurora">极光幻境</option>
-                </select>
-
-                <label>艺术主题:</label>
-                <select id="colorTheme">
-                    <option value="aurora">极光蓝紫</option>
-                    <option value="fire">烈焰橙红</option>
-                    <option value="ocean">深海蓝绿</option>
-                    <option value="forest">翡翠森林</option>
-                </select>
+                <div class="control-group">
+                    <label>可视化模式:</label>
+                    <select id="visualizerMode">
+                        <option value="cosmic">宇宙星云</option>
+                        <option value="neural">神经网络</option>
+                        <option value="liquid">液体变形</option>
+                        <option value="quantum">量子场</option>
+                        <option value="aurora">极光幻境</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>艺术主题:</label>
+                    <select id="colorTheme">
+                        <option value="aurora">极光蓝紫</option>
+                        <option value="fire">烈焰橙红</option>
+                        <option value="ocean">深海蓝绿</option>
+                        <option value="forest">翡翠森林</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <button class="control-btn modern-btn" id="fullscreenBtn" title="全屏模式 (F)">🎬</button>
+                    <div class="performance-monitor" id="performanceMonitor">
+                        <span class="perf-indicator" id="fpsDisplay">FPS: 60</span>
+                        <span class="perf-level" id="perfLevel">高性能</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -95,9 +107,26 @@
         <div class="playlist-section">
             <div class="playlist-header">
                 <h3>播放列表</h3>
-                <button id="clearPlaylistBtn" class="clear-playlist-btn">清空列表</button>
+                <div class="playlist-actions">
+                    <button class="control-btn modern-btn" id="shuffleAllBtn" title="随机播放全部 (S)">🎲</button>
+                    <button class="control-btn modern-btn" id="clearPlaylistBtn" title="清空播放列表">🗑️</button>
+                </div>
             </div>
             <div class="playlist" id="playlist"></div>
+        </div>
+        
+        <!-- 键盘快捷键提示 -->
+        <div class="keyboard-shortcuts" id="keyboardShortcuts" style="display: none;">
+            <h4>键盘快捷键</h4>
+            <div class="shortcuts-grid">
+                <div><kbd>空格</kbd> 播放/暂停</div>
+                <div><kbd>←→</kbd> 上一首/下一首</div>
+                <div><kbd>↑↓</kbd> 音量调节</div>
+                <div><kbd>F</kbd> 全屏可视化</div>
+                <div><kbd>S</kbd> 随机播放</div>
+                <div><kbd>R</kbd> 循环模式</div>
+                <div><kbd>?</kbd> 显示/隐藏快捷键</div>
+            </div>
         </div>
     </div>
 

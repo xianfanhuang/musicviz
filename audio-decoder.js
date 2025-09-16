@@ -13,7 +13,7 @@ class AudioDecoder {
             'ncm', 'kcm', 'xm', 'tm0', 'tm2', 'tm3', 'tm6',
             'kgm', 'vpr', 'mflac', 'mgg'
         ];
-
+        
         // 文件头魔术字节
         this.magicBytes = {
             'mp3': [0xFF, 0xFB, 0x90],
@@ -34,22 +34,22 @@ class AudioDecoder {
      */
     async detectFormat(file) {
         const extension = file.name.split('.').pop().toLowerCase();
-
+        
         // 读取文件头进行二进制探测
         const headerBuffer = await this.readFileHeader(file, 16);
         const detectedFormat = this.detectByMagicBytes(headerBuffer);
-
+        
         if (detectedFormat) {
             console.log(`通过文件头探测到格式: ${detectedFormat}`);
             return detectedFormat;
         }
-
+        
         // 如果文件头探测失败，使用扩展名
         if (this.supportedFormats.includes(extension)) {
             console.log(`通过扩展名探测到格式: ${extension}`);
             return extension;
         }
-
+        
         // 尝试进一步分析文件内容
         return await this.deepFormatAnalysis(file);
     }
@@ -80,7 +80,7 @@ class AudioDecoder {
      */
     compareBytes(source, pattern, offset = 0) {
         if (source.length < offset + pattern.length) return false;
-
+        
         for (let i = 0; i < pattern.length; i++) {
             if (source[offset + i] !== pattern[i]) return false;
         }
@@ -93,12 +93,12 @@ class AudioDecoder {
     async deepFormatAnalysis(file) {
         try {
             const sampleBuffer = await this.readFileHeader(file, 1024);
-
+            
             // 检查是否为加密的音频文件
             if (this.isEncryptedAudio(sampleBuffer)) {
                 return this.detectEncryptedFormat(sampleBuffer, file.name);
             }
-
+            
             // 检查标准音频格式
             return this.detectStandardFormat(sampleBuffer);
         } catch (error) {
@@ -121,11 +121,11 @@ class AudioDecoder {
      */
     calculateEntropy(buffer) {
         const frequency = new Array(256).fill(0);
-
+        
         for (let i = 0; i < buffer.length; i++) {
             frequency[buffer[i]]++;
         }
-
+        
         let entropy = 0;
         for (let i = 0; i < 256; i++) {
             if (frequency[i] > 0) {
@@ -133,7 +133,7 @@ class AudioDecoder {
                 entropy -= p * Math.log2(p);
             }
         }
-
+        
         return entropy;
     }
 
@@ -142,7 +142,7 @@ class AudioDecoder {
      */
     detectEncryptedFormat(buffer, filename) {
         const ext = filename.split('.').pop().toLowerCase();
-
+        
         // 根据文件扩展名和特征判断
         if (['qmc0', 'qmc3', 'qmcflac', 'qmcogg'].includes(ext)) {
             return ext;
@@ -154,7 +154,7 @@ class AudioDecoder {
         }
         if (ext === 'kgm') return 'kgm';
         if (ext === 'vpr') return 'vpr';
-
+        
         return 'unknown_encrypted';
     }
 
@@ -168,12 +168,12 @@ class AudioDecoder {
                 return 'mp3';
             }
         }
-
+        
         // FLAC stream marker
         if (this.compareBytes(buffer, [0x66, 0x4C, 0x61, 0x43], 0)) {
             return 'flac';
         }
-
+        
         return null;
     }
 
@@ -226,7 +226,7 @@ class AudioDecoder {
     async decodeQMC(file, format) {
         const arrayBuffer = await file.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
-
+        
         // 根据具体QMC格式选择解密算法
         let decryptedData;
         switch (format) {
@@ -249,10 +249,10 @@ class AudioDecoder {
         // 自动检测解密后的格式
         const targetFormat = this.detectDecryptedFormat(decryptedData);
         const mimeType = this.getMimeType(targetFormat);
-
+        
         const audioBlob = new Blob([decryptedData], { type: mimeType });
-        const audioFile = new File([audioBlob],
-            file.name.replace(/\.qmc\w*$/i, `.${targetFormat}`),
+        const audioFile = new File([audioBlob], 
+            file.name.replace(/\.qmc\w*$/i, `.${targetFormat}`), 
             { type: mimeType }
         );
 
@@ -281,7 +281,7 @@ class AudioDecoder {
     decryptQMC3(data) {
         const key = this.generateQMCKey();
         const decrypted = new Uint8Array(data.length);
-
+        
         for (let i = 0; i < data.length; i++) {
             decrypted[i] = data[i] ^ key[i % key.length];
         }
@@ -295,7 +295,7 @@ class AudioDecoder {
         const key = new Uint8Array([
             0x27, 0x38, 0x39, 0x74, 0x76, 0x74, 0x78, 0x21
         ]);
-
+        
         const decrypted = new Uint8Array(data.length);
         for (let i = 0; i < data.length; i++) {
             decrypted[i] = data[i] ^ key[i % key.length];
@@ -309,7 +309,7 @@ class AudioDecoder {
     decryptQMCOGG(data) {
         const key = 0x4F;
         const decrypted = new Uint8Array(data.length);
-
+        
         for (let i = 0; i < data.length; i++) {
             decrypted[i] = data[i] ^ key;
         }
@@ -328,24 +328,24 @@ class AudioDecoder {
      */
     detectDecryptedFormat(data) {
         // 检查文件头魔术字节
-        if (this.compareBytes(data, [0xFF, 0xFB]) ||
+        if (this.compareBytes(data, [0xFF, 0xFB]) || 
             this.compareBytes(data, [0xFF, 0xF3]) ||
             this.compareBytes(data, [0xFF, 0xF2])) {
             return 'mp3';
         }
-
+        
         if (this.compareBytes(data, [0x66, 0x4C, 0x61, 0x43])) {
             return 'flac';
         }
-
+        
         if (this.compareBytes(data, [0x4F, 0x67, 0x67, 0x53])) {
             return 'ogg';
         }
-
+        
         if (this.compareBytes(data, [0x52, 0x49, 0x46, 0x46])) {
             return 'wav';
         }
-
+        
         return 'mp3'; // 默认
     }
 
@@ -361,7 +361,7 @@ class AudioDecoder {
             'm4a': 'audio/mp4',
             'aac': 'audio/aac'
         };
-
+        
         return mimeTypes[format] || 'audio/mpeg';
     }
 
@@ -371,7 +371,7 @@ class AudioDecoder {
     async decodeNCM(file) {
         const arrayBuffer = await file.arrayBuffer();
         const dataView = new DataView(arrayBuffer);
-
+        
         // 验证NCM文件头
         const magic = dataView.getUint32(0, false);
         if (magic !== 0x4e455443) {
@@ -380,11 +380,11 @@ class AudioDecoder {
 
         // 跳过版本号
         let offset = 8;
-
+        
         // 读取密钥长度和密钥数据
         const keyLength = dataView.getUint32(offset, true);
         offset += 4;
-
+        
         if (keyLength > 0) {
             offset += keyLength; // 跳过密钥数据
         }
@@ -392,7 +392,7 @@ class AudioDecoder {
         // 读取元数据长度和元数据
         const metaLength = dataView.getUint32(offset, true);
         offset += 4;
-
+        
         let metadata = {};
         if (metaLength > 0) {
             const metaData = new Uint8Array(arrayBuffer.slice(offset, offset + metaLength));
@@ -400,7 +400,7 @@ class AudioDecoder {
             for (let i = 0; i < metaData.length; i++) {
                 metaData[i] ^= 0x63;
             }
-
+            
             try {
                 const metaText = new TextDecoder('utf-8').decode(metaData);
                 metadata = JSON.parse(metaText.replace(/^music:/, ''));
@@ -412,10 +412,10 @@ class AudioDecoder {
 
         // 跳过CRC32
         offset += 4;
-
+        
         // 跳过间隔
         offset += 5;
-
+        
         // 读取专辑图片
         const imageSize = dataView.getUint32(offset, true);
         offset += 4 + imageSize;
@@ -426,10 +426,10 @@ class AudioDecoder {
 
         const format = metadata.format || 'mp3';
         const mimeType = this.getMimeType(format);
-
+        
         const audioBlob = new Blob([decryptedData], { type: mimeType });
-        const audioFile = new File([audioBlob],
-            file.name.replace('.ncm', `.${format}`),
+        const audioFile = new File([audioBlob], 
+            file.name.replace('.ncm', `.${format}`), 
             { type: mimeType }
         );
 
@@ -456,12 +456,12 @@ class AudioDecoder {
             0x68, 0x7A, 0x48, 0x52, 0x41, 0x6D, 0x73, 0x6F,
             0x35, 0x6B, 0x49, 0x6E, 0x62, 0x61, 0x78, 0x57
         ]);
-
+        
         const decrypted = new Uint8Array(data.length);
         for (let i = 0; i < data.length; i++) {
             decrypted[i] = data[i] ^ coreKey[i % coreKey.length];
         }
-
+        
         return decrypted;
     }
 
@@ -471,11 +471,11 @@ class AudioDecoder {
     async decodeKGM(file) {
         const arrayBuffer = await file.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
-
+        
         // KGM解密算法
         const decrypted = new Uint8Array(data.length);
         const key = 0x9B;
-
+        
         for (let i = 0; i < data.length; i++) {
             decrypted[i] = data[i] ^ key;
         }
@@ -499,10 +499,10 @@ class AudioDecoder {
     async decodeVPR(file) {
         const arrayBuffer = await file.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
-
+        
         // VPR解密算法
         const decrypted = new Uint8Array(data.length);
-
+        
         for (let i = 0; i < data.length; i++) {
             decrypted[i] = data[i] ^ (i & 0xFF);
         }
@@ -539,13 +539,13 @@ class AudioDecoder {
         const key = [];
         const seed = 0x6A65;
         let x = seed;
-
+        
         for (let i = 0; i < 128; i++) {
             x = ((x * 0x105) + 0x6A65) & 0xFFFF;
             key.push((x >> 8) & 0xFF);
             key.push(x & 0xFF);
         }
-
+        
         return new Uint8Array(key);
     }
 
@@ -573,10 +573,10 @@ class AudioDecoder {
     async decodeXM(file) {
         const arrayBuffer = await file.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
-
+        
         const decrypted = new Uint8Array(data.length);
         const key = 0xA7;
-
+        
         for (let i = 0; i < data.length; i++) {
             decrypted[i] = data[i] ^ key;
         }
@@ -601,12 +601,12 @@ class AudioDecoder {
         return new Promise((resolve) => {
             const audio = new Audio();
             const url = URL.createObjectURL(file);
-
+            
             const timeout = setTimeout(() => {
                 URL.revokeObjectURL(url);
                 resolve(this.getDefaultMetadata(file));
             }, 5000);
-
+            
             audio.addEventListener('loadedmetadata', () => {
                 clearTimeout(timeout);
                 const metadata = {
@@ -619,17 +619,17 @@ class AudioDecoder {
                     bitrate: this.estimateBitrate(file, audio.duration),
                     sampleRate: audio.sampleRate || 44100
                 };
-
+                
                 URL.revokeObjectURL(url);
                 resolve(metadata);
             });
-
+            
             audio.addEventListener('error', () => {
                 clearTimeout(timeout);
                 URL.revokeObjectURL(url);
                 resolve(this.getDefaultMetadata(file));
             });
-
+            
             audio.src = url;
         });
     }
