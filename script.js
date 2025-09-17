@@ -2,7 +2,7 @@
 // 在HTML中加载network-sniffer.js
 
 /**
- * 音影·幻听 - 主控制器
+ * sonoria - 主控制器
  * 整合音频解析、播放控制和可视化功能
  */
 
@@ -836,3 +836,54 @@ class MusicPlayer {
 document.addEventListener('DOMContentLoaded', () => {
     new MusicPlayer();
 });
+/* ===== 锁屏封面 + MediaSession ===== */
+let lockURL = '';
+function updateLockScreenCover(){
+  if(!visualizer||!document.hidden)return;
+  visualizer.canvas.toBlob(b=>{
+    if(lockURL)URL.revokeObjectURL(lockURL);
+    lockURL=URL.createObjectURL(b);
+    if('mediaSession' in navigator){
+      navigator.mediaSession.metadata.artwork=[{src:lockURL,sizes:'512x512',type:'image/png'}];
+    }
+  },'image/png',0.8);
+}
+setInterval(updateLockScreenCover,250);
+
+/* MediaSession 控制 */
+if('mediaSession' in navigator){
+  navigator.mediaSession.metadata=new MediaMetadata({title:'Sonoria',artist:'Live Visual',artwork:[]});
+  navigator.mediaSession.setActionHandler('play',()=>audioPlayer.play());
+  navigator.mediaSession.setActionHandler('pause',()=>audioPlayer.pause());
+  navigator.mediaSession.setActionHandler('previoustrack',()=>player.previousTrack());
+  navigator.mediaSession.setActionHandler('nexttrack',()=>player.nextTrack());
+}
+
+/* ===== 底部控制岛 ===== */
+function revealControls(){
+  document.getElementById('controlBar').classList.add('show');
+  document.body.style.paddingBottom='64px';
+}
+/* 迷你可视化 */
+const miniCV=document.getElementById('miniVis');
+const mCtx=miniCV.getContext('2d');
+function drawMiniVis(){
+  mCtx.clearRect(0,0,80,80);
+  const energy=visualizer?visualizer.energyLevel/255:0;
+  const ang=energy*Math.PI*2;
+  mCtx.beginPath();mCtx.arc(40,40,30,-Math.PI/2,-Math.PI/2+ang);
+  mCtx.strokeStyle='#007AFF';mCtx.lineWidth=4;mCtx.stroke();
+  requestAnimationFrame(drawMiniVis);
+}
+drawMiniVis();
+
+/* 文件入口 */
+document.getElementById('fileInput').addEventListener('change',e=>{
+  player.processFiles([...e.target.files]);
+  if(player.playlist.length) revealControls();
+});
+
+/* 首次点击舞台即激活音频 */
+document.getElementById('stage').addEventListener('click',()=>{
+  if(!player.audioContext) player.initializeAudioContext();
+},{once:true});
