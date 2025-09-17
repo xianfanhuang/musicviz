@@ -1,139 +1,58 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SONORIA|动人心绚，乐音之境</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Sonoria - 动人心绚</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#007AFF">
 </head>
 <body>
-    <div class="app-container">
-        <!-- 头部标题 -->
-        <header class="header">
-            <h1 class="app-title">𝓈𝒾𝓃ℴ𝓇𝒾𝒶</h1>
-            <p class="app-subtitle">动人心绚，乐音之境</p>
-        </header>
-
-        <!-- 音频输入区域 -->
-        <div class="input-section">
-            <!-- 文件上传 -->
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-content">
-                    <div class="upload-icon">🌈mp3,m4a,flac,wav...</div>
-                    <p>Drag in or select</p>
-                    <!---<p class="supported-formats">MP3, FLAC, QMC0/3, NCM, KCM, XM, TM, KGM, VPR, WAV, OGG...</p>-->
-                </div>
-                <input type="file" id="fileInput" accept=".mp3,.flac,.wav,.ogg,.m4a,.aac,.qmc0,.qmc3,.qmcflac,.qmcogg,.ncm,.kcm,.xm,.tm0,.tm2,.tm3,.tm6,.kgm,.vpr,.mflac,.mgg" multiple style="display: none;">
-            </div>
-            
-            <!-- URL输入 -->
-            <div class="url-input-section">
-                <div class="url-input-container">
-                    <input type="text" id="urlInput" placeholder="输入音频直链或播放页面地址..." />
-                    <button id="sniffBtn" class="sniff-btn">🔍 解析</button>
-                </div>
-                <div class="supported-sites">
-                    支持站点: 网易云音乐、QQ音乐、酷狗、酷我、哔哩哔哩、直链音频
-                </div>
-            </div>
-        </div>
-
-        <!-- 播放控制区域 -->
-        <div class="player-section">
-            <div class="track-info">
-                <div class="track-title" id="trackTitle">选择音频文件开始播放</div>
-                <div class="track-artist" id="trackArtist"></div>
-            </div>
-            
-            <div class="player-controls">
-                <button class="control-btn" id="prevBtn">⏮</button>
-                <button class="control-btn play-btn" id="playBtn">▶</button>
-                <button class="control-btn" id="nextBtn">⏭</button>
-                <button class="control-btn" id="shuffleBtn">🔀</button>
-                <button class="control-btn" id="repeatBtn">🔁</button>
-            </div>
-
-            <div class="progress-container">
-                <span class="time-display" id="currentTime">0:00</span>
-                <div class="progress-bar" id="progressBar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <span class="time-display" id="totalTime">0:00</span>
-            </div>
-
-            <div class="volume-container">
-                <button class="control-btn" id="muteBtn">🔊</button>
-                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80">
-            </div>
-        </div>
-
-        <!-- 可视化效果区域 -->
-        <div class="visualizer-section">
-            <canvas id="visualizerCanvas"></canvas>
-            <div class="visualizer-controls">
-                <div class="control-group">
-                    <label>可视化模式:</label>
-                    <select id="visualizerMode">
-                        <option value="cosmic">宇宙星云</option>
-                        <option value="neural">神经网络</option>
-                        <option value="liquid">液体变形</option>
-                        <option value="quantum">量子场</option>
-                        <option value="aurora">极光幻境</option>
-                    </select>
-                </div>
-                
-                <div class="control-group">
-                    <label>艺术主题:</label>
-                    <select id="colorTheme">
-                        <option value="aurora">极光蓝紫</option>
-                        <option value="fire">烈焰橙红</option>
-                        <option value="ocean">深海蓝绿</option>
-                        <option value="forest">翡翠森林</option>
-                    </select>
-                </div>
-                
-                <div class="control-group">
-                    <button class="control-btn modern-btn" id="fullscreenBtn" title="全屏模式 (F)">🎬</button>
-                    <div class="performance-monitor" id="performanceMonitor">
-                        <span class="perf-indicator" id="fpsDisplay">FPS: 60</span>
-                        <span class="perf-level" id="perfLevel">高性能</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 播放列表 -->
-        <div class="playlist-section">
-            <div class="playlist-header">
-                <h3>播放列表</h3>
-                <div class="playlist-actions">
-                    <button class="control-btn modern-btn" id="shuffleAllBtn" title="随机播放全部 (S)">🎲</button>
-                    <button class="control-btn modern-btn" id="clearPlaylistBtn" title="清空播放列表">🗑️</button>
-                </div>
-            </div>
-            <div class="playlist" id="playlist"></div>
-        </div>
-        
-        <!-- 键盘快捷键提示 -->
-        <div class="keyboard-shortcuts" id="keyboardShortcuts" style="display: none;">
-            <h4>键盘快捷键</h4>
-            <div class="shortcuts-grid">
-                <div><kbd>空格</kbd> 播放/暂停</div>
-                <div><kbd>←→</kbd> 上一首/下一首</div>
-                <div><kbd>↑↓</kbd> 音量调节</div>
-                <div><kbd>F</kbd> 全屏可视化</div>
-                <div><kbd>S</kbd> 随机播放</div>
-                <div><kbd>R</kbd> 循环模式</div>
-                <div><kbd>?</kbd> 显示/隐藏快捷键</div>
-            </div>
-        </div>
+  <!-- 加载舞台 -->
+  <header class="stage" id="stage">
+    <canvas id="heroCanvas"></canvas>
+    <div class="brand">
+      <h1 class="brand__name">Sonoria</h1>
+      <p class="brand__slogan-cn">动人心绚，乐音之境</p>
+      <p class="brand__slogan-en">Where Sound Becomes Vision</p>
     </div>
+  </header>
 
-    <audio id="audioPlayer" preload="auto"></audio>
-    <script src="audio-decoder.js"></script>
-    <script src="network-sniffer.js"></script>
-    <script src="visualizer.js"></script>
-    <script src="script.js"></script>
+  <!-- 底部控制岛 -->
+  <section class="controlBar" id="controlBar" aria-hidden="true">
+    <div class="controlBar__left">
+      <div class="coverDrop" id="coverDrop">
+        <input type="file" id="fileInput" multiple accept="audio/*">
+        <canvas id="miniVis" width="80" height="80"></canvas>
+        <div class="coverDrop__hint">+</div>
+      </div>
+      <div class="trackInfo">
+        <div id="trackTitle">未在播放</div>
+        <div id="trackArtist"></div>
+      </div>
+    </div>
+    <div class="controlBar__center">
+      <button class="ctrl" id="prevBtn">􀊎</button>
+      <button class="ctrl ctrl--play" id="playBtn">􀊄</button>
+      <button class="ctrl" id="nextBtn">􀊐</button>
+    </div>
+    <div class="controlBar__right">
+      <button class="ctrl" id="airPlayBtn">􀑬</button>
+    </div>
+  </section>
+
+  <!-- 主可视化 -->
+  <div class="vizBox" id="vizBox">
+    <canvas id="visualizerCanvas"></canvas>
+  </div>
+
+  <!-- 原生音频 -->
+  <audio id="audioPlayer" preload="auto" playsinline></audio>
+
+  <script src="audio-decoder.js"></script>
+  <script src="network-sniffer.js"></script>
+  <script src="visualizer.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
