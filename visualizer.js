@@ -48,6 +48,43 @@ class AudioVisualizer {
         this.setupAnalyser();
         this.initializeElements();
     }
+        /* === 移动端适配 === */
+this.tier = this.autoTier();
+this.targetFPS = {low:30,medium:60,high:60}[this.tier];
+const cfg = {low:{particles:60,bands:32},medium:{particles:120,bands:64},high:{particles:200,bands:128}};
+this.maxParticles = cfg[this.tier].particles;
+this.bands = cfg[this.tier].bands;
+
+this.fitMobilePixelGrid = () => {
+  const dpr = window.devicePixelRatio || 1;
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+  const ratio = isMobile ? Math.min(dpr,2) : dpr;
+  const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+  this.canvas.width  = Math.floor(w * ratio);
+  this.canvas.height = Math.floor(h * ratio);
+  this.ctx.setTransform(ratio,0,0,ratio,0,0);
+  this.width = w; this.height = h; this.centerX = w/2; this.centerY = h/2;
+};
+this.fitMobilePixelGrid();
+window.addEventListener('resize',()=>this.fitMobilePixelGrid());
+
+/* 帧率&电量降级 */
+let last = performance.now(), fps = 60, frame = 0;
+const loop = (now)=>{
+  if (document.hidden) return;
+  const delta = now - last; fps = fps*0.9 + (1000/delta)*0.1; frame++;
+  if (frame%6===0 && fps < this.targetFPS*0.7 && this.tier!=='low') this.downgrade();
+  this.time+=0.016; this.updateAudioAnalysis(); this.updateDynamicElements(); this.clearCanvas();
+  switch(this.mode){case 'cosmic':this.drawCosmicVisualization();break;}
+  this.drawBreathingAura(); last = now;
+  setTimeout(()=>requestAnimationFrame(loop),1000/this.targetFPS);
+}; requestAnimationFrame(loop);
+
+this.downgrade = () => {
+  if (this.maxParticles<=60) return;
+  this.maxParticles = Math.max(60, this.maxParticles-20);
+  this.bands = Math.max(32, this.bands-16);
+};
 
     setupCanvas() {
         const resizeCanvas = () => {
