@@ -5,6 +5,91 @@
  * sonoria - 主控制器
  * 整合音频解析、播放控制和可视化功能
  */
+/* ==========  重构版 script.js  ========== */
+/* ① 首屏呼吸圆环启动（新增） */
+const heroCV = document.getElementById('heroCanvas');
+const ctx = heroCV.getContext('2d');
+let t = 0;
+function startHero() {
+  const dpr = window.devicePixelRatio || 1;
+  const fit = () => {
+    const rect = heroCV.getBoundingClientRect();
+    heroCV.width = rect.width * dpr;  heroCV.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };  fit();  window.addEventListener('resize', fit);
+  function breathe() {
+    if (!heroCV.offsetParent) return;
+    const w = heroCV.clientWidth, h = heroCV.clientHeight;
+    const cx = w / 2, cy = h / 2, r = Math.min(w, h) * 0.35;
+    const breath = (Math.sin(t * 0.04) + 1) * 0.5;
+    const hue = 210 + breath * 60;
+    ctx.clearRect(0, 0, w, h);
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0, `hsla(${hue},80%,60%,${0.2 + breath * 0.3})`);
+    grad.addColorStop(1, `hsla(${hue},80%,50%,0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();  ctx.arc(cx, cy, r * (0.9 + breath * 0.1), 0, Math.PI * 2);  ctx.fill();
+    t++;  requestAnimationFrame(breathe);
+  }  breathe();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startHero);
+} else {  startHero(); }
+
+/* ② 首屏点击激活（新增） */
+const stage = document.getElementById('stage');
+stage.addEventListener('click', () => {
+  if (player.audioContext && player.audioContext.state === 'suspended') {
+    player.audioContext.resume();
+  }
+  if (player.playlist.length) {  revealControls();  }
+  else {  document.getElementById('fileInput').click();  }
+}, { once: false });
+
+/* ③ 锁屏封面生成器（新增） */
+let lockURL = '';
+function updateLockScreenCover() {
+  if (!visualizer || !document.hidden) return;
+  visualizer.canvas.toBlob(blob => {
+    if (lockURL) URL.revokeObjectURL(lockURL);
+    lockURL = URL.createObjectURL(blob);
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata.artwork = [{ src: lockURL, sizes: '512x512', type: 'image/png' }];
+    }
+  }, 'image/png', 0.8);
+}
+setInterval(updateLockScreenCover, 250);
+
+/* ④ 底部控制岛显隐（新增） */
+function revealControls() {
+  document.getElementById('controlBar').classList.add('show');
+  document.body.style.paddingBottom = '64px';
+}
+
+/* ⑤ 迷你可视化（新增） */
+const miniCV = document.getElementById('miniVis');
+const mCtx = miniCV.getContext('2d');
+function drawMiniVis() {
+  mCtx.clearRect(0, 0, 80, 80);
+  const energy = visualizer ? visualizer.energyLevel / 255 : 0;
+  const ang = energy * Math.PI * 2;
+  mCtx.beginPath();  mCtx.arc(40, 40, 30, -Math.PI / 2, -Math.PI / 2 + ang);
+  mCtx.strokeStyle = '#007AFF';  mCtx.lineWidth = 4;  mCtx.stroke();
+  requestAnimationFrame(drawMiniVis);
+}
+drawMiniVis();
+
+/* ⑥ 文件入口（新增） */
+document.getElementById('fileInput').addEventListener('change', e => {
+  player.processFiles([...e.target.files]);
+  if (player.playlist.length) revealControls();
+});
+
+/* ==========  原有业务代码占位  ========== */
+XXX-XXX（原有代码）
+/* ====================================== */
+
+
 
 class MusicPlayer {
     constructor() {
@@ -836,54 +921,3 @@ class MusicPlayer {
 document.addEventListener('DOMContentLoaded', () => {
     new MusicPlayer();
 });
-/* ===== 锁屏封面 + MediaSession ===== */
-let lockURL = '';
-function updateLockScreenCover(){
-  if(!visualizer||!document.hidden)return;
-  visualizer.canvas.toBlob(b=>{
-    if(lockURL)URL.revokeObjectURL(lockURL);
-    lockURL=URL.createObjectURL(b);
-    if('mediaSession' in navigator){
-      navigator.mediaSession.metadata.artwork=[{src:lockURL,sizes:'512x512',type:'image/png'}];
-    }
-  },'image/png',0.8);
-}
-setInterval(updateLockScreenCover,250);
-
-/* MediaSession 控制 */
-if('mediaSession' in navigator){
-  navigator.mediaSession.metadata=new MediaMetadata({title:'Sonoria',artist:'Live Visual',artwork:[]});
-  navigator.mediaSession.setActionHandler('play',()=>audioPlayer.play());
-  navigator.mediaSession.setActionHandler('pause',()=>audioPlayer.pause());
-  navigator.mediaSession.setActionHandler('previoustrack',()=>player.previousTrack());
-  navigator.mediaSession.setActionHandler('nexttrack',()=>player.nextTrack());
-}
-
-/* ===== 底部控制岛 ===== */
-function revealControls(){
-  document.getElementById('controlBar').classList.add('show');
-  document.body.style.paddingBottom='64px';
-}
-/* 迷你可视化 */
-const miniCV=document.getElementById('miniVis');
-const mCtx=miniCV.getContext('2d');
-function drawMiniVis(){
-  mCtx.clearRect(0,0,80,80);
-  const energy=visualizer?visualizer.energyLevel/255:0;
-  const ang=energy*Math.PI*2;
-  mCtx.beginPath();mCtx.arc(40,40,30,-Math.PI/2,-Math.PI/2+ang);
-  mCtx.strokeStyle='#007AFF';mCtx.lineWidth=4;mCtx.stroke();
-  requestAnimationFrame(drawMiniVis);
-}
-drawMiniVis();
-
-/* 文件入口 */
-document.getElementById('fileInput').addEventListener('change',e=>{
-  player.processFiles([...e.target.files]);
-  if(player.playlist.length) revealControls();
-});
-
-/* 首次点击舞台即激活音频 */
-document.getElementById('stage').addEventListener('click',()=>{
-  if(!player.audioContext) player.initializeAudioContext();
-},{once:true});
