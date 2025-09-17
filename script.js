@@ -85,12 +85,6 @@ document.getElementById('fileInput').addEventListener('change', e => {
   if (player.playlist.length) revealControls();
 });
 
-/* ==========  原有业务代码占位  ========== */
-XXX-XXX（原有代码）
-/* ====================================== */
-
-
-
 class MusicPlayer {
     constructor() {
         this.audioElement = document.getElementById('audioPlayer');
