@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Sonoria - 动人心绚</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
+  <!-- 修复PWA路径：适配GitHub Pages子路径（如 /musicviz/） -->
+  <link rel="manifest" href="/musicviz/manifest.json">
   <meta name="theme-color" content="#007AFF">
+  <!-- 添加图标：适配PWA -->
+  <link rel="icon" href="/musicviz/icon-512.png" sizes="512x512" type="image/png">
 </head>
 <body>
   <!-- 加载舞台 -->
@@ -18,6 +21,58 @@
       <p class="brand__slogan-en">Where Sound Becomes Vision</p>
     </div>
   </header>
+
+  <!-- URL探嗅区域：补全缺失DOM -->
+  <section class="sniffArea" id="sniffArea">
+    <div class="sniffContainer">
+      <input type="text" id="urlInput" placeholder="输入音频URL（如网易云/QQ音乐链接）" class="urlInput">
+      <button class="ctrl sniffBtn" id="sniffBtn">🔍 解析</button>
+    </div>
+  </section>
+
+  <!-- 可视化控制：补全缺失DOM -->
+  <section class="vizControls" id="vizControls">
+    <div class="controlGroup">
+      <label for="visualizerMode">可视化模式：</label>
+      <select id="visualizerMode" class="selectControl">
+        <option value="cosmic">宇宙星云</option>
+        <option value="neural">神经网络</option>
+        <option value="liquid">液态流动</option>
+        <option value="quantum">量子场</option>
+        <option value="aurora">极光</option>
+      </select>
+    </div>
+    <div class="controlGroup">
+      <label for="colorTheme">颜色主题：</label>
+      <select id="colorTheme" class="selectControl">
+        <option value="aurora">极光蓝</option>
+        <option value="fire">火焰红</option>
+        <option value="ocean">海洋蓝</option>
+        <option value="forest">森林绿</option>
+      </select>
+    </div>
+    <div class="controlGroup">
+      <button class="ctrl" id="fullscreenBtn">⛶ 全屏</button>
+      <button class="ctrl" id="shuffleAllBtn">🔀 随机全部</button>
+      <button class="ctrl" id="clearPlaylistBtn">🗑 清空列表</button>
+    </div>
+  </section>
+
+  <!-- 播放列表：补全缺失DOM -->
+  <section class="playlistContainer" id="playlistContainer">
+    <h3 class="playlistTitle">播放列表</h3>
+    <div id="playlist" class="playlist"></div>
+  </section>
+
+  <!-- 主可视化 -->
+  <div class="vizBox" id="vizBox">
+    <canvas id="visualizerCanvas"></canvas>
+    <!-- 性能监控：补全缺失DOM -->
+    <div class="perfMonitor" id="perfMonitor">
+      <span id="fpsDisplay">FPS: 60</span>
+      <span id="perfLevel">标准模式</span>
+    </div>
+  </section>
 
   <!-- 底部控制岛 -->
   <section class="controlBar" id="controlBar" aria-hidden="true">
@@ -33,26 +88,35 @@
       </div>
     </div>
     <div class="controlBar__center">
-      <button class="ctrl" id="prevBtn">􀊎</button>
-      <button class="ctrl ctrl--play" id="playBtn">􀊄</button>
-      <button class="ctrl" id="nextBtn">􀊐</button>
+      <button class="ctrl" id="prevBtn">⏮</button>
+      <button class="ctrl ctrl--play" id="playBtn">▶</button>
+      <button class="ctrl" id="nextBtn">⏭</button>
+      <button class="ctrl" id="shuffleBtn">🔀</button>
+      <button class="ctrl" id="repeatBtn">🔁</button>
+      <button class="ctrl" id="muteBtn">🔊</button>
     </div>
     <div class="controlBar__right">
-      <button class="ctrl" id="airPlayBtn">􀑬</button>
+      <!-- 音量滑块：补全缺失DOM -->
+      <input type="range" id="volumeSlider" min="0" max="100" value="80" class="volumeSlider">
+      <button class="ctrl" id="airPlayBtn">📺</button>
+    </div>
+    <!-- 进度条：补全缺失DOM -->
+    <div class="progressContainer">
+      <span id="currentTime">0:00</span>
+      <div id="progressBar" class="progressBar">
+        <div id="progressFill" class="progressFill"></div>
+      </div>
+      <span id="totalTime">0:00</span>
     </div>
   </section>
-
-  <!-- 主可视化 -->
-  <div class="vizBox" id="vizBox">
-    <canvas id="visualizerCanvas"></canvas>
-  </div>
 
   <!-- 原生音频 -->
   <audio id="audioPlayer" preload="auto" playsinline></audio>
 
-  <script src="audio-decoder.js"></script>
-  <script src="network-sniffer.js"></script>
-  <script src="visualizer.js"></script>
-  <script src="script.js"></script>
+  <!-- 脚本加载顺序：确保依赖先加载 -->
+  <script src="/musicviz/audio-decoder.js"></script>
+  <script src="/musicviz/network-sniffer.js"></script>
+  <script src="/musicviz/visualizer.js"></script>
+  <script src="/musicviz/script.js"></script>
 </body>
 </html>
