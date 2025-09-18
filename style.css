@@ -5,33 +5,389 @@
   --text-primary:#ffffff;
   --text-secondary:#8e8e93;
   --bg:#000000;
-  --glass:bg:rgba(28,28,30,.85);backdrop-filter:blur(30px);
+  --glass:background:rgba(28,28,30,.85);backdrop-filter:blur(30px);
   --vh:1vh;
+  --border-radius:8px;
+  --spacing-sm:8px;
+  --spacing-md:16px;
+  --spacing-lg:24px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:Inter,-apple-system,BlinkMacSystemFont,Helvetica Neue,sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh;overflow-x:hidden;}
-.stage{height:calc(var(--vh)*100);display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;}
-#heroCanvas{width:60vmin;height:60vmin;opacity:0;animation:fadeIn 1.2s .2s forwards;}
-.brand{text-align:center;margin-top:2rem;opacity:0;animation:fadeUp 1s .8s forwards;}
-.brand__name{font-size:clamp(2.8rem,8vmin,4.5rem);font-weight:700;letter-spacing:-.02em;background:linear-gradient(135deg,var(--primary-accent),var(--secondary-accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.brand__slogan-cn,.brand__slogan-en{font-size:clamp(1rem,2.5vmin,1.3rem);color:var(--text-secondary);margin:.2rem 0;}
-@keyframes fadeIn{to{opacity:1}}
-@keyframes fadeUp{to{opacity:1;transform:translateY(0)}from{opacity:0;transform:translateY(20px)}}
-
-.controlBar{position:fixed;bottom:0;left:0;right:0;height:64px;var(--glass);border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 12px;transform:translateY(100%);transition:transform .4s;z-index:10;}
-.controlBar.show{transform:translateY(0);}
-.controlBar__left{display:flex;align-items:center;flex:1;min-width:0;}
-.coverDrop{width:48px;height:48px;border-radius:12px;overflow:hidden;position:relative;margin-right:12px;background:#2c2c2e;}
-.coverDrop input{position:absolute;inset:0;opacity:0;cursor:pointer;}
-#miniVis{width:100%;height:100%;}
-.coverDrop__hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#8e8e93;pointer-events:none;}
-.trackInfo{flex:1;min-width:0;}#trackTitle{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}#trackArtist{font-size:12px;color:var(--text-secondary);}
-.controlBar__center{display:flex;gap:16px;}
-.ctrl{background:none;border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .2s;}
-.ctrl:active{background:rgba(255,255,255,.15);}
-.ctrl--play{font-size:24px;background:var(--primary-accent);}
-@media (orientation:landscape) and (max-height:480px){
-  .controlBar{position:absolute;bottom:8px;left:8px;right:8px;border-radius:16px;height:56px;}
+body{
+  font-family:Inter,-apple-system,BlinkMacSystemFont,Helvetica Neue,sans-serif;
+  background:var(--bg);
+  color:var(--text-primary);
+  min-height:100vh;
+  overflow-x:hidden;
+  padding-bottom:80px; /* 避免内容被控制栏遮挡 */
 }
-.vizBox{padding:16px;display:flex;justify-content:center;}
-#visualizerCanvas{width:100%;max-width:800px;height:60vmin;border-radius:16px;background:radial-gradient(circle at center,rgba(0,122,255,.1),transparent);}
+
+/* 首屏舞台 */
+.stage{
+  height:calc(var(--vh)*100 - 120px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  position:relative;
+  padding:var(--spacing-md);
+}
+#heroCanvas{
+  width:60vmin;
+  height:60vmin;
+  opacity:0;
+  animation:fadeIn 1.2s .2s forwards;
+}
+.brand{
+  text-align:center;
+  margin-top:2rem;
+  opacity:0;
+  animation:fadeUp 1s .8s forwards;
+}
+.brand__name{
+  font-size:clamp(2.8rem,8vmin,4.5rem);
+  font-weight:700;
+  letter-spacing:-.02em;
+  background:linear-gradient(135deg,var(--primary-accent),var(--secondary-accent));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.brand__slogan-cn,.brand__slogan-en{
+  font-size:clamp(1rem,2.5vmin,1.3rem);
+  color:var(--text-secondary);
+  margin:.2rem 0;
+}
+
+/* URL探嗅区域 */
+.sniffArea{
+  display:flex;
+  justify-content:center;
+  padding:var(--spacing-md);
+  background:var(--glass);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.sniffContainer{
+  display:flex;
+  gap:var(--spacing-sm);
+  width:100%;
+  max-width:800px;
+}
+.urlInput{
+  flex:1;
+  padding:10px 16px;
+  border-radius:var(--border-radius);
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.05);
+  color:var(--text-primary);
+  font-size:14px;
+  outline:none;
+  transition:border .2s;
+}
+.urlInput:focus{
+  border-color:var(--primary-accent);
+}
+
+/* 可视化控制区域 */
+.vizControls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--spacing-md);
+  justify-content:center;
+  align-items:center;
+  padding:var(--spacing-md);
+  background:var(--glass);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.controlGroup{
+  display:flex;
+  align-items:center;
+  gap:var(--spacing-sm);
+}
+.selectControl{
+  padding:8px 12px;
+  border-radius:var(--border-radius);
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.05);
+  color:var(--text-primary);
+  font-size:14px;
+  outline:none;
+  cursor:pointer;
+}
+
+/* 播放列表 */
+.playlistContainer{
+  padding:var(--spacing-md);
+  max-width:800px;
+  margin:0 auto;
+}
+.playlistTitle{
+  font-size:18px;
+  font-weight:600;
+  margin-bottom:var(--spacing-sm);
+  color:var(--text-primary);
+}
+.playlist{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.playlist-item{
+  display:flex;
+  align-items:center;
+  padding:12px;
+  border-radius:var(--border-radius);
+  background:rgba(255,255,255,.05);
+  cursor:pointer;
+  transition:background .2s;
+}
+.playlist-item:hover{
+  background:rgba(255,255,255,.1);
+}
+.playlist-item.active{
+  background:rgba(102,126,234,.2);
+  border-left:3px solid var(--primary-accent);
+}
+.track-number{
+  width:24px;
+  text-align:center;
+  color:var(--text-secondary);
+  margin-right:12px;
+}
+.track-details{
+  flex:1;
+  min-width:0;
+}
+.track-name{
+  font-size:14px;
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.format-badge{
+  font-size:10px;
+  padding:2px 6px;
+  border-radius:4px;
+  background:rgba(255,255,255,.1);
+  color:var(--text-secondary);
+}
+.track-meta{
+  font-size:12px;
+  color:var(--text-secondary);
+  display:flex;
+  justify-content:space-between;
+  margin-top:4px;
+}
+
+/* 可视化容器 */
+.vizBox{
+  padding:var(--spacing-md);
+  display:flex;
+  justify-content:center;
+  position:relative;
+}
+#visualizerCanvas{
+  width:100%;
+  max-width:800px;
+  height:60vmin;
+  border-radius:16px;
+  background:radial-gradient(circle at center,rgba(0,122,255,.1),transparent);
+}
+/* 性能监控 */
+.perfMonitor{
+  position:absolute;
+  top:12px;
+  right:12px;
+  display:flex;
+  gap:12px;
+  padding:6px 12px;
+  border-radius:var(--border-radius);
+  background:var(--glass);
+  font-size:12px;
+  color:var(--text-secondary);
+}
+
+/* 底部控制栏 */
+.controlBar{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:80px;
+  var(--glass);
+  border-top:1px solid rgba(255,255,255,.08);
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  padding:0 var(--spacing-md);
+  transform:translateY(100%);
+  transition:transform .4s;
+  z-index:100;
+}
+.controlBar.show{
+  transform:translateY(0);
+}
+/* 进度条 */
+.progressContainer{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:8px;
+}
+.progressBar{
+  flex:1;
+  height:4px;
+  border-radius:2px;
+  background:rgba(255,255,255,.1);
+  cursor:pointer;
+  position:relative;
+}
+.progressFill{
+  position:absolute;
+  top:0;
+  left:0;
+  height:100%;
+  border-radius:2px;
+  background:linear-gradient(90deg,var(--primary-accent),var(--secondary-accent));
+  width:0%;
+}
+.currentTime,.totalTime{
+  font-size:12px;
+  color:var(--text-secondary);
+  width:40px;
+  text-align:center;
+}
+
+/* 控制按钮 */
+.ctrl{
+  background:none;
+  border:none;
+  color:#fff;
+  font-size:20px;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .2s;
+  cursor:pointer;
+}
+.ctrl:active{
+  background:rgba(255,255,255,.15);
+}
+.ctrl--play{
+  font-size:24px;
+  background:var(--primary-accent);
+}
+/* 音量滑块 */
+.volumeSlider{
+  width:80px;
+  height:4px;
+  accent-color:var(--primary-accent);
+  background:rgba(255,255,255,.1);
+  border-radius:2px;
+  outline:none;
+}
+
+/* 封面区域 */
+.coverDrop{
+  width:48px;
+  height:48px;
+  border-radius:12px;
+  overflow:hidden;
+  position:relative;
+  margin-right:12px;
+  background:#2c2c2e;
+}
+.coverDrop input{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  cursor:pointer;
+}
+#miniVis{
+  width:100%;
+  height:100%;
+}
+.coverDrop__hint{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  color:#8e8e93;
+  pointer-events:none;
+}
+/* 轨道信息 */
+.trackInfo{
+  flex:1;
+  min-width:0;
+}
+#trackTitle{
+  font-size:14px;
+  font-weight:600;
+  color:#fff;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#trackArtist{
+  font-size:12px;
+  color:var(--text-secondary);
+}
+
+/* 动画 */
+@keyframes fadeIn{to{opacity:1}}
+@keyframes fadeUp{
+  to{opacity:1;transform:translateY(0)}
+  from{opacity:0;transform:translateY(20px)}
+}
+
+/* 移动端适配 */
+@media (orientation:landscape) and (max-height:480px){
+  .stage{
+    height:calc(var(--vh)*100 - 60px);
+  }
+  .controlBar{
+    position:absolute;
+    bottom:8px;
+    left:8px;
+    right:8px;
+    border-radius:16px;
+    height:56px;
+    padding:0 8px;
+  }
+  .progressContainer{
+    margin-top:4px;
+  }
+  .vizControls{
+    gap:var(--spacing-sm);
+    padding:var(--spacing-sm);
+  }
+  .controlGroup{
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+}
+@media (max-width:480px){
+  .sniffContainer{
+    flex-direction:column;
+  }
+  .playlistContainer{
+    padding:var(--spacing-sm);
+  }
+  .volumeSlider{
+    width:60px;
+  }
+  .ctrl{
+    font-size:18px;
+    width:32px;
+    height:32px;
+  }
+}
