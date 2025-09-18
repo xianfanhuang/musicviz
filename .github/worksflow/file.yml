@@ -1,0 +1,22 @@
+# Sonoria 应用文件树（GitHub Pages 部署版 | teswy 分支专用）
+# 功能：1. 定义完整项目文件结构 2. 配套清空teswy分支原有文件的操作指引
+# 复制后可直接创建目录+空文件，需按步骤执行分支清空操作
+  target_branch: teswy         # 目标分支（强制指定teswy）
+  files:
+    # 核心功能文件（必需）
+    - filename: index.html       # 主页面（含所有DOM结构，路径适配teswy分支）
+    - filename: style.css        # 样式文件（覆盖所有元素样式，无路径依赖）
+    - filename: script.js        # 主控制器（重构修复版，适配teswy分支环境）
+    
+    # 功能依赖文件（必需）
+    - filename: audio-decoder.js # 音频解码器（多格式解密，无分支依赖）
+    - filename: network-sniffer.js # 网络探嗅器（GitHub Pages跨域适配）
+    - filename: visualizer.js    # 音频可视化器（性能优化版）
+    
+    # PWA适配文件（必需）
+    - filename: manifest.json    # 应用清单（路径已配置为 "/sonoria-musicviz/manifest.json"）
+    - filename: icon-512.png     # 应用图标（512x512 PNG，PWA桌面/移动端显示用）
+    
+    # 说明文档（建议）
+    - filename: README.md        # teswy分支专属部署指南（含清空分支步骤）
+    - filename: BRANCH_NOTES.md  # teswy分支更新日志（功能修复、优化记录）
