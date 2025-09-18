@@ -688,7 +688,21 @@ class MusicPlayer {
   }
 }
 
-/* ==========  原有文件尾部（若有）  ========== */
+/* ==========  原有文件尾部（若有）  ========== *
 document.addEventListener('DOMContentLoaded', () => {
-  new MusicPlayer();
+  // ① 先实例化
+  window.player = new MusicPlayer();
+  // ② 再绑定首屏点击
+  const stage = document.getElementById('stage');
+  stage.addEventListener('click', () => {
+    if (window.player.audioContext && window.player.audioContext.state === 'suspended') {
+      window.player.audioContext.resume();
+    }
+    if (window.player.playlist.length) {
+      revealControls();                       // 已定义在尾部
+    } else {
+      document.getElementById('fileInput').click();
+    }
+  }, { once: false });
 });
+
