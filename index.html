@@ -483,6 +483,57 @@
     </style>
 </head>
 <body>
+    <!-- ① 熄灯模式：背景隐去，只剩光晕与手势提示 -->
+<script>
+(() => {
+  if (!new URLSearchParams(location.search).has('immersive')) return;
+  const $ = s => document.querySelector(s);
+  $('#visualizer').style.cssText = 'z-index:10';
+  $('.overlay').style.opacity = 0;
+  $('.container').style.cssText += 'pointer-events:none;background:transparent;backdrop-filter:none;box-shadow:none';
+  $('#player-card').style.cssText += 'background:transparent;border:none;box-shadow:none;pointer-events:auto';
+  $('#swipe-hint').style.cssText += 'bottom:8vh;font-size:13px;letter-spacing:1px';
+})();
+</script>
+<!-- ② 隐形播放条：进度=呼吸环，时间=Logo内数字 -->
+<script>
+(() => {
+  if (!new URLSearchParams(location.search).has('immersive')) return;
+  const logo = document.querySelector('#logo-circle');
+  const prog = document.querySelector('#progress');
+  const cur = document.querySelector('#current-time');
+  const bar = document.querySelector('.progress-section');
+  bar.style.display = 'none';          // 隐藏原进度条
+
+  const breathRing = document.createElement('canvas');
+  breathRing.width = breathRing.height = 180;
+  Object.assign(breathRing.style, {
+    position: 'absolute', width: '180px', height: '180px',
+    top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+    pointerEvents: 'none', zIndex: -1
+  });
+  logo.parentElement.appendChild(breathRing);
+  const ctx = breathRing.getContext('2d');
+
+  function drawRing(p) {
+    ctx.clearRect(0, 0, 180, 180);
+    const r = 80 + Math.sin(performance.now()/600)*6;
+    ctx.beginPath();
+    ctx.arc(90, 90, r, -Math.PI/2, -Math.PI/2 + Math.PI*2*p);
+    ctx.strokeStyle = `rgba(255,255,255,${0.6+Math.sin(performance.now()/400)*0.2})`;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  const mo = new MutationObserver(() => {
+    const p = parseFloat(prog.style.width||0)/100;
+    drawRing(p);
+    logo.querySelector('.logo-icon').textContent = cur.textContent;
+  });
+  mo.observe(prog, { attributes: true, attributeFilter: ['style'] });
+})();
+</script>
+
     <canvas id="visualizer"></canvas>
     <div class="overlay"></div>
     
