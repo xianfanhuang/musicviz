@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="auto">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonoria - 动人心绚，乐音之境</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Sonoria - Music Visualizer</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -11,6 +13,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         
         :root {
@@ -45,6 +48,11 @@
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
         
+        [lang="zh"] .en-only,
+        [lang="en"] .zh-only {
+            display: none !important;
+        }
+        
         body {
             font-family: var(--font-text);
             background: var(--system-bg);
@@ -54,13 +62,8 @@
             width: 100vw;
             user-select: none;
             transition: --hue 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            position: fixed;
+            -webkit-overflow-scrolling: touch;
         }
         
         /* 动态色彩动画 */
@@ -194,8 +197,33 @@
             justify-content: center;
             font-size: 48px;
             color: white;
+            position: relative;
         }
         
+        /* 呼吸感 S 字母样式 */
+        .logo-letter {
+            position: absolute;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 3.5rem;
+            color: rgba(255, 255, 255, 0.15);
+            z-index: 2;
+            animation: breath 3s ease-in-out infinite;
+            pointer-events: none;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes breath {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(1.05);
+            }
+        }
+
         .logo-circle {
             width: 80px;
             height: 80px;
@@ -223,37 +251,6 @@
             font-size: 2rem;
             color: white;
             z-index: 1;
-        }
-        
-        /* 呼吸感 S 字母样式 */
-        .logo-letter {
-            position: absolute;
-            font-family: var(--font-display);
-            font-weight: 800;
-            font-size: 2.5rem;
-            color: rgba(255, 255, 255, 0.15);
-            z-index: 2;
-            animation: breath 3s ease-in-out infinite;
-            pointer-events: none;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-        }
-
-        @keyframes breath {
-            0%, 100% {
-                opacity: 0.3;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.6;
-                transform: scale(1.05);
-            }
-        }
-
-        /* 沉浸模式下的 S 字母 */
-        .immersive-mode .logo-letter {
-            font-size: 3rem;
-            opacity: 0.1;
-            animation: breath 4s ease-in-out infinite;
         }
         
         .brand {
@@ -691,7 +688,27 @@
             100% { left: 100%; }
         }
         
-        /* 移动设备Canvas优化 */
+        /* 语言切换按钮 */
+        .lang-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .lang-toggle:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -705,6 +722,10 @@
             .album-art-section {
                 width: 200px;
                 height: 200px;
+            }
+            
+            .logo-letter {
+                font-size: 2.5rem;
             }
             
             .title {
@@ -735,9 +756,11 @@
                 font-size: 12px;
             }
             
-            /* 减小S字母尺寸 */
-            .logo-letter {
-                font-size: 2rem !important;
+            .lang-toggle {
+                top: 15px;
+                right: 15px;
+                padding: 6px 10px;
+                font-size: 12px;
             }
         }
         
@@ -758,12 +781,27 @@
             .play-button {
                 grid-column: 2;
             }
+            
+            .album-art-section {
+                width: 160px;
+                height: 160px;
+            }
+            
+            .logo-letter {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
 <body>
     <canvas id="visualizer"></canvas>
     <div class="overlay"></div>
+    
+    <!-- 语言切换按钮 -->
+    <button class="lang-toggle" id="lang-toggle">
+        <span class="zh-only">EN</span>
+        <span class="en-only">中文</span>
+    </button>
     
     <!-- 手势区域 -->
     <div class="gesture-area">
@@ -776,18 +814,28 @@
             <div class="logo-section">
                 <div class="album-art-section">
                     <div class="album-art">
-                        <i class="material-icons">music_note</i>
+                        <i class="material-icons logo-icon">music_note</i>
+                        <div class="logo-letter">S</div>
                     </div>
                 </div>
                 <div class="brand">
                     <h1 class="title">Sonoria</h1>
-                    <div class="slogan">动人心绚，乐音之境</div>
+                    <div class="slogan">
+                        <span class="zh-only">动人心绚，乐音之境</span>
+                        <span class="en-only">Where Music Meets Visual Art</span>
+                    </div>
                 </div>
             </div>
             
             <div class="player-info">
-                <div class="track-title" id="track-title">等待音乐...</div>
-                <div class="track-artist" id="track-artist">上传或选择音乐开始体验</div>
+                <div class="track-title" id="track-title">
+                    <span class="zh-only">等待音乐...</span>
+                    <span class="en-only">Waiting for music...</span>
+                </div>
+                <div class="track-artist" id="track-artist">
+                    <span class="zh-only">上传或选择音乐开始体验</span>
+                    <span class="en-only">Upload or select music to begin</span>
+                </div>
             </div>
             
             <div class="progress-section">
@@ -820,21 +868,41 @@
             
             <div class="upload-area" id="upload-area">
                 <i class="material-icons">library_music</i>
-                <div class="upload-text">拖放音乐文件到此处或点击上传</div>
-                <div class="file-types">支持 MP3, M4A, WAV, FLAC, OGG, AAC</div>
+                <div class="upload-text">
+                    <span class="zh-only">拖放音乐文件到此处或点击上传</span>
+                    <span class="en-only">Drag & drop music files or click to upload</span>
+                </div>
             </div>
             
             <div class="theme-selector">
-                <button class="theme-button active" data-mode="aurora">极光</button>
-                <button class="theme-button" data-mode="cosmic">宇宙</button>
-                <button class="theme-button" data-mode="neural">神经</button>
-                <button class="theme-button" data-mode="liquid">液态</button>
-                <button class="theme-button" data-mode="quantum">量子</button>
+                <button class="theme-button active" data-mode="aurora">
+                    <span class="zh-only">极光</span>
+                    <span class="en-only">Aurora</span>
+                </button>
+                <button class="theme-button" data-mode="cosmic">
+                    <span class="zh-only">宇宙</span>
+                    <span class="en-only">Cosmic</span>
+                </button>
+                <button class="theme-button" data-mode="neural">
+                    <span class="zh-only">神经</span>
+                    <span class="en-only">Neural</span>
+                </button>
+                <button class="theme-button" data-mode="liquid">
+                    <span class="zh-only">液态</span>
+                    <span class="en-only">Liquid</span>
+                </button>
+                <button class="theme-button" data-mode="quantum">
+                    <span class="zh-only">量子</span>
+                    <span class="en-only">Quantum</span>
+                </button>
             </div>
             
             <div class="playlist-section" id="playlist-section">
                 <div class="playlist-header">
-                    <div class="playlist-title">播放列表</div>
+                    <div class="playlist-title">
+                        <span class="zh-only">播放列表</span>
+                        <span class="en-only">Playlist</span>
+                    </div>
                     <div class="playlist-controls">
                         <button class="system-button icon-button" id="clear-button" title="清空列表">
                             <i class="material-icons">clear_all</i>
@@ -851,23 +919,27 @@
             </div>
             
             <div class="status" id="status">
-                准备就绪 - 拖放音乐文件或使用麦克风
+                <span class="zh-only">准备就绪 - 拖放音乐文件或使用麦克风</span>
+                <span class="en-only">Ready - Drag & drop music files or use microphone</span>
             </div>
         </div>
     </div>
 
-    <div class="swipe-hint" id="swipe-hint">左右滑动切换可视化主题</div>
+    <div class="swipe-hint" id="swipe-hint">
+        <span class="zh-only">左右滑动切换可视化主题</span>
+        <span class="en-only">Swipe to change visualization theme</span>
+    </div>
     <div class="swipe-feedback" id="swipe-feedback"></div>
 
-    <!-- 明确支持的音乐文件类型 -->
-    <input type="file" id="audio-upload" accept=".mp3,.m4a,.wav,.flac,.ogg,.aac,.aiff,.alac,.opus" multiple>
+    <!-- 支持更多音频格式 -->
+    <input type="file" id="audio-upload" accept="audio/*, .mp3, .wav, .m4a, .aac, .flac, .ogg, .oga, .opus, .weba, .3gp, .3g2" multiple>
     
     <script>
         // 配置常量
         const CONFIG = {
             canvas: {
                 clearAlpha: 0.1,
-                dpr: window.devicePixelRatio || 1,
+                dpr: Math.min(window.devicePixelRatio || 1, 2),
                 maxWidth: 4096,
                 maxHeight: 4096,
                 mobileFFT: 512
@@ -890,12 +962,81 @@
                     qualityThreshold: 30,
                     mobileQualityThreshold: 20
                 }
+            }
+        };
+
+        // 语言设置
+        const i18n = {
+            zh: {
+                title: "Sonoria",
+                slogan: "动人心绚，乐音之境",
+                waiting: "等待音乐...",
+                uploadHint: "上传或选择音乐开始体验",
+                ready: "准备就绪 - 拖放音乐文件或使用麦克风",
+                playing: "正在播放音乐",
+                paused: "音乐已暂停",
+                loading: "正在加载 {count} 个文件...",
+                added: "已添加 {count} 个文件到播放列表",
+                loaded: "已加载: {name}",
+                shuffleOn: "随机播放已开启",
+                shuffleOff: "随机播放已关闭",
+                playlistCleared: "播放列表已清空",
+                playlistShuffled: "播放列表已随机排序",
+                micOn: "正在通过麦克风捕捉环境音乐...",
+                micOff: "麦克风已关闭",
+                themeChanged: "已切换到{theme}主题",
+                swipeHint: "左右滑动切换可视化主题",
+                themes: {
+                    aurora: "极光韵律",
+                    cosmic: "宇宙脉动",
+                    neural: "神经脉络",
+                    liquid: "液态流动",
+                    quantum: "量子场域"
+                },
+                error: {
+                    audioInit: "音频系统初始化失败",
+                    noSupport: "您的浏览器不支持音频分析功能",
+                    micPermission: "请允许麦克风访问权限",
+                    micNotFound: "未找到麦克风设备",
+                    noSupportAPI: "浏览器不支持此功能",
+                    network: "网络错误，请检查网络连接"
+                }
             },
-            // 支持的文件类型
-            supportedFormats: [
-                'mp3', 'm4a', 'wav', 'flac', 'ogg', 'aac', 
-                'aiff', 'alac', 'opus', 'mp4', 'webm'
-            ]
+            en: {
+                title: "Sonoria",
+                slogan: "Where Music Meets Visual Art",
+                waiting: "Waiting for music...",
+                uploadHint: "Upload or select music to begin",
+                ready: "Ready - Drag & drop music files or use microphone",
+                playing: "Playing music",
+                paused: "Music paused",
+                loading: "Loading {count} files...",
+                added: "Added {count} files to playlist",
+                loaded: "Loaded: {name}",
+                shuffleOn: "Shuffle enabled",
+                shuffleOff: "Shuffle disabled",
+                playlistCleared: "Playlist cleared",
+                playlistShuffled: "Playlist shuffled",
+                micOn: "Capturing ambient sound through microphone...",
+                micOff: "Microphone disabled",
+                themeChanged: "Switched to {theme} theme",
+                swipeHint: "Swipe to change visualization theme",
+                themes: {
+                    aurora: "Aurora Rhythm",
+                    cosmic: "Cosmic Pulse",
+                    neural: "Neural Network",
+                    liquid: "Liquid Flow",
+                    quantum: "Quantum Field"
+                },
+                error: {
+                    audioInit: "Audio system initialization failed",
+                    noSupport: "Your browser doesn't support audio analysis",
+                    micPermission: "Please allow microphone access",
+                    micNotFound: "Microphone device not found",
+                    noSupportAPI: "Browser doesn't support this feature",
+                    network: "Network error, please check your connection"
+                }
+            }
         };
 
         // 高级节拍检测
@@ -996,7 +1137,6 @@
                     // 移动设备优化 - 降低渲染质量以提升性能
                     if (this.width <= 768) {
                         this.analyser.fftSize = CONFIG.canvas.mobileFFT;
-                        CONFIG.audio.fftSize = CONFIG.canvas.mobileFFT;
                     } else {
                         this.analyser.fftSize = CONFIG.audio.fftSize;
                     }
@@ -1145,6 +1285,9 @@
                 
                 // 将离屏Canvas绘制到主Canvas
                 this.ctx.drawImage(this.offScreenCanvas, 0, 0);
+                
+                // 更新S字母效果
+                this.updateLogoLetter();
             }
 
             updateAudioAnalysis() {
@@ -1167,9 +1310,6 @@
                 
                 // 更新中心圆形参数
                 this.updateCenterCircle();
-                
-                // 更新S字母效果
-                this.updateLogoLetter();
             }
 
             getAverageEnergy(start, end) {
@@ -1511,20 +1651,20 @@
                 
                 switch(this.currentState) {
                     case this.states.LOADING:
-                        statusEl.textContent = message || '加载中...';
+                        statusEl.textContent = message;
                         playToggle.disabled = true;
                         break;
                     case this.states.ERROR:
-                        statusEl.textContent = `错误: ${message}`;
+                        statusEl.textContent = message;
                         statusEl.style.color = '#ff6b6b';
                         break;
                     case this.states.READY:
-                        statusEl.textContent = message || '准备就绪';
+                        statusEl.textContent = message;
                         statusEl.style.color = '';
                         playToggle.disabled = false;
                         break;
                     case this.states.PLAYING:
-                        statusEl.textContent = message || '正在播放';
+                        statusEl.textContent = message;
                         statusEl.style.color = '';
                         playToggle.disabled = false;
                         break;
@@ -1564,10 +1704,10 @@
                 console.error(`[${context}]`, error);
                 
                 const userFriendlyMessages = {
-                    'NotAllowedError': '请允许麦克风访问权限',
-                    'NotFoundError': '未找到麦克风设备',
-                    'NotSupportedError': '浏览器不支持此功能',
-                    'NetworkError': '网络错误，请检查网络连接'
+                    'NotAllowedError': currentLang === 'zh' ? i18n.zh.error.micPermission : i18n.en.error.micPermission,
+                    'NotFoundError': currentLang === 'zh' ? i18n.zh.error.micNotFound : i18n.en.error.micNotFound,
+                    'NotSupportedError': currentLang === 'zh' ? i18n.zh.error.noSupportAPI : i18n.en.error.noSupportAPI,
+                    'NetworkError': currentLang === 'zh' ? i18n.zh.error.network : i18n.en.error.network
                 };
                 
                 const message = userFriendlyMessages[error.name] || error.message;
@@ -1582,15 +1722,56 @@
                 };
                 
                 if (!supports.audioContext) {
-                    throw new Error('您的浏览器不支持Web Audio API');
+                    throw new Error(currentLang === 'zh' ? i18n.zh.error.noSupport : i18n.en.error.noSupport);
                 }
                 
                 return supports;
             }
         }
 
+        // 语言管理
+        let currentLang = 'zh';
+
+        function detectLanguage() {
+            const browserLang = navigator.language || navigator.userLanguage;
+            return browserLang.startsWith('zh') ? 'zh' : 'en';
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.documentElement.lang = lang;
+            localStorage.setItem('sonoria-lang', lang);
+            updateUIText();
+        }
+
+        function updateUIText() {
+            const texts = i18n[currentLang];
+            
+            // 更新所有需要本地化的文本
+            document.querySelector('.slogan .zh-only').textContent = texts.slogan;
+            document.querySelector('.slogan .en-only').textContent = texts.slogan;
+            document.getElementById('track-title').innerHTML = `<span class="zh-only">${texts.waiting}</span><span class="en-only">${texts.waiting}</span>`;
+            document.getElementById('track-artist').innerHTML = `<span class="zh-only">${texts.uploadHint}</span><span class="en-only">${texts.uploadHint}</span>`;
+            document.querySelector('.upload-text').innerHTML = `<span class="zh-only">${texts.uploadHint}</span><span class="en-only">${texts.uploadHint}</span>`;
+            document.querySelector('.swipe-hint').innerHTML = `<span class="zh-only">${texts.swipeHint}</span><span class="en-only">${texts.swipeHint}</span>`;
+            
+            // 更新按钮标题
+            document.getElementById('shuffle-button').title = currentLang === 'zh' ? '随机播放' : 'Shuffle';
+            document.getElementById('prev-button').title = currentLang === 'zh' ? '上一首' : 'Previous';
+            document.getElementById('play-toggle').title = currentLang === 'zh' ? '播放' : 'Play';
+            document.getElementById('next-button').title = currentLang === 'zh' ? '下一首' : 'Next';
+            document.getElementById('mic-toggle').title = currentLang === 'zh' ? '麦克风' : 'Microphone';
+            document.getElementById('clear-button').title = currentLang === 'zh' ? '清空列表' : 'Clear All';
+            document.getElementById('sort-button').title = currentLang === 'zh' ? '随机排序' : 'Shuffle';
+        }
+
         // 应用主逻辑
         document.addEventListener('DOMContentLoaded', function() {
+            // 初始化语言
+            const savedLang = localStorage.getItem('sonoria-lang');
+            const detectedLang = detectLanguage();
+            setLanguage(savedLang || detectedLang);
+            
             // 获取DOM元素
             const canvas = document.getElementById('visualizer');
             const audioUpload = document.getElementById('audio-upload');
@@ -1613,6 +1794,7 @@
             const trackArtist = document.getElementById('track-artist');
             const playlistItems = document.getElementById('playlist-items');
             const swipeHint = document.getElementById('swipe-hint');
+            const langToggle = document.getElementById('lang-toggle');
             
             // 应用状态
             const appState = new AppState();
@@ -1637,7 +1819,9 @@
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     visualizer = new AudioVisualizer(canvas, audioContext);
                     visualizer.start();
-                    appState.setState('ready', "音频系统已初始化");
+                    
+                    const texts = i18n[currentLang];
+                    appState.setState('ready', texts.ready);
                     return true;
                 } catch (error) {
                     ErrorHandler.handleError(error, '音频初始化');
@@ -1654,20 +1838,16 @@
                     return;
                 }
                 
-                appState.setState('loading', `正在加载 ${files.length} 个文件...`);
+                const texts = i18n[currentLang];
+                appState.setState('loading', texts.loading.replace('{count}', files.length));
                 
                 // 将文件添加到播放列表
-                let validFiles = 0;
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
                     
-                    // 检查文件类型
-                    const fileExtension = file.name.split('.').pop().toLowerCase();
-                    if (!CONFIG.supportedFormats.includes(fileExtension)) {
+                    if (!file.type.startsWith('audio/') && !file.type.startsWith('video/')) {
                         continue;
                     }
-                    
-                    validFiles++;
                     
                     const track = {
                         id: Date.now() + i,
@@ -1689,13 +1869,13 @@
                 }
                 
                 // 如果播放列表之前为空，自动播放第一首
-                if (playlist.length === validFiles && validFiles > 0) {
+                if (playlist.length === files.length) {
                     currentTrackIndex = 0;
                     loadTrack(currentTrackIndex);
                 }
                 
                 renderPlaylist();
-                appState.setState('ready', `已添加 ${validFiles} 个文件到播放列表`);
+                appState.setState('ready', texts.added.replace('{count}', files.length));
             }
             
             // 加载指定索引的曲目
@@ -1713,13 +1893,16 @@
                 audioElement = new Audio();
                 audioElement.src = track.url;
                 audioElement.crossOrigin = "anonymous";
+                // 添加iOS息屏播放支持
+                audioElement.setAttribute('playsinline', '');
+                audioElement.setAttribute('webkit-playsinline', '');
                 
                 // 连接可视化器
                 visualizer.connectAudio(audioElement);
                 
                 // 更新UI
                 trackTitle.textContent = track.name;
-                trackArtist.textContent = "未知艺术家";
+                trackArtist.textContent = currentLang === 'zh' ? "未知艺术家" : "Unknown Artist";
                 totalTimeEl.textContent = formatTime(track.duration || 0);
                 
                 // 设置音频事件
@@ -1732,7 +1915,9 @@
                 
                 // 启用播放按钮
                 playToggle.disabled = false;
-                appState.setState('ready', `已加载: ${track.name}`);
+                
+                const texts = i18n[currentLang];
+                appState.setState('ready', texts.loaded.replace('{name}', track.name));
                 
                 // 更新播放列表高亮
                 renderPlaylist();
@@ -1750,19 +1935,31 @@
                     audioContext.resume();
                 }
                 
-                audioElement.play();
-                isPlaying = true;
-                playToggle.innerHTML = '<i class="material-icons">pause</i>';
-                appState.setState('playing', '正在播放音乐');
+                // iOS Safari需要用户交互才能播放音频
+                const playPromise = audioElement.play();
                 
-                // 添加动态色彩动画
-                document.body.classList.add('audio-playing');
-                
-                // 重置不活动计时器
-                resetInactivityTimer();
-                
-                // 触觉反馈
-                AppleInteraction.hapticFeedback('light');
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isPlaying = true;
+                        playToggle.innerHTML = '<i class="material-icons">pause</i>';
+                        
+                        const texts = i18n[currentLang];
+                        appState.setState('playing', texts.playing);
+                        
+                        // 添加动态色彩动画
+                        document.body.classList.add('audio-playing');
+                        
+                        // 重置不活动计时器
+                        resetInactivityTimer();
+                        
+                        // 触觉反馈
+                        AppleInteraction.hapticFeedback('light');
+                    }).catch(error => {
+                        console.error('播放失败:', error);
+                        const texts = i18n[currentLang];
+                        appState.setState('error', '播放失败: ' + error.message);
+                    });
+                }
             }
             
             // 暂停音乐
@@ -1771,7 +1968,9 @@
                     audioElement.pause();
                     isPlaying = false;
                     playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
-                    appState.setState('ready', '音乐已暂停');
+                    
+                    const texts = i18n[currentLang];
+                    appState.setState('ready', texts.paused);
                     
                     // 移除动态色彩动画
                     document.body.classList.remove('audio-playing');
@@ -1843,7 +2042,7 @@
                         </div>
                         <div class="playlist-item-info">
                             <div class="playlist-item-title">${track.name}</div>
-                            <div class="playlist-item-artist">未知艺术家</div>
+                            <div class="playlist-item-artist">${currentLang === 'zh' ? '未知艺术家' : 'Unknown Artist'}</div>
                         </div>
                         <div class="playlist-item-duration">${formatTime(track.duration || 0)}</div>
                     `;
@@ -1863,7 +2062,9 @@
             function toggleShuffle() {
                 isShuffled = !isShuffled;
                 shuffleButton.classList.toggle('active', isShuffled);
-                appState.setState('ready', isShuffled ? '随机播放已开启' : '随机播放已关闭');
+                
+                const texts = i18n[currentLang];
+                appState.setState('ready', isShuffled ? texts.shuffleOn : texts.shuffleOff);
                 AppleInteraction.hapticFeedback('light');
             }
             
@@ -1887,13 +2088,17 @@
                 
                 playlist = [];
                 currentTrackIndex = 0;
-                trackTitle.textContent = '等待音乐...';
-                trackArtist.textContent = '上传或选择音乐开始体验';
+                
+                const texts = i18n[currentLang];
+                trackTitle.innerHTML = `<span class="zh-only">${texts.waiting}</span><span class="en-only">${texts.waiting}</span>`;
+                trackArtist.innerHTML = `<span class="zh-only">${texts.uploadHint}</span><span class="en-only">${texts.uploadHint}</span>`;
+                
                 progressBar.style.width = '0%';
                 currentTimeEl.textContent = '0:00';
                 totalTimeEl.textContent = '0:00';
                 renderPlaylist();
-                appState.setState('ready', '播放列表已清空');
+                
+                appState.setState('ready', texts.playlistCleared);
                 AppleInteraction.hapticFeedback('medium');
             }
             
@@ -1913,7 +2118,9 @@
                 }
                 
                 renderPlaylist();
-                appState.setState('ready', '播放列表已随机排序');
+                
+                const texts = i18n[currentLang];
+                appState.setState('ready', texts.playlistShuffled);
                 AppleInteraction.hapticFeedback('light');
             }
             
@@ -1929,11 +2136,14 @@
                     }
                     isMicActive = false;
                     micToggle.classList.remove('active');
-                    appState.setState('ready', '麦克风已关闭');
+                    
+                    const texts = i18n[currentLang];
+                    appState.setState('ready', texts.micOff);
                 } else {
                     // 开启麦克风
                     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        appState.setState('error', '您的浏览器不支持麦克风输入');
+                        const texts = i18n[currentLang];
+                        appState.setState('error', texts.error.noSupportAPI);
                         return;
                     }
                     
@@ -1941,7 +2151,8 @@
                         return;
                     }
                     
-                    appState.setState('loading', '请求麦克风权限...');
+                    const texts = i18n[currentLang];
+                    appState.setState('loading', texts.micOn);
                     
                     navigator.mediaDevices.getUserMedia({ audio: true, video: false })
                         .then(function(stream) {
@@ -1951,9 +2162,9 @@
                             
                             isMicActive = true;
                             micToggle.classList.add('active');
-                            appState.setState('ready', '正在通过麦克风捕捉环境音乐...');
-                            trackTitle.textContent = '麦克风输入';
-                            trackArtist.textContent = '环境声音';
+                            appState.setState('ready', texts.micOn);
+                            trackTitle.textContent = currentLang === 'zh' ? '麦克风输入' : 'Microphone Input';
+                            trackArtist.textContent = currentLang === 'zh' ? '环境声音' : 'Ambient Sound';
                             
                             // 如果正在播放音乐，暂停它
                             if (isPlaying) {
@@ -1981,26 +2192,15 @@
                         button.classList.toggle('active', button.dataset.mode === mode);
                     });
                     
-                    const modeName = getModeName(mode);
-                    appState.setState('ready', `已切换到${modeName}主题`);
-                    AppleInteraction.showSwipeFeedback(modeName);
+                    const texts = i18n[currentLang];
+                    const themeName = texts.themes[mode] || mode;
+                    appState.setState('ready', texts.themeChanged.replace('{theme}', themeName));
+                    AppleInteraction.showSwipeFeedback(themeName);
                     AppleInteraction.hapticFeedback('light');
                 }
                 
                 // 重置不活动计时器
                 resetInactivityTimer();
-            }
-            
-            // 获取模式名称
-            function getModeName(mode) {
-                const modeNames = {
-                    'aurora': '极光韵律',
-                    'cosmic': '宇宙脉动',
-                    'neural': '神经脉络',
-                    'liquid': '液态流动',
-                    'quantum': '量子场域'
-                };
-                return modeNames[mode] || mode;
             }
             
             // 重置不活动计时器
@@ -2102,6 +2302,11 @@
             sortButton.addEventListener('click', shufflePlaylist);
             micToggle.addEventListener('click', toggleMicrophone);
             
+            // 语言切换
+            langToggle.addEventListener('click', function() {
+                setLanguage(currentLang === 'zh' ? 'en' : 'zh');
+            });
+            
             // 模式切换按钮事件
             themeButtons.forEach(button => {
                 button.addEventListener('click', function() {
@@ -2153,9 +2358,11 @@
             
             // 初始化音频系统
             if (!initAudioContext()) {
-                appState.setState('error', "您的浏览器不支持音频分析功能");
+                const texts = i18n[currentLang];
+                appState.setState('error', texts.error.noSupport);
             } else {
-                appState.setState('ready', "准备就绪 - 拖放音乐文件或使用麦克风");
+                const texts = i18n[currentLang];
+                appState.setState('ready', texts.ready);
             }
             
             // 初始化键盘控制
@@ -2163,15 +2370,6 @@
             
             // 显示滑动提示
             setTimeout(showSwipeHint, 2000);
-            
-            // 添加S字母到logo
-            const logoCircle = document.querySelector('.logo-circle');
-            if (logoCircle) {
-                const logoLetter = document.createElement('div');
-                logoLetter.className = 'logo-letter';
-                logoLetter.textContent = 'S';
-                logoCircle.appendChild(logoLetter);
-            }
         });
     </script>
 </body>
