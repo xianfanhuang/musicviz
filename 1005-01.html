@@ -892,10 +892,11 @@
                 this.setupCanvas();
                 this.setupAnalyser();
             }
+            
 
             setupCanvas() {
                 const resizeCanvas = () => {
-                    const dpr = window.devicePixelRatio;
+                    const dpr = Math.min(window.devicePixelRatio, 2);
                     
                     this.canvas.width = window.innerWidth * dpr;
                     this.canvas.height = window.innerHeight * dpr;
