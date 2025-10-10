@@ -92,7 +92,8 @@
         .minimized .progress-section,
         .minimized .upload-area,
         .minimized .theme-selector,
-        .minimized .playlist-section {
+        .minimized .playlist-section,
+        .minimized .secondary-controls {
             display: none;
         }
         
@@ -224,6 +225,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
+            position: relative;
         }
         
         .icon-button:hover {
@@ -251,6 +253,13 @@
             width: 55px;
             height: 55px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+        
+        .secondary-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
         }
         
         .upload-area {
@@ -317,9 +326,16 @@
         
         .playlist-section {
             margin-top: 20px;
-            max-height: 200px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .playlist-section.expanded {
+            max-height: 300px;
             overflow-y: auto;
-            padding-right: 10px;
         }
         
         .playlist-header {
@@ -327,6 +343,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            padding: 0 10px;
         }
         
         .playlist-title {
@@ -340,8 +357,9 @@
         }
         
         .playlist-items {
-            max-height: 150px;
+            max-height: 250px;
             overflow-y: auto;
+            padding: 0 10px 10px;
         }
         
         .playlist-item {
@@ -426,6 +444,65 @@
         
         .swipe-hint.show {
             opacity: 1;
+        }
+        
+        .tooltip {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+        
+        .icon-button:hover .tooltip {
+            opacity: 1;
+        }
+        
+        .more-menu {
+            position: absolute;
+            bottom: 60px;
+            right: 0;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+            box-shadow: var(--shadow);
+        }
+        
+        .more-menu.show {
+            display: flex;
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .menu-item i {
+            margin-right: 8px;
+            font-size: 18px;
         }
         
         @media (max-width: 768px) {
@@ -515,21 +592,52 @@
             </div>
             
             <div class="control-row">
-                <button class="icon-button" id="shuffle-button" title="随机播放">
-                    <i class="material-icons">shuffle</i>
-                </button>
-                <button class="icon-button" id="prev-button" title="上一首">
+                <button class="icon-button" id="prev-button">
                     <i class="material-icons">skip_previous</i>
+                    <span class="tooltip">上一首</span>
                 </button>
-                <button class="icon-button play-button" id="play-toggle" title="播放">
+                <button class="icon-button play-button" id="play-toggle">
                     <i class="material-icons">play_arrow</i>
+                    <span class="tooltip">播放</span>
                 </button>
-                <button class="icon-button" id="next-button" title="下一首">
+                <button class="icon-button" id="next-button">
                     <i class="material-icons">skip_next</i>
+                    <span class="tooltip">下一首</span>
                 </button>
-                <button class="icon-button" id="mic-toggle" title="麦克风">
+                <button class="icon-button" id="more-button">
+                    <i class="material-icons">more_vert</i>
+                    <span class="tooltip">更多</span>
+                </button>
+            </div>
+            
+            <div class="secondary-controls">
+                <button class="icon-button" id="playlist-toggle">
+                    <i class="material-icons">queue_music</i>
+                    <span class="tooltip">播放列表</span>
+                </button>
+                <button class="icon-button" id="upload-button">
+                    <i class="material-icons">library_music</i>
+                    <span class="tooltip">上传音乐</span>
+                </button>
+                <button class="icon-button" id="mic-toggle">
                     <i class="material-icons">mic_none</i>
+                    <span class="tooltip">麦克风</span>
                 </button>
+            </div>
+            
+            <div class="more-menu" id="more-menu">
+                <div class="menu-item" id="shuffle-option">
+                    <i class="material-icons">shuffle</i>
+                    <span>随机播放</span>
+                </div>
+                <div class="menu-item" id="loop-option">
+                    <i class="material-icons">loop</i>
+                    <span>循环播放</span>
+                </div>
+                <div class="menu-item" id="clear-option">
+                    <i class="material-icons">clear_all</i>
+                    <span>清空列表</span>
+                </div>
             </div>
             
             <div class="upload-area" id="upload-area">
@@ -549,11 +657,8 @@
                 <div class="playlist-header">
                     <div class="playlist-title">播放列表</div>
                     <div class="playlist-controls">
-                        <button class="icon-button" id="clear-button" title="清空列表">
-                            <i class="material-icons">clear_all</i>
-                        </button>
-                        <button class="icon-button" id="sort-button" title="随机排序">
-                            <i class="material-icons">shuffle</i>
+                        <button class="icon-button" id="close-playlist" title="关闭列表">
+                            <i class="material-icons">close</i>
                         </button>
                     </div>
                 </div>
@@ -767,7 +872,6 @@
                         break;
                     case 'neural':
                         // Line connections for neural
-                        // Similar to particles but with lines between them
                         this.particles.forEach(p => {
                             // Update as in cosmic
                             const dx = centerX - p.x;
@@ -886,6 +990,11 @@
                 this.isPlaying = false;
                 cancelAnimationFrame(this.animationId);
             }
+            
+            // 将可视化转换为图片用于媒体会话封面
+            getVisualizationAsBlob(callback) {
+                this.canvas.toBlob(callback, 'image/jpeg', 0.8);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -895,17 +1004,23 @@
             const uploadArea = document.getElementById('upload-area');
             const audioUpload = document.getElementById('audio-upload');
             const playToggle = document.getElementById('play-toggle');
-            const shuffleButton = document.getElementById('shuffle-button');
+            const moreButton = document.getElementById('more-button');
+            const moreMenu = document.getElementById('more-menu');
+            const playlistToggle = document.getElementById('playlist-toggle');
+            const uploadButton = document.getElementById('upload-button');
+            const micToggle = document.getElementById('mic-toggle');
+            const shuffleOption = document.getElementById('shuffle-option');
+            const loopOption = document.getElementById('loop-option');
+            const clearOption = document.getElementById('clear-option');
             const prevButton = document.getElementById('prev-button');
             const nextButton = document.getElementById('next-button');
-            const micToggle = document.getElementById('mic-toggle');
-            const clearButton = document.getElementById('clear-button');
-            const sortButton = document.getElementById('sort-button');
+            const closePlaylist = document.getElementById('close-playlist');
             const progressBar = document.getElementById('progress');
             const currentTimeEl = document.getElementById('current-time');
             const totalTimeEl = document.getElementById('total-time');
             const trackTitle = document.getElementById('track-title');
             const trackArtist = document.getElementById('track-artist');
+            const playlistSection = document.getElementById('playlist-section');
             const playlistItems = document.getElementById('playlist-items');
             const swipeHint = document.getElementById('swipe-hint');
             const themeButtons = document.querySelectorAll('.theme-button');
@@ -918,11 +1033,13 @@
             let visualizer;
             let isPlaying = false;
             let isMicActive = false;
+            let isShuffled = false;
+            let isLooping = false;
             let playlist = [];
             let currentTrack = 0;
-            let isShuffled = false;
             let inactivityTimer;
             let touchStartX = 0;
+            let mediaSessionUpdateInterval;
             
             function initAudioContext() {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -936,19 +1053,172 @@
                 if (isMic) {
                     visualizer.connectStream(fileOrStream);
                     isPlaying = true;
-                    status.textContent = 'Listening to microphone';
+                    updateStatus('正在收听麦克风输入');
+                    playToggle.innerHTML = '<i class="material-icons">pause</i>';
+                    updateMediaSessionMetadata('麦克风输入', '实时音频', true);
                     return;
                 }
 
                 if (audioElement) audioElement.pause();
                 audioElement = new Audio(URL.createObjectURL(fileOrStream));
                 visualizer.connectAudio(audioElement);
+                
+                // 设置音频事件监听
+                audioElement.addEventListener('loadedmetadata', function() {
+                    updateTimeDisplay();
+                    updateMediaSessionMetadata(
+                        fileOrStream.name.replace(/\.[^/.]+$/, ""), 
+                        'Sonoria', 
+                        false
+                    );
+                });
+                
+                audioElement.addEventListener('timeupdate', function() {
+                    updateProgress();
+                    updateTimeDisplay();
+                });
+                
+                audioElement.addEventListener('ended', function() {
+                    playNext();
+                });
+                
                 audioElement.play();
                 isPlaying = true;
                 playToggle.innerHTML = '<i class="material-icons">pause</i>';
-                status.textContent = 'Playing uploaded track';
+                updateStatus(`正在播放: ${fileOrStream.name}`);
             }
 
+            function updateProgress() {
+                if (audioElement && audioElement.duration) {
+                    const progress = (audioElement.currentTime / audioElement.duration) * 100;
+                    progressBar.style.width = `${progress}%`;
+                }
+            }
+
+            function updateTimeDisplay() {
+                if (audioElement) {
+                    const currentTime = formatTime(audioElement.currentTime);
+                    const totalTime = formatTime(audioElement.duration || 0);
+                    currentTimeEl.textContent = currentTime;
+                    totalTimeEl.textContent = totalTime;
+                }
+            }
+
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+
+            function updateStatus(message) {
+                status.textContent = message;
+                setTimeout(() => {
+                    if (status.textContent === message) {
+                        status.textContent = '';
+                    }
+                }, 3000);
+            }
+
+            function updateMediaSessionMetadata(title, artist, isLive) {
+                if ('mediaSession' in navigator) {
+                    // 定期更新媒体会话封面为当前可视化
+                    if (mediaSessionUpdateInterval) {
+                        clearInterval(mediaSessionUpdateInterval);
+                    }
+                    
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: title,
+                        artist: artist,
+                        album: 'Sonoria'
+                    });
+                    
+                    // 每5秒更新一次封面
+                    mediaSessionUpdateInterval = setInterval(() => {
+                        visualizer.getVisualizationAsBlob(function(blob) {
+                            if (blob) {
+                                const imageUrl = URL.createObjectURL(blob);
+                                navigator.mediaSession.metadata.artwork = [
+                                    { src: imageUrl, sizes: '512x512', type: 'image/jpeg' }
+                                ];
+                            }
+                        });
+                    }, 5000);
+                    
+                    // 设置媒体会话操作
+                    navigator.mediaSession.setActionHandler('play', function() {
+                        if (audioElement) {
+                            audioElement.play();
+                            isPlaying = true;
+                            playToggle.innerHTML = '<i class="material-icons">pause</i>';
+                        }
+                    });
+                    
+                    navigator.mediaSession.setActionHandler('pause', function() {
+                        if (audioElement) {
+                            audioElement.pause();
+                            isPlaying = false;
+                            playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
+                        }
+                    });
+                    
+                    navigator.mediaSession.setActionHandler('previoustrack', function() {
+                        playPrevious();
+                    });
+                    
+                    navigator.mediaSession.setActionHandler('nexttrack', function() {
+                        playNext();
+                    });
+                }
+            }
+
+            function playPrevious() {
+                if (playlist.length > 1) {
+                    currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
+                    setupAudio(playlist[currentTrack]);
+                    updatePlaylistDisplay();
+                }
+            }
+
+            function playNext() {
+                if (playlist.length > 1) {
+                    if (isShuffled) {
+                        currentTrack = Math.floor(Math.random() * playlist.length);
+                    } else {
+                        currentTrack = (currentTrack + 1) % playlist.length;
+                    }
+                    setupAudio(playlist[currentTrack]);
+                    updatePlaylistDisplay();
+                }
+            }
+
+            function updatePlaylistDisplay() {
+                playlistItems.innerHTML = '';
+                playlist.forEach((file, index) => {
+                    const item = document.createElement('div');
+                    item.className = `playlist-item ${index === currentTrack ? 'active' : ''}`;
+                    item.innerHTML = `
+                        <i class="material-icons playlist-item-icon">music_note</i>
+                        <div class="playlist-item-info">
+                            <div class="playlist-item-title">${file.name.replace(/\.[^/.]+$/, "")}</div>
+                            <div class="playlist-item-artist">Sonoria</div>
+                        </div>
+                        <div class="playlist-item-duration">--:--</div>
+                    `;
+                    item.addEventListener('click', () => {
+                        currentTrack = index;
+                        setupAudio(playlist[currentTrack]);
+                        updatePlaylistDisplay();
+                    });
+                    playlistItems.appendChild(item);
+                });
+            }
+
+            function togglePlaylist() {
+                playlistSection.classList.toggle('expanded');
+            }
+
+            // 事件监听器
+            uploadButton.addEventListener('click', () => audioUpload.click());
             uploadArea.addEventListener('click', () => audioUpload.click());
 
             audioUpload.addEventListener('change', (e) => {
@@ -958,19 +1228,36 @@
                     if (playlist.length > 0) {
                         currentTrack = 0;
                         setupAudio(playlist[currentTrack]);
+                        updatePlaylistDisplay();
                     }
                 }
             });
 
             playToggle.addEventListener('click', () => {
                 if (isPlaying) {
-                    audioElement.pause();
+                    if (audioElement) {
+                        audioElement.pause();
+                    }
                     isPlaying = false;
                     playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
-                } else if (audioElement) {
-                    audioElement.play();
-                    isPlaying = true;
-                    playToggle.innerHTML = '<i class="material-icons">pause</i>';
+                    if (mediaSessionUpdateInterval) {
+                        clearInterval(mediaSessionUpdateInterval);
+                    }
+                } else {
+                    if (audioElement) {
+                        audioElement.play();
+                        isPlaying = true;
+                        playToggle.innerHTML = '<i class="material-icons">pause</i>';
+                    updateMediaSessionMetadata(
+                        playlist[currentTrack]?.name.replace(/\.[^/.]+$/, "") || '未知曲目', 
+                        'Sonoria', 
+                        false
+                    );
+                    } else if (playlist.length > 0) {
+                        setupAudio(playlist[currentTrack]);
+                    } else {
+                        updateStatus('请先上传音乐文件');
+                    }
                 }
             });
 
@@ -978,6 +1265,13 @@
                 if (isMicActive) {
                     isMicActive = false;
                     micToggle.classList.remove('active');
+                    if (audioElement) {
+                        audioElement.play();
+                    }
+                    updateStatus('麦克风已关闭');
+                    if (mediaSessionUpdateInterval) {
+                        clearInterval(mediaSessionUpdateInterval);
+                    }
                 } else {
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -985,10 +1279,56 @@
                         isMicActive = true;
                         micToggle.classList.add('active');
                     } catch (err) {
-                        status.textContent = 'Microphone access denied';
+                        updateStatus('麦克风访问被拒绝');
                     }
                 }
             });
+
+            moreButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                moreMenu.classList.toggle('show');
+            });
+
+            // 关闭更多菜单当点击其他地方时
+            document.addEventListener('click', () => {
+                moreMenu.classList.remove('show');
+            });
+
+            shuffleOption.addEventListener('click', () => {
+                isShuffled = !isShuffled;
+                shuffleOption.innerHTML = `<i class="material-icons">shuffle</i><span>${isShuffled ? '取消随机' : '随机播放'}</span>`;
+                updateStatus(isShuffled ? '随机播放已开启' : '随机播放已关闭');
+                moreMenu.classList.remove('show');
+            });
+
+            loopOption.addEventListener('click', () => {
+                isLooping = !isLooping;
+                if (audioElement) {
+                    audioElement.loop = isLooping;
+                }
+                loopOption.innerHTML = `<i class="material-icons">loop</i><span>${isLooping ? '取消循环' : '循环播放'}</span>`;
+                updateStatus(isLooping ? '循环播放已开启' : '循环播放已关闭');
+                moreMenu.classList.remove('show');
+            });
+
+            clearOption.addEventListener('click', () => {
+                playlist = [];
+                currentTrack = 0;
+                if (audioElement) {
+                    audioElement.pause();
+                    isPlaying = false;
+                    playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
+                }
+                updatePlaylistDisplay();
+                updateStatus('播放列表已清空');
+                moreMenu.classList.remove('show');
+            });
+
+            prevButton.addEventListener('click', playPrevious);
+            nextButton.addEventListener('click', playNext);
+
+            playlistToggle.addEventListener('click', togglePlaylist);
+            closePlaylist.addEventListener('click', togglePlaylist);
 
             themeButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -998,7 +1338,9 @@
                 });
             });
 
-            document.addEventListener('touchstart', (e) => touchStartX = e.touches[0].clientX);
+            document.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+            });
 
             document.addEventListener('touchend', (e) => {
                 const touchEndX = e.changedTouches[0].clientX;
@@ -1023,10 +1365,44 @@
             document.addEventListener('mousemove', () => {
                 clearTimeout(inactivityTimer);
                 playerCard.classList.remove('minimized');
-                inactivityTimer = setTimeout(() => playerCard.classList.add('minimized'), 15000);
+                inactivityTimer = setTimeout(() => playerCard.classList.add('minimized'), 5000);
             });
 
+            // 拖放功能
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'rgba(102, 126, 234, 0.7)';
+                uploadArea.style.background = 'rgba(102, 126, 234, 0.1)';
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = 'var(--border-light)';
+                uploadArea.style.background = 'transparent';
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--border-light)';
+                uploadArea.style.background = 'transparent';
+                
+                const files = e.dataTransfer.files;
+                if (files) {
+                    Array.from(files).forEach(file => {
+                        if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
+                            playlist.push(file);
+                        }
+                    });
+                    if (playlist.length > 0) {
+                        currentTrack = 0;
+                        setupAudio(playlist[currentTrack]);
+                        updatePlaylistDisplay();
+                    }
+                }
+            });
+
+            // 初始化
             initAudioContext();
+            updateStatus('欢迎使用 Sonoria - 上传音乐或使用麦克风开始体验');
         });
     </script>
 </body>
