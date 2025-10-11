@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonoria | 沉浸式音乐可视化体验</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js" defer></script>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #f093fb;
+            --tertiary: #4facfe;
+            --quaternary: #a8edea;
+            --bg-dark: #0a0a14;
+            --bg-darker: #05050a;
+            --bg-card: rgba(255, 255, 255, 0.08);
+            --bg-card-hover: rgba(255, 255, 255, 0.12);
+            --text-primary: rgba(255, 255, 255, 0.98);
+            --text-secondary: rgba(255, 255, 255, 0.85);
+            --text-tertiary: rgba(255, 255, 255, 0.6);
+            --border-light: rgba(255, 255, 255, 0.15);
+            --border-lighter: rgba(255, 255, 255, 0.08);
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 30px 80px rgba(0, 0, 0, 0.4);
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --error: #f87171;
+            --accent: #8b5cf6;
+            /* 深度层级阴影 */
+            --depth-1: 0 2px 8px rgba(0,0,0,0.12);
+            --depth-2: 0 8px 30px rgba(0,0,0,0.2);
+            --depth-3: 0 20px 60px rgba(0,0,0,0.3);
+            --depth-4: 0 40px 120px rgba(0,0,0,0.4);
+            /* 动画曲线 */
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+            --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
+            --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: var(--bg-darker);
+            color: var(--text-primary);
+            overflow: hidden;
+            min-height: 100vh;
+            min-width: 100vw;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-feature-settings: 'kern' 1, 'liga' 1;
+        }
+
+        @media (max-width: 768px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .player-card,
+            .visual-controls-card {
+                grid-column: 1 / -1;
+            }
+
+            .title {
+                font-size: 2rem;
+            }
+
+            .upload-area {
+                height: 100px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .upload-area {
+                padding: 16px;
+            }
+
+            .icon-button {
+                width: 48px;
+                height: 48px;
+            }
+
+            .control-row {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Existing HTML content -->
+</body>
+</html>
