@@ -1065,11 +1065,15 @@
                 audioElement = new Audio(URL.createObjectURL(fileOrStream));
                 visualizer.connectAudio(audioElement);
 
+                const trackName = fileOrStream.name.replace(/\.[^/.]+$/, "");
+                trackTitle.textContent = trackName;
+                trackArtist.textContent = "Sonoria";
+
                 // 设置音频事件监听
                 audioElement.addEventListener('loadedmetadata', function() {
                     updateTimeDisplay();
                     updateMediaSessionMetadata(
-                        fileOrStream.name.replace(/\.[^/.]+$/, ""),
+                        trackName,
                         'Sonoria',
                         false
                     );
@@ -1190,6 +1194,26 @@
                     }
                     setupAudio(playlist[currentTrack]);
                     updatePlaylistDisplay();
+                }
+            }
+
+            function resetPlayerUI() {
+                if (audioElement) {
+                    audioElement.pause();
+                    audioElement = null;
+                }
+                isPlaying = false;
+                playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
+                trackTitle.textContent = '';
+                trackArtist.textContent = '';
+                progressBar.style.width = '0%';
+                currentTimeEl.textContent = '0:00';
+                totalTimeEl.textContent = '0:00';
+                if (mediaSessionUpdateInterval) {
+                    clearInterval(mediaSessionUpdateInterval);
+                }
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.metadata = null;
                 }
             }
 
@@ -1316,11 +1340,7 @@
             clearOption.addEventListener('click', () => {
                 playlist = [];
                 currentTrack = 0;
-                if (audioElement) {
-                    audioElement.pause();
-                    isPlaying = false;
-                    playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
-                }
+                resetPlayerUI();
                 updatePlaylistDisplay();
                 updateStatus('播放列表已清空');
                 moreMenu.classList.remove('show');
