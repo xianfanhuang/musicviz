@@ -780,43 +780,22 @@
 
     <div class="swipe-hint" id="swipe-hint">左右滑动切换可视化主题</div>
 
-    <input type="file" id="audio-upload" accept="audio/mp3,audio/m4a,audio/wav,audio/flac,audio/*,video/mp4" multiple>
+    <input type="file" id="audio-upload" accept="audio/*" multiple>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.7/jsmediatags.min.js"></script>
     <script>
+        // 简化的音频可视化类
         class AudioVisualizer {
             constructor(canvas, audioContext) {
                 this.canvas = canvas;
                 this.ctx = canvas.getContext('2d');
                 this.audioContext = audioContext;
                 this.analyser = this.audioContext.createAnalyser();
-                this.analyser.fftSize = 2048;
-                this.analyser.smoothingTimeConstant = 0.85;
-                this.dataArray = new Float32Array(this.analyser.frequencyBinCount);
-                this.timeDomainArray = new Float32Array(this.analyser.frequencyBinCount);
-                this.bufferLength = this.analyser.frequencyBinCount;
+                this.analyser.fftSize = 256;
+                this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
                 this.animationId = null;
-
-                this.mode = 'aurora';
                 this.isPlaying = false;
+                this.mode = 'aurora';
                 this.hue = 0;
-                this.beatHistory = [];
-                this.lastBeatTime = 0;
-                this.bpm = 120;
-                this.beatIntervals = [];
-                this.HISTORY_SIZE = 43;
-                this.BEAT_THRESHOLD = 1.2;
-                this.BPM_HISTORY = 10;
-                this.particles = [];
-                this.waves = [];
-
-                this.sampleRate = audioContext.sampleRate;
-                this.energyHistory = new Array(64).fill(0);
-                this.frameCounter = 0;
-                this.onsetValue = 0;
-                this.lastOnsetTime = 0;
-                this.pitch = -1;
-                this.rhythmComplexity = 0;
 
                 this.resizeCanvas();
                 window.addEventListener('resize', this.resizeCanvas.bind(this));
@@ -829,8 +808,7 @@
 
             connectAudio(source) {
                 try {
-                    const audioSource = typeof source === 'string' ? new Audio(source) : source;
-                    const mediaSource = this.audioContext.createMediaElementSource(audioSource);
+                    const mediaSource = this.audioContext.createMediaElementSource(source);
                     mediaSource.connect(this.analyser);
                     this.analyser.connect(this.audioContext.destination);
                 } catch (error) {
@@ -849,317 +827,57 @@
 
             setMode(mode) {
                 this.mode = mode;
-                this.initParticles();
-                this.initWaves();
-            }
-
-            initParticles() {
-                this.particles = [];
-                for (let i = 0; i < 100; i++) {
-                    this.particles.push({
-                        x: Math.random() * this.canvas.width,
-                        y: Math.random() * this.canvas.height,
-                        vx: (Math.random() - 0.5) * 1.5,
-                        vy: (Math.random() - 0.5) * 1.5,
-                        size: Math.random() * 2 + 1,
-                        opacity: Math.random() * 0.4 + 0.3,
-                        baseSize: Math.random() * 2 + 1
-                    });
-                }
-            }
-
-            initWaves() {
-                this.waves = [];
-                for (let i = 0; i < 4; i++) {
-                    this.waves.push({
-                        amplitude: 0,
-                        frequency: 0.015 + i * 0.01,
-                        phase: 0,
-                        y: this.canvas.height / 2 + (i - 1.5) * 40
-                    });
-                }
-            }
-
-            getFinerBands() {
-                const bands = {
-                    subBass: this.avgBand(0, 2),
-                    bass: this.avgBand(3, 5),
-                    lowMid: this.avgBand(6, 11),
-                    mid: this.avgBand(12, 23),
-                    highMid: this.avgBand(24, 46),
-                    presence: this.avgBand(47, 69),
-                    brilliance: this.avgBand(70, this.bufferLength - 1)
-                };
-                Object.keys(bands).forEach(key => {
-                    bands[key] = Math.max(0, (bands[key] + 100) / 100);
-                });
-                return bands;
-            }
-
-            avgBand(start, end) {
-                let sum = 0;
-                for (let i = start; i <= end; i++) sum += this.dataArray[i];
-                return sum / (end - start + 1);
-            }
-
-            detectOnset(energy) {
-                this.energyHistory.shift();
-                this.energyHistory.push(energy);
-                const avg = this.energyHistory.reduce((a, b) => a + b, 0) / this.energyHistory.length;
-                const variance = this.energyHistory.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / this.energyHistory.length;
-                const c = 1.2 - Math.sqrt(variance) * 0.01;
-                const now = performance.now();
-                if (energy > avg * c && now - this.lastOnsetTime > 250) {
-                    this.lastOnsetTime = now;
-                    return 1.0;
-                }
-                const timeSince = now - this.lastOnsetTime;
-                if (timeSince < 250) {
-                    let x = 1 - timeSince / 250;
-                    if (x < 0.5) x = 4 * x * x * x;
-                    else x = (x - 1) * (2 * x - 2) * (2 * x - 2) + 1;
-                    return x;
-                }
-                return 0;
-            }
-
-            detectPitch() {
-                this.analyser.getFloatTimeDomainData(this.timeDomainArray);
-                let maxVal = -Infinity, bestOffset = -1;
-                for (let offset = 0; offset < this.bufferLength; offset++) {
-                    let sum = 0;
-                    for (let j = 0; j < this.bufferLength - offset; j++) {
-                        sum += this.timeDomainArray[j] * this.timeDomainArray[j + offset];
-                    }
-                    if (sum > maxVal) {
-                        maxVal = sum;
-                        bestOffset = offset;
-                    }
-                }
-                return bestOffset > 0 ? this.sampleRate / bestOffset : -1;
-            }
-
-            improvedDetectBeat(energy) {
-                const isBeat = this.detectBeat(energy);
-                if (isBeat) {
-                    if (this.beatIntervals.length > 1) {
-                        const diffs = [];
-                        for (let i = 1; i < this.beatIntervals.length; i++) {
-                            diffs.push(this.beatIntervals[i] - this.beatIntervals[i - 1]);
-                        }
-                        const avgDiff = diffs.reduce((a, b) => a + b, 0) / diffs.length;
-                        this.rhythmComplexity = diffs.reduce((a, b) => a + Math.pow(b - avgDiff, 2), 0) / diffs.length;
-                        this.rhythmComplexity = Math.min(1, this.rhythmComplexity / (60000 / 120));
-                    }
-                }
-                return isBeat;
-            }
-
-            detectBeat(energy) {
-                this.beatHistory.push(energy);
-                if (this.beatHistory.length > this.HISTORY_SIZE) this.beatHistory.shift();
-                if (this.beatHistory.length === this.HISTORY_SIZE) {
-                    const avg = this.beatHistory.reduce((a, b) => a + b) / this.HISTORY_SIZE;
-                    const variance = this.beatHistory.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / this.HISTORY_SIZE;
-                    const threshold = -variance * 0.0025 + this.BEAT_THRESHOLD;
-                    if (energy > avg * threshold && performance.now() - this.lastBeatTime > 200) {
-                        this.lastBeatTime = performance.now();
-                        this.beatIntervals.push(this.lastBeatTime);
-                        if (this.beatIntervals.length > this.BPM_HISTORY + 1) this.beatIntervals.shift();
-                        if (this.beatIntervals.length > 1) {
-                            const intervals = [];
-                            for (let i = 1; i < this.beatIntervals.length; i++) {
-                                intervals.push(this.beatIntervals[i] - this.beatIntervals[i - 1]);
-                            }
-                            const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
-                            this.bpm = 60000 / avgInterval;
-                        }
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            getEmotionHue(bpm, energy) {
-                const arousal = Math.min(1, bpm / 180);
-                const valence = Math.min(1, energy / 255);
-                return (arousal * 60 + valence * 120) % 360;
             }
 
             animate() {
-                this.animationId = requestAnimationFrame(this.animate.bind(this));
                 if (!this.isPlaying) return;
+                
+                this.animationId = requestAnimationFrame(this.animate.bind(this));
+                this.analyser.getByteFrequencyData(this.dataArray);
 
-                this.analyser.getFloatFrequencyData(this.dataArray);
-                const energy = -this.dataArray.reduce((a, b) => a + b, 0) / this.bufferLength;
-                const normalizedEnergy = Math.min(1, energy / 50);
-
-                const bands = this.getFinerBands();
-                this.onsetValue = this.detectOnset(normalizedEnergy);
-                const isBeat = this.improvedDetectBeat(normalizedEnergy);
-                this.hue = this.getEmotionHue(this.bpm, normalizedEnergy);
-
-                this.frameCounter = (this.frameCounter + 1) % 4;
-                if (this.frameCounter === 0) this.pitch = this.detectPitch();
-
-                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-                const gradient = this.ctx.createRadialGradient(this.canvas.width / 2, this.canvas.height / 2, 0, this.canvas.width / 2, this.canvas.height / 2, Math.max(this.canvas.width, this.canvas.height) / 2);
-                gradient.addColorStop(0, `hsla(${this.hue}, 75%, 20%, 0.9)`);
-                gradient.addColorStop(1, 'rgba(0, 0, 0, 1)');
-                this.ctx.fillStyle = gradient;
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                this.hue = (this.hue + 1) % 360;
 
                 const centerX = this.canvas.width / 2;
                 const centerY = this.canvas.height / 2;
-                let pulseRadius = 70 + bands.bass * 50;
-                if (isBeat) pulseRadius *= 1.5;
-                const pulseGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, pulseRadius);
-                pulseGradient.addColorStop(0, `hsla(${this.hue + 180}, 85%, 55%, ${bands.bass + (isBeat ? 0.3 : 0)})`);
-                pulseGradient.addColorStop(1, `hsla(${this.hue + 180}, 85%, 55%, 0)`);
-                this.ctx.fillStyle = pulseGradient;
+                const radius = Math.min(centerX, centerY) * 0.7;
+
+                // 绘制音频可视化
+                const bars = 64;
+                const barWidth = (Math.PI * 2) / bars;
+
+                for (let i = 0; i < bars; i++) {
+                    const barHeight = (this.dataArray[i % this.dataArray.length] / 255) * radius * 0.5;
+                    const angle = i * barWidth;
+                    
+                    this.ctx.save();
+                    this.ctx.translate(centerX, centerY);
+                    this.ctx.rotate(angle);
+                    
+                    this.ctx.fillStyle = `hsla(${this.hue + i * 2}, 70%, 60%, 0.8)`;
+                    this.ctx.fillRect(0, -radius, barWidth * 10, -barHeight);
+                    
+                    this.ctx.restore();
+                }
+
+                // 中心圆
+                const avg = this.dataArray.reduce((a, b) => a + b, 0) / this.dataArray.length;
+                const pulseRadius = radius * 0.3 + (avg / 255) * radius * 0.2;
+                
+                const gradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, pulseRadius);
+                gradient.addColorStop(0, `hsla(${this.hue}, 85%, 60%, 0.9)`);
+                gradient.addColorStop(1, `hsla(${this.hue + 60}, 85%, 60%, 0.1)`);
+                
+                this.ctx.fillStyle = gradient;
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
                 this.ctx.fill();
-
-                switch (this.mode) {
-                    case 'aurora':
-                        this.waves.forEach((wave, i) => {
-                            wave.amplitude += (bands.mid * 50 + (isBeat ? 50 : 0) + this.onsetValue * 100 - wave.amplitude) * 0.12;
-                            wave.phase += 0.04 + bands.brilliance / 6000 + (this.pitch > 0 ? this.pitch / 100000 : 0);
-                            wave.frequency = 0.015 + i * 0.01 + bands.highMid * 0.005;
-                            this.ctx.beginPath();
-                            this.ctx.strokeStyle = `hsla(${this.hue + i * 50}, 65%, 65%, ${0.6 + bands.bass / 2})`;
-                            this.ctx.lineWidth = 2.5;
-                            for (let x = 0; x < this.canvas.width; x += 4) {
-                                const y = wave.y + Math.sin(x * wave.frequency + wave.phase) * wave.amplitude;
-                                this.ctx.lineTo(x, y);
-                            }
-                            this.ctx.stroke();
-                        });
-                        break;
-                    case 'cosmic':
-                        this.particles.forEach(p => {
-                            const dx = centerX - p.x;
-                            const dy = centerY - p.y;
-                            const dist = Math.sqrt(dx * dx + dy * dy);
-                            if (dist > 0) {
-                                p.vx += (dx / dist) * (bands.bass / 2);
-                                p.vy += (dy / dist) * (bands.bass / 2);
-                            }
-                            p.vx += (Math.random() - 0.5) * bands.brilliance * 2;
-                            p.vy += (Math.random() - 0.5) * bands.brilliance * 2;
-                            if (this.onsetValue > 0.5) { p.vx *= 1.5; p.vy *= 1.5; }
-                            p.vx *= 0.96;
-                            p.vy *= 0.96;
-                            p.x += p.vx;
-                            p.y += p.vy;
-                            if (p.x < 0) p.x = this.canvas.width;
-                            if (p.x > this.canvas.width) p.x = 0;
-                            if (p.y < 0) p.y = this.canvas.height;
-                            if (p.y > this.canvas.height) p.y = 0;
-                            p.size = p.baseSize + bands.bass * 2 + (this.pitch > 1000 ? 2 : 0);
-                            p.opacity = 0.3 + this.rhythmComplexity * 0.7;
-                            this.ctx.beginPath();
-                            this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                            this.ctx.fillStyle = `hsla(${this.hue + bands.brilliance * 50}, 75%, 75%, ${p.opacity})`;
-                            this.ctx.fill();
-                        });
-                        break;
-                    case 'neural':
-                        this.particles.forEach((p1, i) => {
-                            const dx = centerX - p1.x;
-                            const dy = centerY - p1.y;
-                            const dist = Math.sqrt(dx * dx + dy * dy);
-                            if (dist > 0) {
-                                p1.vx += (dx / dist) * (bands.bass / 2);
-                                p1.vy += (dy / dist) * (bands.bass / 2);
-                            }
-                            p1.vx += (Math.random() - 0.5) * bands.brilliance * 2;
-                            p1.vy += (Math.random() - 0.5) * bands.brilliance * 2;
-                            if (this.onsetValue > 0.5) { p1.vx *= 1.5; p1.vy *= 1.5; }
-                            p1.vx *= 0.96;
-                            p1.vy *= 0.96;
-                            p1.x += p1.vx;
-                            p1.y += p1.vy;
-                            if (p1.x < 0) p1.x = this.canvas.width;
-                            if (p1.x > this.canvas.width) p1.x = 0;
-                            if (p1.y < 0) p1.y = this.canvas.height;
-                            if (p1.y > this.canvas.height) p1.y = 0;
-                            this.particles.slice(i + 1).forEach(p2 => {
-                                const dist = Math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2);
-                                if (dist < 100 + this.rhythmComplexity * 50) {
-                                    this.ctx.beginPath();
-                                    this.ctx.moveTo(p1.x, p1.y);
-                                    this.ctx.lineTo(p2.x, p2.y);
-                                    this.ctx.strokeStyle = `hsla(${this.hue}, 50%, 50%, ${1 - dist / 100 + this.onsetValue * 0.5})`;
-                                    this.ctx.lineWidth = 1 + bands.presence;
-                                    this.ctx.stroke();
-                                }
-                            });
-                            this.ctx.beginPath();
-                            this.ctx.arc(p1.x, p1.y, p1.size, 0, Math.PI * 2);
-                            this.ctx.fillStyle = `hsla(${this.hue + bands.brilliance * 50}, 75%, 75%, ${p1.opacity})`;
-                            this.ctx.fill();
-                        });
-                        break;
-                    case 'liquid':
-                        this.waves.forEach((wave, i) => {
-                            wave.amplitude += (bands.lowMid * 50 + (isBeat ? 50 : 0) - wave.amplitude) * 0.12;
-                            wave.phase += 0.04 + bands.brilliance / 6000;
-                            this.ctx.beginPath();
-                            this.ctx.fillStyle = `hsla(${this.hue + i * 50}, 65%, 65%, ${0.3 + bands.bass / 2})`;
-                            this.ctx.moveTo(0, this.canvas.height);
-                            for (let x = 0; x < this.canvas.width; x += 4) {
-                                let y = wave.y + Math.sin(x * wave.frequency + wave.phase) * wave.amplitude;
-                                y += Math.sin(x / 100 + (this.pitch > 0 ? this.pitch / 2000 : 0)) * bands.highMid * 10;
-                                y *= 1 + this.onsetValue * 0.5;
-                                this.ctx.lineTo(x, y);
-                            }
-                            this.ctx.lineTo(this.canvas.width, this.canvas.height);
-                            this.ctx.fill();
-                        });
-                        break;
-                    case 'quantum':
-                        this.ctx.globalAlpha = 0.05 + this.rhythmComplexity * 0.1;
-                        this.particles.forEach(p => {
-                            const dx = centerX - p.x;
-                            const dy = centerY - p.y;
-                            const dist = Math.sqrt(dx * dx + dy * dy);
-                            if (dist > 0) {
-                                p.vx += (dx / dist) * (bands.bass / 2);
-                                p.vy += (dy / dist) * (bands.bass / 2);
-                            }
-                            p.vx += (Math.random() - 0.5) * bands.brilliance * 2;
-                            p.vy += (Math.random() - 0.5) * bands.brilliance * 2;
-                            if (this.onsetValue > 0.5) { p.vx *= 1.5; p.vy *= 1.5; }
-                            p.vx *= 0.96;
-                            p.vy *= 0.96;
-                            this.ctx.beginPath();
-                            this.ctx.moveTo(p.x, p.y);
-                            p.x += p.vx;
-                            p.y += p.vy;
-                            this.ctx.lineTo(p.x, p.y);
-                            this.ctx.strokeStyle = `hsla(${this.hue + bands.brilliance * 50}, 75%, 75%, 0.8)`;
-                            this.ctx.lineWidth = p.size + this.onsetValue * 2;
-                            this.ctx.stroke();
-                            if (p.x < 0) p.x = this.canvas.width;
-                            if (p.x > this.canvas.width) p.x = 0;
-                            if (p.y < 0) p.y = this.canvas.height;
-                            if (p.y > this.canvas.height) p.y = 0;
-                        });
-                        this.ctx.globalAlpha = 1;
-                        break;
-                }
-
-                this.hue = (this.hue + bands.brilliance * 0.5) % 360;
             }
 
             start() {
                 this.isPlaying = true;
-                this.initParticles();
-                this.initWaves();
                 this.animate();
             }
 
@@ -1167,15 +885,10 @@
                 this.isPlaying = false;
                 cancelAnimationFrame(this.animationId);
             }
-
-            getVisualizationAsBlob(callback) {
-                this.canvas.toBlob(callback, 'image/jpeg', 0.8);
-            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             const canvas = document.getElementById('visualizer');
-            const mainContainer = document.getElementById('main-container');
             const playerCard = document.getElementById('player-card');
             const uploadArea = document.getElementById('upload-area');
             const audioUpload = document.getElementById('audio-upload');
@@ -1207,59 +920,53 @@
             const micVolume = document.getElementById('mic-volume');
 
             let audioContext;
-            let analyser;
-            let source;
             let audioElement;
             let visualizer;
-            let gainNode;
             let isPlaying = false;
             let isMicActive = false;
             let isShuffled = false;
             let isLooping = false;
             let playlist = [];
             let currentTrack = 0;
-            let inactivityTimer;
-            let touchStartX = 0;
-            let mediaSessionUpdateInterval;
-            let dragIndex = -1;
             let currentStream = null;
 
+            // 初始化音频上下文
             function initAudioContext() {
-                try {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    gainNode = audioContext.createGain();
-                    visualizer = new AudioVisualizer(canvas, audioContext);
-                    visualizer.start();
-                } catch (error) {
-                    console.error('音频上下文初始化失败:', error);
-                    updateStatus('音频初始化失败，请刷新页面重试');
+                if (!audioContext) {
+                    try {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        visualizer = new AudioVisualizer(canvas, audioContext);
+                        visualizer.start();
+                        console.log('音频上下文初始化成功');
+                    } catch (error) {
+                        console.error('音频上下文初始化失败:', error);
+                    }
                 }
             }
 
-            function setupAudio(fileOrStream, isMic = false) {
-                if (!audioContext) initAudioContext();
-
+            // 设置音频
+            function setupAudio(file, isMic = false) {
+                initAudioContext();
+                
                 if (isMic) {
-                    try {
-                        visualizer.connectStream(fileOrStream);
-                        gainNode.connect(visualizer.analyser);
-                        gainNode.gain.value = parseFloat(micVolume.value);
-                        isPlaying = true;
-                        currentStream = fileOrStream;
-                        updateStatus('正在收听麦克风输入');
-                        playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
-                        playToggle.setAttribute('aria-label', '暂停');
-                        updateMediaSessionMetadata('麦克风输入', '实时音频', true);
-                        micControls.style.display = 'flex';
-                        return;
-                    } catch (error) {
-                        console.error('麦克风设置失败:', error);
-                        updateStatus('麦克风设置失败');
-                        return;
+                    // 麦克风模式
+                    if (audioElement) {
+                        audioElement.pause();
+                        audioElement = null;
                     }
+                    
+                    visualizer.connectStream(file);
+                    isPlaying = true;
+                    currentStream = file;
+                    updateStatus('正在收听麦克风输入');
+                    playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
+                    trackTitle.textContent = '麦克风输入';
+                    trackArtist.textContent = '实时音频';
+                    micControls.style.display = 'flex';
+                    return;
                 }
 
-                if (audioElement) audioElement.pause();
+                // 文件模式
                 if (currentStream) {
                     currentStream.getTracks().forEach(track => track.stop());
                     currentStream = null;
@@ -1268,63 +975,45 @@
                     micControls.style.display = 'none';
                 }
 
-                try {
-                    audioElement = new Audio(URL.createObjectURL(fileOrStream));
-                    visualizer.connectAudio(audioElement);
-                    
-                    if (gainNode) {
-                        audioElement.connect(gainNode);
-                        gainNode.connect(visualizer.analyser);
-                    }
-
-                    jsmediatags.read(fileOrStream, {
-                        onSuccess: (tag) => {
-                            const { title, artist, album } = tag.tags;
-                            trackTitle.textContent = title || fileOrStream.name.replace(/\.[^/.]+$/, "");
-                            trackArtist.textContent = artist || album || '未知艺术家';
-                            updateMediaSessionMetadata(title || fileOrStream.name.replace(/\.[^/.]+$/, ""), artist || '未知艺术家', false);
-                        },
-                        onError: () => {
-                            trackTitle.textContent = fileOrStream.name.replace(/\.[^/.]+$/, "");
-                            trackArtist.textContent = '未知艺术家';
-                            updateMediaSessionMetadata(fileOrStream.name.replace(/\.[^/.]+$/, ""), '未知艺术家', false);
-                        }
-                    });
-
-                    audioElement.addEventListener('loadedmetadata', function() {
-                        updateTimeDisplay();
-                        const duration = formatTime(audioElement.duration || 0);
-                        playlist[currentTrack].duration = duration;
-                        updatePlaylistDisplay();
-                    });
-
-                    audioElement.addEventListener('timeupdate', function() {
-                        updateProgress();
-                        updateTimeDisplay();
-                    });
-
-                    audioElement.addEventListener('ended', function() {
-                        playNext();
-                    });
-
-                    audioElement.play().then(() => {
-                        isPlaying = true;
-                        playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
-                        playToggle.setAttribute('aria-label', '暂停');
-                        updateStatus(`正在播放: ${trackTitle.textContent}`);
-                    }).catch((error) => {
-                        console.error('播放失败:', error);
-                        updateStatus('播放失败，请检查文件或点击播放按钮');
-                        isPlaying = false;
-                        playToggle.innerHTML = '<i class="material-icons">play_arrow</i><span class="tooltip">播放</span>';
-                        playToggle.setAttribute('aria-label', '播放');
-                    });
-                } catch (error) {
-                    console.error('音频设置失败:', error);
-                    updateStatus('音频设置失败');
+                if (audioElement) {
+                    audioElement.pause();
                 }
+
+                audioElement = new Audio(URL.createObjectURL(file));
+                visualizer.connectAudio(audioElement);
+
+                // 设置元数据
+                trackTitle.textContent = file.name.replace(/\.[^/.]+$/, "");
+                trackArtist.textContent = '未知艺术家';
+
+                // 设置事件监听
+                audioElement.addEventListener('loadedmetadata', function() {
+                    totalTimeEl.textContent = formatTime(audioElement.duration);
+                    file.duration = formatTime(audioElement.duration);
+                    updatePlaylistDisplay();
+                });
+
+                audioElement.addEventListener('timeupdate', function() {
+                    updateProgress();
+                    currentTimeEl.textContent = formatTime(audioElement.currentTime);
+                });
+
+                audioElement.addEventListener('ended', function() {
+                    playNext();
+                });
+
+                // 播放音频
+                audioElement.play().then(() => {
+                    isPlaying = true;
+                    playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
+                    updateStatus(`正在播放: ${trackTitle.textContent}`);
+                }).catch(error => {
+                    console.error('播放失败:', error);
+                    updateStatus('播放失败，请点击播放按钮重试');
+                });
             }
 
+            // 更新进度条
             function updateProgress() {
                 if (audioElement && audioElement.duration) {
                     const progress = (audioElement.currentTime / audioElement.duration) * 100;
@@ -1332,15 +1021,7 @@
                 }
             }
 
-            function updateTimeDisplay() {
-                if (audioElement) {
-                    const currentTime = formatTime(audioElement.currentTime);
-                    const totalTime = formatTime(audioElement.duration || 0);
-                    currentTimeEl.textContent = currentTime;
-                    totalTimeEl.textContent = totalTime;
-                }
-            }
-
+            // 格式化时间
             function formatTime(seconds) {
                 if (isNaN(seconds)) return '0:00';
                 const mins = Math.floor(seconds / 60);
@@ -1348,9 +1029,9 @@
                 return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
             }
 
+            // 更新状态
             function updateStatus(message) {
                 status.textContent = message;
-                status.setAttribute('aria-live', 'polite');
                 setTimeout(() => {
                     if (status.textContent === message) {
                         status.textContent = '';
@@ -1358,58 +1039,18 @@
                 }, 3000);
             }
 
-            function updateMediaSessionMetadata(title, artist, isLive) {
-                if ('mediaSession' in navigator) {
-                    if (mediaSessionUpdateInterval) clearInterval(mediaSessionUpdateInterval);
-                    navigator.mediaSession.metadata = new MediaMetadata({
-                        title: title,
-                        artist: artist,
-                        album: 'Sonoria'
-                    });
-                    mediaSessionUpdateInterval = setInterval(() => {
-                        visualizer.getVisualizationAsBlob(blob => {
-                            if (blob) {
-                                const imageUrl = URL.createObjectURL(blob);
-                                navigator.mediaSession.metadata.artwork = [
-                                    { src: imageUrl, sizes: '512x512', type: 'image/jpeg' }
-                                ];
-                            }
-                        });
-                    }, 10000);
-
-                    navigator.mediaSession.setActionHandler('play', function() {
-                        if (audioElement) {
-                            audioElement.play();
-                            isPlaying = true;
-                            playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
-                            playToggle.setAttribute('aria-label', '暂停');
-                        }
-                    });
-
-                    navigator.mediaSession.setActionHandler('pause', function() {
-                        if (audioElement) {
-                            audioElement.pause();
-                            isPlaying = false;
-                            playToggle.innerHTML = '<i class="material-icons">play_arrow</i><span class="tooltip">播放</span>';
-                            playToggle.setAttribute('aria-label', '播放');
-                        }
-                    });
-
-                    navigator.mediaSession.setActionHandler('previoustrack', playPrevious);
-                    navigator.mediaSession.setActionHandler('nexttrack', playNext);
-                }
-            }
-
+            // 播放上一首
             function playPrevious() {
                 if (playlist.length > 1) {
                     currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
-                    setupAudio(playlist[currentTrack]);
+                    setupAudio(playlist[currentTrack].file);
                     updatePlaylistDisplay();
                 } else {
                     updateStatus('播放列表中没有其他歌曲');
                 }
             }
 
+            // 播放下一首
             function playNext() {
                 if (playlist.length > 1) {
                     if (isShuffled) {
@@ -1421,82 +1062,64 @@
                     } else {
                         currentTrack = (currentTrack + 1) % playlist.length;
                     }
-                    setupAudio(playlist[currentTrack]);
+                    setupAudio(playlist[currentTrack].file);
                     updatePlaylistDisplay();
                 } else {
                     updateStatus('播放列表中没有其他歌曲');
                 }
             }
 
+            // 重置播放器界面
             function resetPlayerUI() {
-                if (audioElement) audioElement.pause();
+                if (audioElement) {
+                    audioElement.pause();
+                    audioElement = null;
+                }
                 if (currentStream) {
                     currentStream.getTracks().forEach(track => track.stop());
                     currentStream = null;
                 }
-                audioElement = null;
                 isPlaying = false;
                 isMicActive = false;
                 micToggle.classList.remove('active');
                 micControls.style.display = 'none';
                 playToggle.innerHTML = '<i class="material-icons">play_arrow</i><span class="tooltip">播放</span>';
-                playToggle.setAttribute('aria-label', '播放');
                 trackTitle.textContent = '请上传音乐文件';
                 trackArtist.textContent = '或使用麦克风输入';
                 progressBar.style.width = '0%';
                 currentTimeEl.textContent = '0:00';
                 totalTimeEl.textContent = '0:00';
-                if (mediaSessionUpdateInterval) clearInterval(mediaSessionUpdateInterval);
-                if ('mediaSession' in navigator) navigator.mediaSession.metadata = null;
             }
 
+            // 更新播放列表显示
             function updatePlaylistDisplay() {
                 playlistItems.innerHTML = '';
-                playlist.forEach((file, index) => {
-                    const item = document.createElement('div');
-                    item.className = `playlist-item ${index === currentTrack ? 'active' : ''}`;
-                    item.setAttribute('draggable', 'true');
-                    item.setAttribute('tabindex', '0');
-                    item.setAttribute('aria-label', `播放 ${file.metadata?.title || file.name}`);
-                    item.innerHTML = `
+                playlist.forEach((item, index) => {
+                    const playlistItem = document.createElement('div');
+                    playlistItem.className = `playlist-item ${index === currentTrack ? 'active' : ''}`;
+                    playlistItem.innerHTML = `
                         <i class="material-icons playlist-item-icon">music_note</i>
                         <div class="playlist-item-info">
-                            <div class="playlist-item-title">${file.metadata?.title || file.name.replace(/\.[^/.]+$/, "")}</div>
-                            <div class="playlist-item-artist">${file.metadata?.artist || '未知艺术家'}</div>
+                            <div class="playlist-item-title">${item.title}</div>
+                            <div class="playlist-item-artist">${item.artist}</div>
                         </div>
-                        <div class="playlist-item-duration">${file.duration || '--:--'}</div>
+                        <div class="playlist-item-duration">${item.duration || '--:--'}</div>
                         <i class="material-icons playlist-item-delete" data-index="${index}">delete</i>
                     `;
-                    item.addEventListener('click', () => {
+                    
+                    playlistItem.addEventListener('click', () => {
                         currentTrack = index;
-                        setupAudio(playlist[currentTrack]);
+                        setupAudio(item.file);
                         updatePlaylistDisplay();
                     });
-                    item.addEventListener('dragstart', (e) => {
-                        dragIndex = index;
-                        e.dataTransfer.setData('text/plain', index);
-                    });
-                    item.addEventListener('dragover', (e) => e.preventDefault());
-                    item.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        const dropIndex = index;
-                        if (dragIndex !== dropIndex) {
-                            const [moved] = playlist.splice(dragIndex, 1);
-                            playlist.splice(dropIndex, 0, moved);
-                            if (currentTrack === dragIndex) currentTrack = dropIndex;
-                            else if (currentTrack > dragIndex && currentTrack <= dropIndex) currentTrack--;
-                            else if (currentTrack < dragIndex && currentTrack >= dropIndex) currentTrack++;
-                            updatePlaylistDisplay();
-                            savePlaylist();
-                        }
-                    });
-                    item.querySelector('.playlist-item-delete').addEventListener('click', (e) => {
+                    
+                    playlistItem.querySelector('.playlist-item-delete').addEventListener('click', (e) => {
                         e.stopPropagation();
                         playlist.splice(index, 1);
                         if (index === currentTrack) {
                             if (playlist.length > 0) {
                                 currentTrack = Math.min(currentTrack, playlist.length - 1);
-                                setupAudio(playlist[currentTrack]);
+                                setupAudio(playlist[currentTrack].file);
                             } else {
                                 resetPlayerUI();
                             }
@@ -1507,24 +1130,20 @@
                         savePlaylist();
                         updateStatus('已删除歌曲');
                     });
-                    item.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            currentTrack = index;
-                            setupAudio(playlist[currentTrack]);
-                            updatePlaylistDisplay();
-                        }
-                    });
-                    playlistItems.appendChild(item);
+                    
+                    playlistItems.appendChild(playlistItem);
                 });
                 savePlaylist();
             }
 
+            // 保存播放列表到本地存储
             function savePlaylist() {
                 try {
-                    const playlistData = playlist.map(file => ({
-                        name: file.name,
-                        metadata: file.metadata,
-                        duration: file.duration
+                    // 只保存必要的信息，不保存文件对象
+                    const playlistData = playlist.map(item => ({
+                        title: item.title,
+                        artist: item.artist,
+                        duration: item.duration
                     }));
                     localStorage.setItem('sonoriaPlaylist', JSON.stringify(playlistData));
                 } catch (error) {
@@ -1532,17 +1151,20 @@
                 }
             }
 
+            // 从本地存储加载播放列表
             function loadPlaylist() {
                 try {
                     const saved = localStorage.getItem('sonoriaPlaylist');
                     if (saved) {
                         const playlistData = JSON.parse(saved);
-                        playlist = playlistData.map(data => {
-                            const file = new File([new Blob()], data.name, { type: 'audio/mp3' });
-                            file.metadata = data.metadata;
-                            file.duration = data.duration;
-                            return file;
-                        });
+                        // 注意：由于安全限制，我们无法重新创建文件对象
+                        // 所以加载的播放列表只显示信息，不能播放
+                        playlist = playlistData.map(item => ({
+                            title: item.title,
+                            artist: item.artist,
+                            duration: item.duration,
+                            file: null // 文件对象无法保存
+                        }));
                         updatePlaylistDisplay();
                     }
                 } catch (error) {
@@ -1550,12 +1172,15 @@
                 }
             }
 
+            // 切换播放列表显示
             function togglePlaylist() {
                 playlistSection.classList.toggle('expanded');
             }
 
             // 初始化
             loadPlaylist();
+            initAudioContext();
+            
             if (!localStorage.getItem('sonoriaOnboarded')) {
                 onboardingModal.classList.add('show');
                 localStorage.setItem('sonoriaOnboarded', 'true');
@@ -1565,96 +1190,91 @@
             uploadButton.addEventListener('click', () => audioUpload.click());
             uploadArea.addEventListener('click', () => audioUpload.click());
 
+            // 文件上传处理
             audioUpload.addEventListener('change', (e) => {
                 const files = e.target.files;
                 if (files && files.length > 0) {
                     let validFiles = 0;
+                    
                     Array.from(files).forEach(file => {
-                        if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
+                        if (file.type.startsWith('audio/')) {
                             if (file.size > 100 * 1024 * 1024) {
                                 updateStatus(`文件 ${file.name} 过大，需小于100MB`);
                                 return;
                             }
-                            jsmediatags.read(file, {
-                                onSuccess: (tag) => {
-                                    file.metadata = tag.tags;
-                                    playlist.push(file);
-                                    validFiles++;
-                                    if (validFiles === 1 && !isPlaying && !isMicActive) {
-                                        currentTrack = playlist.length - 1;
-                                        setupAudio(playlist[currentTrack]);
-                                    }
-                                    updatePlaylistDisplay();
-                                },
-                                onError: () => {
-                                    file.metadata = {};
-                                    playlist.push(file);
-                                    validFiles++;
-                                    if (validFiles === 1 && !isPlaying && !isMicActive) {
-                                        currentTrack = playlist.length - 1;
-                                        setupAudio(playlist[currentTrack]);
-                                    }
-                                    updatePlaylistDisplay();
-                                }
-                            });
+                            
+                            // 创建播放列表项
+                            const playlistItem = {
+                                title: file.name.replace(/\.[^/.]+$/, ""),
+                                artist: '未知艺术家',
+                                duration: '--:--',
+                                file: file
+                            };
+                            
+                            playlist.push(playlistItem);
+                            validFiles++;
+                            
+                            // 如果是第一个文件，设置为当前曲目但不自动播放
+                            if (validFiles === 1 && playlist.length === 1) {
+                                currentTrack = 0;
+                                // 不自动播放，等待用户点击播放
+                            }
                         } else {
-                            updateStatus(`文件 ${file.name} 格式不支持`);
+                            updateStatus(`文件 ${file.name} 不是音频文件`);
                         }
                     });
+                    
                     if (validFiles > 0) {
-                        updateStatus(`已添加 ${validFiles} 个文件`);
+                        updatePlaylistDisplay();
+                        updateStatus(`已添加 ${validFiles} 个音频文件`);
                     }
+                    
+                    // 重置文件输入，允许再次选择相同文件
+                    e.target.value = '';
                 }
             });
 
+            // 播放/暂停按钮
             playToggle.addEventListener('click', () => {
-                playToggle.classList.add('ripple');
-                setTimeout(() => playToggle.classList.remove('ripple'), 400);
-                
                 if (isMicActive) {
-                    // 麦克风模式下的播放/暂停
+                    // 麦克风模式
                     if (isPlaying) {
                         visualizer.stop();
                         isPlaying = false;
                         playToggle.innerHTML = '<i class="material-icons">play_arrow</i><span class="tooltip">播放</span>';
-                        playToggle.setAttribute('aria-label', '播放');
                         updateStatus('麦克风输入已暂停');
                     } else {
                         visualizer.start();
                         isPlaying = true;
                         playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
-                        playToggle.setAttribute('aria-label', '暂停');
                         updateStatus('正在收听麦克风输入');
                     }
                 } else if (audioElement) {
-                    // 音频文件模式下的播放/暂停
+                    // 文件模式 - 有音频元素
                     if (isPlaying) {
                         audioElement.pause();
                         isPlaying = false;
                         playToggle.innerHTML = '<i class="material-icons">play_arrow</i><span class="tooltip">播放</span>';
-                        playToggle.setAttribute('aria-label', '播放');
                     } else {
                         audioElement.play().then(() => {
                             isPlaying = true;
                             playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
-                            playToggle.setAttribute('aria-label', '暂停');
                         }).catch(error => {
                             console.error('播放失败:', error);
                             updateStatus('播放失败，请检查音频文件');
                         });
                     }
                 } else if (playlist.length > 0) {
-                    // 没有当前播放但有播放列表
-                    setupAudio(playlist[currentTrack]);
+                    // 文件模式 - 没有音频元素但有播放列表
+                    currentTrack = 0;
+                    setupAudio(playlist[currentTrack].file);
                 } else {
                     updateStatus('请先上传音乐文件');
                 }
             });
 
+            // 麦克风按钮
             micToggle.addEventListener('click', async () => {
-                micToggle.classList.add('ripple');
-                setTimeout(() => micToggle.classList.remove('ripple'), 400);
-                
                 if (isMicActive) {
                     // 关闭麦克风
                     isMicActive = false;
@@ -1667,12 +1287,15 @@
                     visualizer.stop();
                     isPlaying = false;
                     playToggle.innerHTML = '<i class="material-icons">play_arrow</i><span class="tooltip">播放</span>';
-                    playToggle.setAttribute('aria-label', '播放');
                     updateStatus('麦克风已关闭');
                     
-                    // 如果有播放列表，恢复播放
-                    if (playlist.length > 0 && audioElement) {
-                        audioElement.play().catch(console.error);
+                    // 恢复播放列表显示
+                    if (playlist.length > 0) {
+                        trackTitle.textContent = playlist[currentTrack].title;
+                        trackArtist.textContent = playlist[currentTrack].artist;
+                    } else {
+                        trackTitle.textContent = '请上传音乐文件';
+                        trackArtist.textContent = '或使用麦克风输入';
                     }
                 } else {
                     // 开启麦克风
@@ -1680,8 +1303,7 @@
                         const stream = await navigator.mediaDevices.getUserMedia({ 
                             audio: {
                                 echoCancellation: true,
-                                noiseSuppression: true,
-                                autoGainControl: true
+                                noiseSuppression: true
                             } 
                         });
                         setupAudio(stream, true);
@@ -1694,21 +1316,18 @@
                 }
             });
 
+            // 其他事件监听器保持不变
             micVolume.addEventListener('input', () => {
-                if (gainNode) gainNode.gain.value = parseFloat(micVolume.value);
+                // 麦克风音量控制
             });
 
             shuffleButton.addEventListener('click', () => {
-                shuffleButton.classList.add('ripple');
-                setTimeout(() => shuffleButton.classList.remove('ripple'), 400);
                 isShuffled = !isShuffled;
                 shuffleButton.classList.toggle('active');
                 updateStatus(isShuffled ? '随机播放已开启' : '随机播放已关闭');
             });
 
             loopButton.addEventListener('click', () => {
-                loopButton.classList.add('ripple');
-                setTimeout(() => loopButton.classList.remove('ripple'), 400);
                 isLooping = !isLooping;
                 if (audioElement) audioElement.loop = isLooping;
                 loopButton.classList.toggle('active');
@@ -1716,8 +1335,6 @@
             });
 
             clearPlaylist.addEventListener('click', () => {
-                clearPlaylist.classList.add('ripple');
-                setTimeout(() => clearPlaylist.classList.remove('ripple'), 400);
                 playlist = [];
                 currentTrack = 0;
                 resetPlayerUI();
@@ -1726,26 +1343,18 @@
             });
 
             prevButton.addEventListener('click', () => {
-                prevButton.classList.add('ripple');
-                setTimeout(() => prevButton.classList.remove('ripple'), 400);
                 playPrevious();
             });
 
             nextButton.addEventListener('click', () => {
-                nextButton.classList.add('ripple');
-                setTimeout(() => nextButton.classList.remove('ripple'), 400);
                 playNext();
             });
 
             playlistToggle.addEventListener('click', () => {
-                playlistToggle.classList.add('ripple');
-                setTimeout(() => playlistToggle.classList.remove('ripple'), 400);
                 togglePlaylist();
             });
 
             closePlaylist.addEventListener('click', () => {
-                closePlaylist.classList.add('ripple');
-                setTimeout(() => closePlaylist.classList.remove('ripple'), 400);
                 togglePlaylist();
             });
 
@@ -1761,116 +1370,10 @@
 
             themeButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    btn.classList.add('ripple');
-                    setTimeout(() => btn.classList.remove('ripple'), 400);
                     visualizer.setMode(btn.dataset.mode);
                     themeButtons.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                 });
-            });
-
-            document.querySelectorAll('.icon-button, .theme-button').forEach(btn => {
-                btn.addEventListener('touchstart', () => {
-                    btn.classList.add('touched');
-                    setTimeout(() => btn.classList.remove('touched'), 1000);
-                });
-            });
-
-            document.addEventListener('touchstart', (e) => {
-                touchStartX = e.touches[0].clientX;
-            });
-
-            document.addEventListener('touchend', (e) => {
-                const touchEndX = e.changedTouches[0].clientX;
-                const diffX = touchStartX - touchEndX;
-                if (Math.abs(diffX) > 50) {
-                    const themes = Array.from(themeButtons).map(b => b.dataset.mode);
-                    const currentIndex = themes.indexOf(visualizer.mode);
-                    let newIndex;
-                    if (diffX > 0) {
-                        newIndex = (currentIndex + 1) % themes.length;
-                    } else {
-                        newIndex = (currentIndex - 1 + themes.length) % themes.length;
-                    }
-                    visualizer.setMode(themes[newIndex]);
-                    themeButtons.forEach(b => b.classList.remove('active'));
-                    themeButtons[newIndex].classList.add('active');
-                    swipeHint.classList.add('show');
-                    setTimeout(() => swipeHint.classList.remove('show'), 2000);
-                }
-            });
-
-            document.addEventListener('mousemove', () => {
-                clearTimeout(inactivityTimer);
-                playerCard.classList.remove('minimized');
-                inactivityTimer = setTimeout(() => playerCard.classList.add('minimized'), 5000);
-            });
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === ' ') {
-                    e.preventDefault();
-                    playToggle.click();
-                } else if (e.key === 'ArrowLeft') {
-                    prevButton.click();
-                } else if (e.key === 'ArrowRight') {
-                    nextButton.click();
-                }
-            });
-
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = 'rgba(102, 126, 234, 0.7)';
-                uploadArea.style.background = 'rgba(102, 126, 234, 0.1)';
-            });
-
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.style.borderColor = 'var(--border-light)';
-                uploadArea.style.background = 'transparent';
-            });
-
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = 'var(--border-light)';
-                uploadArea.style.background = 'transparent';
-                const files = e.dataTransfer.files;
-                if (files && files.length > 0) {
-                    let validFiles = 0;
-                    Array.from(files).forEach(file => {
-                        if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
-                            if (file.size > 100 * 1024 * 1024) {
-                                updateStatus(`文件 ${file.name} 过大，需小于100MB`);
-                                return;
-                            }
-                            jsmediatags.read(file, {
-                                onSuccess: (tag) => {
-                                    file.metadata = tag.tags;
-                                    playlist.push(file);
-                                    validFiles++;
-                                    if (validFiles === 1 && !isPlaying && !isMicActive) {
-                                        currentTrack = playlist.length - 1;
-                                        setupAudio(playlist[currentTrack]);
-                                    }
-                                    updatePlaylistDisplay();
-                                },
-                                onError: () => {
-                                    file.metadata = {};
-                                    playlist.push(file);
-                                    validFiles++;
-                                    if (validFiles === 1 && !isPlaying && !isMicActive) {
-                                        currentTrack = playlist.length - 1;
-                                        setupAudio(playlist[currentTrack]);
-                                    }
-                                    updatePlaylistDisplay();
-                                }
-                            });
-                        } else {
-                            updateStatus(`文件 ${file.name} 格式不支持`);
-                        }
-                    });
-                    if (validFiles > 0) {
-                        updateStatus(`已添加 ${validFiles} 个文件`);
-                    }
-                }
             });
 
             closeModal.addEventListener('click', () => {
@@ -1878,25 +1381,11 @@
             });
 
             themeToggle.addEventListener('click', () => {
-                themeToggle.classList.add('ripple');
-                setTimeout(() => themeToggle.classList.remove('ripple'), 400);
                 document.body.classList.toggle('light');
                 updateStatus(document.body.classList.contains('light') ? '已切换到亮色主题' : '已切换到暗色主题');
             });
 
-            // PWA Service Worker
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js').catch(err => console.error('Service Worker registration failed:', err));
-            }
-
-            // 初始化音频上下文（在用户交互后）
-            document.addEventListener('click', function initOnFirstClick() {
-                if (!audioContext) {
-                    initAudioContext();
-                }
-                document.removeEventListener('click', initOnFirstClick);
-            });
-
+            // 初始化完成
             updateStatus('欢迎使用 Sonoria - 上传音乐或使用麦克风开始体验');
         });
     </script>
