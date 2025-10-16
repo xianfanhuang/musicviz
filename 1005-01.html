@@ -1,83 +1,77 @@
 <!DOCTYPE html>
-<html lang="auto">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sonoria - Music Visualizer</title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonoria - 动人心绚，乐音之境</title>
     <style>
+        /* 基础字体样式 */
+        @font-face {
+            font-family: 'Material Icons';
+            font-style: normal;
+            font-weight: 400;
+            src: url(https://fonts.gstatic.com/s/materialicons/v142/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2) format('woff2');
+        }
+        
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
         }
-        
+
         :root {
-            /* Apple Design 色彩系统 */
-            --system-primary: rgba(10, 132, 255, 0.8);
-            --system-secondary: rgba(191, 90, 242, 0.8);
-            --system-tertiary: rgba(48, 209, 88, 0.8);
-            --system-bg: rgba(0, 0, 0, 0.85);
-            --system-surface: rgba(28, 28, 30, 0.8);
-            --system-surface-elevated: rgba(44, 44, 46, 0.8);
-            
-            /* 动态色彩系统 */
-            --hue: 220;
-            --accent-primary: hsl(var(--hue), 100%, 65%);
-            --accent-secondary: hsl(calc(var(--hue) + 30), 100%, 65%);
-            
-            /* 毛玻璃效果 */
-            --backdrop-blur: blur(20px);
-            --backdrop-saturate: saturate(180%);
-            
-            /* 字体系统 */
-            --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-            --font-text: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-            
-            /* 文本颜色 */
+            --primary: #667eea;
+            --secondary: #f093fb;
+            --tertiary: #4facfe;
+            --bg-dark: #0a0a14;
+            --bg-light: #f5f5f5;
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --bg-card-light: rgba(0, 0, 0, 0.05);
             --text-primary: rgba(255, 255, 255, 0.9);
-            --text-secondary: rgba(255, 255, 255, 0.7);
-            --text-tertiary: rgba(255, 255, 255, 0.5);
-            
-            /* 边框 */
+            --text-secondary: rgba(255, 255, 255, 0.9);
+            --text-primary-light: rgba(0, 0, 0, 0.9);
+            --text-secondary-light: rgba(0, 0, 0, 0.7);
             --border-light: rgba(255, 255, 255, 0.1);
+            --border-light-light: rgba(0, 0, 0, 0.1);
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
-        
-        [lang="zh"] .en-only,
-        [lang="en"] .zh-only {
-            display: none !important;
-        }
-        
+
         body {
-            font-family: var(--font-text);
-            background: var(--system-bg);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-dark);
             color: var(--text-primary);
             overflow: hidden;
             height: 100vh;
             width: 100vw;
             user-select: none;
-            transition: --hue 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            position: fixed;
-            -webkit-overflow-scrolling: touch;
+            touch-action: none;
         }
-        
-        /* 动态色彩动画 */
-        @keyframes dynamicHue {
-            0% { --hue: 220; }
-            33% { --hue: 280; }
-            66% { --hue: 340; }
-            100% { --hue: 220; }
+
+        body.light {
+            background: var(--bg-light);
+            color: var(--text-primary-light);
+            --bg-card: var(--bg-card-light);
+            --text-primary: var(--text-primary-light);
+            --text-secondary: var(--text-secondary-light);
+            --border-light: var(--border-light-light);
         }
-        
-        .audio-playing {
-            animation: dynamicHue 8s linear infinite;
-        }
-        
+
         #visualizer {
             position: fixed;
             top: 0;
@@ -85,11 +79,8 @@
             width: 100%;
             height: 100%;
             z-index: 1;
-            max-width: 100vw;
-            max-height: 100vh;
-            transform: translateZ(0);
         }
-        
+
         .overlay {
             position: fixed;
             top: 0;
@@ -100,7 +91,7 @@
             z-index: 2;
             pointer-events: none;
         }
-        
+
         .container {
             position: relative;
             z-index: 3;
@@ -111,124 +102,53 @@
             align-items: center;
             padding: 20px;
             transition: opacity 0.5s ease;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
-        
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
+
         .player-card {
-            background: var(--system-surface);
-            backdrop-filter: var(--backdrop-blur) var(--backdrop-saturate);
-            -webkit-backdrop-filter: var(--backdrop-blur) var(--backdrop-saturate);
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
             border-radius: 24px;
             padding: 30px;
-            box-shadow: 
-                var(--shadow), 
-                inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+            box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             border: 1px solid var(--border-light);
             width: 100%;
             max-width: 500px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.5s ease;
             position: relative;
-            display: grid;
-            grid-template-rows: auto 1fr auto auto;
-            gap: 24px;
-            min-height: 600px;
         }
-        
-        .player-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 
-                0 24px 48px rgba(0, 0, 0, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        }
-        
+
         .player-card.minimized {
-            padding: 20px;
+            padding: 15px;
             border-radius: 50px;
             width: auto;
             max-width: 300px;
-            min-height: auto;
         }
-        
+
         .minimized .player-info,
         .minimized .progress-section,
         .minimized .upload-area,
         .minimized .theme-selector,
-        .minimized .playlist-section {
+        .minimized .playlist-section,
+        .minimized .secondary-controls {
             display: none;
         }
-        
+
         .minimized .control-row {
             justify-content: center;
         }
-        
+
         .logo-section {
             display: flex;
             flex-direction: column;
             align-items: center;
             margin-bottom: 25px;
         }
-        
-        .album-art-section {
-            position: relative;
-            width: 280px;
-            height: 280px;
-            margin: 0 auto 25px;
-            border-radius: 24px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-        
-        .album-art {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            color: white;
-            position: relative;
-        }
-        
-        /* 呼吸感 S 字母样式 */
-        .logo-letter {
-            position: absolute;
-            font-family: var(--font-display);
-            font-weight: 800;
-            font-size: 3.5rem;
-            color: rgba(255, 255, 255, 0.15);
-            z-index: 2;
-            animation: breath 3s ease-in-out infinite;
-            pointer-events: none;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-        }
-
-        @keyframes breath {
-            0%, 100% {
-                opacity: 0.3;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.6;
-                transform: scale(1.05);
-            }
-        }
 
         .logo-circle {
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -237,7 +157,7 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .logo-circle::after {
             content: '';
             position: absolute;
@@ -246,191 +166,157 @@
             border-radius: 50%;
             background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
         }
-        
+
         .logo-icon {
             font-size: 2rem;
             color: white;
             z-index: 1;
         }
-        
+
         .brand {
             text-align: center;
         }
-        
+
         .title {
-            font-family: var(--font-display);
             font-size: 2.2rem;
-            font-weight: 700;
-            line-height: 1.1;
-            letter-spacing: -0.5px;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            font-weight: 600;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--tertiary));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
             text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+            letter-spacing: -0.5px;
         }
-        
+
         .slogan {
             font-size: 0.9rem;
-            opacity: 0.8;
             font-weight: 300;
             margin-top: 4px;
         }
-        
+
         .player-info {
             text-align: center;
             margin-bottom: 20px;
         }
-        
+
         .track-title {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 600;
-            line-height: 1.3;
-            letter-spacing: -0.3px;
+            font-size: 1.3rem;
+            font-weight: 500;
             margin-bottom: 5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .track-artist {
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: var(--text-secondary);
         }
-        
+
         .progress-section {
             margin: 25px 0;
         }
-        
-        .progress-container {
-            width: 100%;
-            height: 4px;
+
+        .progress-bar {
+            height: 8px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            position: relative;
-            cursor: pointer;
+            border-radius: 4px;
+            overflow: hidden;
             margin-bottom: 10px;
+            cursor: pointer;
         }
-        
+
         .progress {
             height: 100%;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-            border-radius: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 4px;
             width: 0%;
             transition: width 0.1s linear;
-            position: relative;
         }
-        
-        .progress::after {
-            content: '';
-            position: absolute;
-            right: -6px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        
-        .progress-container:hover .progress::after {
-            opacity: 1;
-        }
-        
+
         .time-display {
             display: flex;
             justify-content: space-between;
             font-size: 0.8rem;
             color: var(--text-secondary);
         }
-        
+
         .control-row {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-items: center;
-            max-width: 400px;
-            margin: 0 auto;
+            margin-top: 20px;
         }
-        
-        .system-button {
-            display: inline-flex;
+
+        .icon-button {
+            display: flex;
             align-items: center;
             justify-content: center;
-            border: none;
-            border-radius: 12px;
-            font-size: 17px;
-            font-weight: 600;
-            letter-spacing: -0.2px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-light);
+            color: white;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
             position: relative;
             overflow: hidden;
         }
-        
-        .system-button:active {
-            transform: scale(0.96);
+
+        .light .icon-button {
+            color: rgba(0, 0, 0, 0.8);
         }
-        
-        .system-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        
-        .system-button:active::before {
-            left: 100%;
-        }
-        
-        .icon-button {
-            width: 45px;
-            height: 45px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-light);
-            color: white;
-        }
-        
+
         .icon-button:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
         }
-        
+
+        .icon-button:active {
+            transform: translateY(1px);
+        }
+
         .icon-button.active {
             background: rgba(102, 126, 234, 0.2);
             color: #8a7cff;
             box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
         }
-        
+
         .icon-button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
         }
-        
+
+        .icon-button.ripple::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 10%, transparent 10.01%);
+            transform: scale(0);
+            animation: ripple 0.4s ease-out;
+        }
+
+        @keyframes ripple {
+            to { transform: scale(2); opacity: 0; }
+        }
+
         .play-button {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: white;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            grid-column: 3;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
         }
-        
-        .play-button:hover {
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-            transform: translateY(-2px);
+
+        .bottom-nav {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
         }
-        
+
         .upload-area {
             display: flex;
             align-items: center;
@@ -447,22 +333,22 @@
             text-align: center;
             margin-top: 20px;
         }
-        
+
         .upload-area:hover {
             border-color: rgba(102, 126, 234, 0.5);
             background: rgba(102, 126, 234, 0.05);
         }
-        
+
         .upload-area i {
             font-size: 28px;
             color: var(--text-secondary);
         }
-        
+
         .upload-text {
             font-size: 14px;
             color: var(--text-secondary);
         }
-        
+
         .theme-selector {
             display: flex;
             gap: 10px;
@@ -470,10 +356,10 @@
             justify-content: center;
             flex-wrap: wrap;
         }
-        
+
         .theme-button {
             padding: 8px 16px;
-            background: var(--system-surface);
+            background: var(--bg-card);
             border: 1px solid var(--border-light);
             border-radius: 20px;
             color: var(--text-secondary);
@@ -482,46 +368,59 @@
             font-size: 14px;
             backdrop-filter: blur(10px);
         }
-        
+
         .theme-button.active {
             background: rgba(102, 126, 234, 0.3);
             border-color: rgba(102, 126, 234, 0.5);
             color: var(--text-primary);
         }
-        
+
         .theme-button:hover {
             background: rgba(255, 255, 255, 0.1);
         }
-        
+
         .playlist-section {
             margin-top: 20px;
-            max-height: 200px;
-            overflow-y: auto;
-            padding-right: 10px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.2);
         }
-        
+
+        .light .playlist-section {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .playlist-section.expanded {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
         .playlist-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            padding: 0 10px;
         }
-        
+
         .playlist-title {
             font-size: 1rem;
             font-weight: 500;
         }
-        
+
         .playlist-controls {
             display: flex;
             gap: 10px;
         }
-        
+
         .playlist-items {
-            max-height: 150px;
+            max-height: 250px;
             overflow-y: auto;
+            padding: 0 10px 10px;
         }
-        
+
         .playlist-item {
             display: flex;
             align-items: center;
@@ -530,33 +429,46 @@
             margin-bottom: 6px;
             cursor: pointer;
             transition: all 0.2s ease;
+            position: relative;
         }
-        
+
         .playlist-item:hover {
             background: rgba(255, 255, 255, 0.05);
         }
-        
+
+        .light .playlist-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
         .playlist-item.active {
             background: rgba(102, 126, 234, 0.2);
         }
-        
+
+        .playlist-item[draggable="true"]:hover::after {
+            content: '拖动排序';
+            position: absolute;
+            right: 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
         .playlist-item-icon {
             margin-right: 12px;
             color: var(--text-secondary);
         }
-        
+
         .playlist-item-info {
             flex: 1;
             overflow: hidden;
         }
-        
+
         .playlist-item-title {
             font-size: 0.85rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .playlist-item-artist {
             font-size: 0.75rem;
             color: var(--text-secondary);
@@ -564,13 +476,20 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .playlist-item-duration {
             font-size: 0.75rem;
             color: var(--text-secondary);
             margin-left: 10px;
         }
-        
+
+        .playlist-item-delete {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
         .status {
             text-align: center;
             padding: 12px;
@@ -580,11 +499,15 @@
             color: var(--text-secondary);
             margin-top: 20px;
         }
-        
+
+        .light .status {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
         input[type="file"] {
             display: none;
         }
-        
+
         .swipe-hint {
             position: fixed;
             bottom: 20px;
@@ -601,194 +524,138 @@
             transition: opacity 0.5s ease;
             pointer-events: none;
         }
-        
+
         .swipe-hint.show {
             opacity: 1;
         }
-        
-        /* 手势区域 */
-        .gesture-area {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 100;
-            pointer-events: none;
-        }
-        
-        .gesture-area .left-swipe,
-        .gesture-area .right-swipe {
+
+        .tooltip {
             position: absolute;
-            top: 0;
-            width: 100px;
-            height: 100%;
-            pointer-events: auto;
-        }
-        
-        .gesture-area .left-swipe {
-            left: 0;
-        }
-        
-        .gesture-area .right-swipe {
-            right: 0;
-        }
-        
-        /* 手势反馈 */
-        .swipe-feedback {
-            position: fixed;
-            top: 50%;
+            bottom: -40px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 16px 24px;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
             opacity: 0;
-            transition: opacity 0.3s;
             pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 100;
         }
-        
-        .swipe-feedback.show {
+
+        .icon-button:hover .tooltip,
+        .icon-button.touched .tooltip {
             opacity: 1;
         }
-        
-        /* 加载动画 */
-        .loading-spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: var(--accent-primary);
-            animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .loading-state {
-            position: relative;
-        }
-        
-        .loading-state::before {
-            content: '';
-            position: absolute;
+
+        .modal {
+            position: fixed;
             top: 0;
-            left: -100%;
+            left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: shimmer 2s infinite;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
         }
-        
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
+
+        .modal.show {
+            opacity: 1;
+            pointer-events: auto;
         }
-        
-        /* 语言切换按钮 */
-        .lang-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-light);
-            border-radius: 20px;
-            padding: 8px 12px;
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .modal-content h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-content p {
+            font-size: 1rem;
             color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .modal-content button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 20px;
+            color: white;
             cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
         }
-        
-        .lang-toggle:hover {
-            background: rgba(255, 255, 255, 0.15);
+
+        .mic-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
         }
-        
-        @media (max-width: 768px) {
+
+        .mic-controls input[type="range"] {
+            width: 100px;
+        }
+
+        @media (max-width: 1024px) {
             .container {
                 padding: 15px;
             }
-            
             .player-card {
-                padding: 25px;
-                min-height: auto;
-            }
-            
-            .album-art-section {
-                width: 200px;
-                height: 200px;
-            }
-            
-            .logo-letter {
-                font-size: 2.5rem;
-            }
-            
-            .title {
-                font-size: 1.8rem;
-            }
-            
-            .control-grid {
-                gap: 8px;
-            }
-            
-            .icon-button {
-                width: 40px;
-                height: 40px;
-            }
-            
-            .play-button {
-                width: 50px;
-                height: 50px;
-            }
-            
-            .theme-selector {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            
-            .theme-button {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-            
-            .lang-toggle {
-                top: 15px;
-                right: 15px;
-                padding: 6px 10px;
-                font-size: 12px;
+                max-width: 400px;
             }
         }
-        
-        @media (max-width: 480px) {
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
             .player-card {
                 padding: 20px;
             }
-            
+            .title {
+                font-size: 1.8rem;
+            }
+            .control-row {
+                gap: 8px;
+            }
+            .icon-button {
+                width: 44px;
+                height: 44px;
+            }
+            .play-button {
+                width: 52px;
+                height: 52px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .player-card {
+                padding: 15px;
+            }
             .title {
                 font-size: 1.6rem;
             }
-            
             .control-row {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
-            }
-            
-            .play-button {
-                grid-column: 2;
-            }
-            
-            .album-art-section {
-                width: 160px;
-                height: 160px;
-            }
-            
-            .logo-letter {
-                font-size: 2rem;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
             }
         }
     </style>
@@ -796,50 +663,26 @@
 <body>
     <canvas id="visualizer"></canvas>
     <div class="overlay"></div>
-    
-    <!-- 语言切换按钮 -->
-    <button class="lang-toggle" id="lang-toggle">
-        <span class="zh-only">EN</span>
-        <span class="en-only">中文</span>
-    </button>
-    
-    <!-- 手势区域 -->
-    <div class="gesture-area">
-        <div class="left-swipe"></div>
-        <div class="right-swipe"></div>
-    </div>
-    
+
     <div class="container" id="main-container">
         <div class="player-card" id="player-card">
             <div class="logo-section">
-                <div class="album-art-section">
-                    <div class="album-art">
-                        <i class="material-icons logo-icon">music_note</i>
-                        <div class="logo-letter">S</div>
-                    </div>
+                <div class="logo-circle" id="logo-circle">
+                    <i class="material-icons logo-icon">music_note</i>
                 </div>
                 <div class="brand">
                     <h1 class="title">Sonoria</h1>
-                    <div class="slogan">
-                        <span class="zh-only">动人心绚，乐音之境</span>
-                        <span class="en-only">Where Music Meets Visual Art</span>
-                    </div>
+                    <p class="slogan">沉浸式音乐之旅</p>
                 </div>
             </div>
-            
-            <div class="player-info">
-                <div class="track-title" id="track-title">
-                    <span class="zh-only">等待音乐...</span>
-                    <span class="en-only">Waiting for music...</span>
-                </div>
-                <div class="track-artist" id="track-artist">
-                    <span class="zh-only">上传或选择音乐开始体验</span>
-                    <span class="en-only">Upload or select music to begin</span>
-                </div>
+
+            <div class="player-info" id="player-info">
+                <div class="track-title" id="track-title">请上传音乐文件</div>
+                <div class="track-artist" id="track-artist">或使用麦克风输入</div>
             </div>
-            
+
             <div class="progress-section">
-                <div class="progress-container">
+                <div class="progress-bar" id="progress-bar">
                     <div class="progress" id="progress"></div>
                 </div>
                 <div class="time-display">
@@ -847,355 +690,190 @@
                     <span id="total-time">0:00</span>
                 </div>
             </div>
-            
+
             <div class="control-row">
-                <button class="system-button icon-button" id="shuffle-button" title="随机播放">
-                    <i class="material-icons">shuffle</i>
-                </button>
-                <button class="system-button icon-button" id="prev-button" title="上一首">
+                <button class="icon-button" id="prev-button" aria-label="上一首">
                     <i class="material-icons">skip_previous</i>
+                    <span class="tooltip">上一首</span>
                 </button>
-                <button class="system-button play-button" id="play-toggle" title="播放">
+                <button class="icon-button play-button" id="play-toggle" aria-label="播放/暂停">
                     <i class="material-icons">play_arrow</i>
+                    <span class="tooltip">播放</span>
                 </button>
-                <button class="system-button icon-button" id="next-button" title="下一首">
+                <button class="icon-button" id="next-button" aria-label="下一首">
                     <i class="material-icons">skip_next</i>
+                    <span class="tooltip">下一首</span>
                 </button>
-                <button class="system-button icon-button" id="mic-toggle" title="麦克风">
-                    <i class="material-icons">mic_none</i>
+                <button class="icon-button" id="theme-toggle" aria-label="切换主题">
+                    <i class="material-icons">brightness_6</i>
+                    <span class="tooltip">切换主题</span>
                 </button>
             </div>
-            
+
+            <div class="bottom-nav">
+                <button class="icon-button" id="playlist-toggle" aria-label="播放列表">
+                    <i class="material-icons">queue_music</i>
+                    <span class="tooltip">播放列表</span>
+                </button>
+                <button class="icon-button" id="upload-button" aria-label="上传音乐">
+                    <i class="material-icons">library_music</i>
+                    <span class="tooltip">上传音乐</span>
+                </button>
+                <button class="icon-button" id="mic-toggle" aria-label="麦克风">
+                    <i class="material-icons">mic_none</i>
+                    <span class="tooltip">麦克风</span>
+                </button>
+                <button class="icon-button" id="shuffle-button" aria-label="随机播放">
+                    <i class="material-icons">shuffle</i>
+                    <span class="tooltip">随机播放</span>
+                </button>
+                <button class="icon-button" id="loop-button" aria-label="循环播放">
+                    <i class="material-icons">loop</i>
+                    <span class="tooltip">循环播放</span>
+                </button>
+            </div>
+
+            <div class="mic-controls" id="mic-controls" style="display: none;">
+                <label for="mic-volume">麦克风音量:</label>
+                <input type="range" id="mic-volume" min="0" max="2" step="0.1" value="1">
+            </div>
+
             <div class="upload-area" id="upload-area">
                 <i class="material-icons">library_music</i>
-                <div class="upload-text">
-                    <span class="zh-only">拖放音乐文件到此处或点击上传</span>
-                    <span class="en-only">Drag & drop music files or click to upload</span>
-                </div>
+                <div class="upload-text">拖放音乐文件到此处或点击上传</div>
             </div>
-            
+
             <div class="theme-selector">
-                <button class="theme-button active" data-mode="aurora">
-                    <span class="zh-only">极光</span>
-                    <span class="en-only">Aurora</span>
-                </button>
-                <button class="theme-button" data-mode="cosmic">
-                    <span class="zh-only">宇宙</span>
-                    <span class="en-only">Cosmic</span>
-                </button>
-                <button class="theme-button" data-mode="neural">
-                    <span class="zh-only">神经</span>
-                    <span class="en-only">Neural</span>
-                </button>
-                <button class="theme-button" data-mode="liquid">
-                    <span class="zh-only">液态</span>
-                    <span class="en-only">Liquid</span>
-                </button>
-                <button class="theme-button" data-mode="quantum">
-                    <span class="zh-only">量子</span>
-                    <span class="en-only">Quantum</span>
-                </button>
+                <button class="theme-button active" data-mode="aurora">极光</button>
+                <button class="theme-button" data-mode="cosmic">宇宙</button>
+                <button class="theme-button" data-mode="neural">神经</button>
+                <button class="theme-button" data-mode="liquid">液态</button>
+                <button class="theme-button" data-mode="quantum">量子</button>
             </div>
-            
+
             <div class="playlist-section" id="playlist-section">
                 <div class="playlist-header">
-                    <div class="playlist-title">
-                        <span class="zh-only">播放列表</span>
-                        <span class="en-only">Playlist</span>
-                    </div>
+                    <div class="playlist-title">播放列表</div>
                     <div class="playlist-controls">
-                        <button class="system-button icon-button" id="clear-button" title="清空列表">
+                        <button class="icon-button" id="clear-playlist" aria-label="清空列表">
                             <i class="material-icons">clear_all</i>
                         </button>
-                        <button class="system-button icon-button" id="sort-button" title="随机排序">
-                            <i class="material-icons">shuffle</i>
+                        <button class="icon-button" id="close-playlist" aria-label="关闭列表">
+                            <i class="material-icons">close</i>
                         </button>
                     </div>
                 </div>
-                
-                <div class="playlist-items" id="playlist-items">
-                    <!-- 播放列表项将动态添加 -->
-                </div>
+                <div class="playlist-items" id="playlist-items"></div>
             </div>
-            
-            <div class="status" id="status">
-                <span class="zh-only">准备就绪 - 拖放音乐文件或使用麦克风</span>
-                <span class="en-only">Ready - Drag & drop music files or use microphone</span>
-            </div>
+
+            <div class="status" id="status"></div>
         </div>
     </div>
 
-    <div class="swipe-hint" id="swipe-hint">
-        <span class="zh-only">左右滑动切换可视化主题</span>
-        <span class="en-only">Swipe to change visualization theme</span>
+    <div class="modal" id="onboarding-modal">
+        <div class="modal-content">
+            <h2>欢迎体验 Sonoria</h2>
+            <p>上传音乐文件或使用麦克风，享受沉浸式可视化体验！滑动屏幕切换主题，点击播放列表管理歌曲。</p>
+            <button id="close-modal">开始</button>
+        </div>
     </div>
-    <div class="swipe-feedback" id="swipe-feedback"></div>
 
-    <!-- 支持更多音频格式 -->
-    <input type="file" id="audio-upload" accept="audio/*, .mp3, .wav, .m4a, .aac, .flac, .ogg, .oga, .opus, .weba, .3gp, .3g2" multiple>
-    
+    <div class="swipe-hint" id="swipe-hint">左右滑动切换可视化主题</div>
+
+    <input type="file" id="audio-upload" accept="audio/*" multiple>
+
     <script>
-        // 配置常量
-        const CONFIG = {
-            canvas: {
-                clearAlpha: 0.1,
-                dpr: Math.min(window.devicePixelRatio || 1, 2),
-                maxWidth: 4096,
-                maxHeight: 4096,
-                mobileFFT: 512
-            },
-            audio: {
-                fftSize: 1024,
-                smoothingTimeConstant: 0.8,
-                bassRange: 0.1,
-                midRange: 0.4
-            },
-            visualization: {
-                centerCircle: {
-                    baseRadius: 80,
-                    maxEnergyRadius: 60,
-                    maxPulseRadius: 40,
-                    mobileScale: 0.7
-                },
-                performance: {
-                    targetFPS: 60,
-                    qualityThreshold: 30,
-                    mobileQualityThreshold: 20
-                }
-            }
-        };
-
-        // 语言设置
-        const i18n = {
-            zh: {
-                title: "Sonoria",
-                slogan: "动人心绚，乐音之境",
-                waiting: "等待音乐...",
-                uploadHint: "上传或选择音乐开始体验",
-                ready: "准备就绪 - 拖放音乐文件或使用麦克风",
-                playing: "正在播放音乐",
-                paused: "音乐已暂停",
-                loading: "正在加载 {count} 个文件...",
-                added: "已添加 {count} 个文件到播放列表",
-                loaded: "已加载: {name}",
-                shuffleOn: "随机播放已开启",
-                shuffleOff: "随机播放已关闭",
-                playlistCleared: "播放列表已清空",
-                playlistShuffled: "播放列表已随机排序",
-                micOn: "正在通过麦克风捕捉环境音乐...",
-                micOff: "麦克风已关闭",
-                themeChanged: "已切换到{theme}主题",
-                swipeHint: "左右滑动切换可视化主题",
-                themes: {
-                    aurora: "极光韵律",
-                    cosmic: "宇宙脉动",
-                    neural: "神经脉络",
-                    liquid: "液态流动",
-                    quantum: "量子场域"
-                },
-                error: {
-                    audioInit: "音频系统初始化失败",
-                    noSupport: "您的浏览器不支持音频分析功能",
-                    micPermission: "请允许麦克风访问权限",
-                    micNotFound: "未找到麦克风设备",
-                    noSupportAPI: "浏览器不支持此功能",
-                    network: "网络错误，请检查网络连接"
-                }
-            },
-            en: {
-                title: "Sonoria",
-                slogan: "Where Music Meets Visual Art",
-                waiting: "Waiting for music...",
-                uploadHint: "Upload or select music to begin",
-                ready: "Ready - Drag & drop music files or use microphone",
-                playing: "Playing music",
-                paused: "Music paused",
-                loading: "Loading {count} files...",
-                added: "Added {count} files to playlist",
-                loaded: "Loaded: {name}",
-                shuffleOn: "Shuffle enabled",
-                shuffleOff: "Shuffle disabled",
-                playlistCleared: "Playlist cleared",
-                playlistShuffled: "Playlist shuffled",
-                micOn: "Capturing ambient sound through microphone...",
-                micOff: "Microphone disabled",
-                themeChanged: "Switched to {theme} theme",
-                swipeHint: "Swipe to change visualization theme",
-                themes: {
-                    aurora: "Aurora Rhythm",
-                    cosmic: "Cosmic Pulse",
-                    neural: "Neural Network",
-                    liquid: "Liquid Flow",
-                    quantum: "Quantum Field"
-                },
-                error: {
-                    audioInit: "Audio system initialization failed",
-                    noSupport: "Your browser doesn't support audio analysis",
-                    micPermission: "Please allow microphone access",
-                    micNotFound: "Microphone device not found",
-                    noSupportAPI: "Browser doesn't support this feature",
-                    network: "Network error, please check your connection"
-                }
-            }
-        };
-
-        // 高级节拍检测
-        class AdvancedBeatDetection {
-            constructor() {
-                this.energyHistory = new Array(30).fill(0);
-                this.beatThreshold = 1.3;
-            }
-            
-            detectBeat(currentEnergy) {
-                const average = this.energyHistory.reduce((a, b) => a + b) / this.energyHistory.length;
-                
-                this.energyHistory.shift();
-                this.energyHistory.push(currentEnergy);
-                
-                this.beatThreshold = average * 1.3 + 10;
-                
-                return currentEnergy > this.beatThreshold;
-            }
-        }
-
-        // 优化的音频可视化器
+        // 简化的音频可视化类
         class AudioVisualizer {
             constructor(canvas, audioContext) {
                 this.canvas = canvas;
-                this.ctx = canvas.getContext('2d', { alpha: false });
+                this.ctx = canvas.getContext('2d');
                 this.audioContext = audioContext;
-                this.analyser = null;
-                this.dataArray = null;
-                this.bufferLength = 0;
+                this.analyser = this.audioContext.createAnalyser();
+                this.analyser.fftSize = 256;
+                this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
                 this.animationId = null;
-                
-                // 双缓冲Canvas
-                this.offScreenCanvas = document.createElement('canvas');
-                this.offScreenCtx = this.offScreenCanvas.getContext('2d');
-                
-                this.mode = 'aurora';
                 this.isPlaying = false;
-                
-                // 音频分析维度
-                this.energyLevel = 0;
-                this.bassEnergy = 0;
-                this.midEnergy = 0;
-                this.trebleEnergy = 0;
-                this.beatDetection = 0;
-                this.beatDetector = new AdvancedBeatDetection();
-                
-                // 中心圆形参数
-                this.centerCircle = {
-                    radius: 80,
-                    pulse: 0,
-                    intensity: 0,
-                    color: { primary: '102, 126, 234', secondary: '240, 147, 251' }
-                };
-                
-                this.time = 0;
-                
-                // 性能监控
-                this.frameCount = 0;
-                this.lastFpsUpdate = 0;
-                this.fps = 0;
-                
-                this.setupCanvas();
-                this.setupAnalyser();
+                this.mode = 'aurora';
+                this.hue = 0;
+
+                this.resizeCanvas();
+                window.addEventListener('resize', this.resizeCanvas.bind(this));
             }
 
-            setupCanvas() {
-                const resizeCanvas = () => {
-                    // 获取设备像素比，但限制最大值以优化性能
-                    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-                    
-                    // 获取可视区域尺寸
-                    const displayWidth = Math.min(window.innerWidth, CONFIG.canvas.maxWidth);
-                    const displayHeight = Math.min(window.innerHeight, CONFIG.canvas.maxHeight);
-                    
-                    // 设置Canvas尺寸 - 确保不会超出屏幕
-                    this.canvas.width = displayWidth * dpr;
-                    this.canvas.height = displayHeight * dpr;
-                    this.offScreenCanvas.width = displayWidth * dpr;
-                    this.offScreenCanvas.height = displayHeight * dpr;
-                    
-                    // 设置CSS尺寸 - 确保Canvas正确适配屏幕
-                    this.canvas.style.width = `${displayWidth}px`;
-                    this.canvas.style.height = `${displayHeight}px`;
-                    
-                    // 设置2D上下文缩放
-                    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-                    this.ctx.scale(dpr, dpr);
-                    this.offScreenCtx.setTransform(1, 0, 0, 1, 0, 0);
-                    this.offScreenCtx.scale(dpr, dpr);
-                    
-                    // 更新内部尺寸变量
-                    this.width = displayWidth;
-                    this.height = displayHeight;
-                    this.centerX = this.width / 2;
-                    this.centerY = this.height / 2;
-                    
-                    // 移动设备优化 - 降低渲染质量以提升性能
-                    if (this.width <= 768) {
-                        this.analyser.fftSize = CONFIG.canvas.mobileFFT;
-                    } else {
-                        this.analyser.fftSize = CONFIG.audio.fftSize;
-                    }
-                    
-                    // 清除画布
-                    this.clearCanvas();
-                    
-                    console.log(`Canvas重设: ${this.width}x${this.height}, DPR: ${dpr}, FFT: ${this.analyser.fftSize}`);
-                };
-                
-                // 初始设置
-                resizeCanvas();
-                
-                // 添加防抖的resize监听器
-                let resizeTimeout;
-                window.addEventListener('resize', () => {
-                    clearTimeout(resizeTimeout);
-                    resizeTimeout = setTimeout(resizeCanvas, 250);
-                });
-                
-                // 添加页面可见性监听 - 当页面不可见时暂停渲染
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden) {
-                        this.stop();
-                    } else if (this.isPlaying) {
-                        this.animate();
-                    }
-                });
-                
-                // 移动设备触摸事件优化
-                this.canvas.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                }, { passive: false });
-                
-                this.canvas.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                }, { passive: false });
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
             }
 
-            setupAnalyser() {
-                if (this.audioContext) {
-                    this.analyser = this.audioContext.createAnalyser();
-                    this.analyser.fftSize = CONFIG.audio.fftSize;
-                    this.analyser.smoothingTimeConstant = CONFIG.audio.smoothingTimeConstant;
-                    this.bufferLength = this.analyser.frequencyBinCount;
-                    this.dataArray = new Uint8Array(this.bufferLength);
+            connectAudio(source) {
+                try {
+                    const mediaSource = this.audioContext.createMediaElementSource(source);
+                    mediaSource.connect(this.analyser);
+                    this.analyser.connect(this.audioContext.destination);
+                } catch (error) {
+                    console.error('音频连接错误:', error);
                 }
             }
 
-            connectAudio(audioElement) {
-                if (this.audioContext && audioElement) {
-                    const source = this.audioContext.createMediaElementSource(audioElement);
-                    source.connect(this.analyser);
-                    this.analyser.connect(this.audioContext.destination);
+            connectStream(stream) {
+                try {
+                    const streamSource = this.audioContext.createMediaStreamSource(stream);
+                    streamSource.connect(this.analyser);
+                } catch (error) {
+                    console.error('流连接错误:', error);
                 }
             }
 
             setMode(mode) {
                 this.mode = mode;
+            }
+
+            animate() {
+                if (!this.isPlaying) return;
+                
+                this.animationId = requestAnimationFrame(this.animate.bind(this));
+                this.analyser.getByteFrequencyData(this.dataArray);
+
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.hue = (this.hue + 1) % 360;
+
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                const radius = Math.min(centerX, centerY) * 0.7;
+
+                // 绘制音频可视化
+                const bars = 64;
+                const barWidth = (Math.PI * 2) / bars;
+
+                for (let i = 0; i < bars; i++) {
+                    const barHeight = (this.dataArray[i % this.dataArray.length] / 255) * radius * 0.5;
+                    const angle = i * barWidth;
+                    
+                    this.ctx.save();
+                    this.ctx.translate(centerX, centerY);
+                    this.ctx.rotate(angle);
+                    
+                    this.ctx.fillStyle = `hsla(${this.hue + i * 2}, 70%, 60%, 0.8)`;
+                    this.ctx.fillRect(0, -radius, barWidth * 10, -barHeight);
+                    
+                    this.ctx.restore();
+                }
+
+                // 中心圆
+                const avg = this.dataArray.reduce((a, b) => a + b, 0) / this.dataArray.length;
+                const pulseRadius = radius * 0.3 + (avg / 255) * radius * 0.2;
+                
+                const gradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, pulseRadius);
+                gradient.addColorStop(0, `hsla(${this.hue}, 85%, 60%, 0.9)`);
+                gradient.addColorStop(1, `hsla(${this.hue + 60}, 85%, 60%, 0.1)`);
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
+                this.ctx.fill();
             }
 
             start() {
@@ -1205,1171 +883,510 @@
 
             stop() {
                 this.isPlaying = false;
-                if (this.animationId) {
-                    cancelAnimationFrame(this.animationId);
-                }
-            }
-
-            cleanup() {
-                this.stop();
-                this.dataArray = null;
-                this.analyser = null;
-                
-                // 清理Canvas
-                this.ctx.clearRect(0, 0, this.width, this.height);
-                this.offScreenCtx.clearRect(0, 0, this.width, this.height);
-            }
-
-            updateFPS() {
-                this.frameCount++;
-                const now = performance.now();
-                if (now - this.lastFpsUpdate >= 1000) {
-                    this.fps = this.frameCount;
-                    this.frameCount = 0;
-                    this.lastFpsUpdate = now;
-                    
-                    // 动态调整渲染质量
-                    this.adjustQuality();
-                }
-            }
-            
-            adjustQuality() {
-                // 移动设备使用更严格的质量阈值
-                const isMobile = this.width <= 768;
-                const qualityThreshold = isMobile ? 
-                    CONFIG.visualization.performance.mobileQualityThreshold : 
-                    CONFIG.visualization.performance.qualityThreshold;
-                
-                // 根据帧率动态调整渲染质量
-                if (this.fps < qualityThreshold) {
-                    this.analyser.fftSize = isMobile ? 256 : 512;
-                } else {
-                    this.analyser.fftSize = isMobile ? 
-                        CONFIG.canvas.mobileFFT : 
-                        CONFIG.audio.fftSize;
-                }
-            }
-
-            animate() {
-                if (!this.isPlaying) return;
-                
-                this.animationId = requestAnimationFrame(() => this.animate());
-                
-                this.time += 0.016;
-                this.updateFPS();
-                this.updateAudioAnalysis();
-                
-                this.clearCanvas();
-                
-                // 根据当前模式绘制可视化效果
-                switch (this.mode) {
-                    case 'cosmic':
-                        this.drawCosmicVisualization();
-                        break;
-                    case 'neural':
-                        this.drawNeuralNetwork();
-                        break;
-                    case 'liquid':
-                        this.drawLiquidMorphing();
-                        break;
-                    case 'quantum':
-                        this.drawQuantumField();
-                        break;
-                    case 'aurora':
-                    default:
-                        this.drawAuroraEffect();
-                }
-                
-                // 在所有模式下都绘制中心圆形光晕
-                this.drawCenterCircle();
-                
-                // 将离屏Canvas绘制到主Canvas
-                this.ctx.drawImage(this.offScreenCanvas, 0, 0);
-                
-                // 更新S字母效果
-                this.updateLogoLetter();
-            }
-
-            updateAudioAnalysis() {
-                if (!this.analyser || !this.dataArray) return;
-                
-                this.analyser.getByteFrequencyData(this.dataArray);
-                
-                // 计算不同频段的能量
-                const bassRange = Math.floor(this.bufferLength * CONFIG.audio.bassRange);
-                const midRange = Math.floor(this.bufferLength * CONFIG.audio.midRange);
-                
-                this.bassEnergy = this.getAverageEnergy(0, bassRange);
-                this.midEnergy = this.getAverageEnergy(bassRange, midRange);
-                this.trebleEnergy = this.getAverageEnergy(midRange, this.bufferLength);
-                
-                this.energyLevel = (this.bassEnergy + this.midEnergy + this.trebleEnergy) / 3;
-                
-                // 使用高级节拍检测
-                this.beatDetection = this.beatDetector.detectBeat(this.energyLevel) ? 1 : 0;
-                
-                // 更新中心圆形参数
-                this.updateCenterCircle();
-            }
-
-            getAverageEnergy(start, end) {
-                let sum = 0;
-                for (let i = start; i < end; i++) {
-                    sum += this.dataArray[i];
-                }
-                return sum / (end - start);
-            }
-
-            updateCenterCircle() {
-                // 中心圆形根据整体能量和节拍变化
-                this.centerCircle.intensity = this.energyLevel / 255;
-                this.centerCircle.pulse = this.beatDetection ? 1 : Math.max(0, this.centerCircle.pulse - 0.05);
-                
-                // 根据能量改变颜色
-                if (this.energyLevel > 180) {
-                    this.centerCircle.color = { primary: '255, 107, 107', secondary: '255, 159, 67' };
-                } else if (this.energyLevel > 120) {
-                    this.centerCircle.color = { primary: '240, 147, 251', secondary: '179, 136, 235' };
-                } else {
-                    this.centerCircle.color = { primary: '102, 126, 234', secondary: '79, 172, 254' };
-                }
-            }
-            
-            updateLogoLetter() {
-                const logoLetter = document.querySelector('.logo-letter');
-                if (!logoLetter) return;
-                
-                // 根据音频能量调整透明度
-                const baseOpacity = 0.15;
-                const energyOpacity = this.energyLevel / 255 * 0.3;
-                const pulseOpacity = this.beatDetection ? 0.2 : 0;
-                
-                const totalOpacity = baseOpacity + energyOpacity + pulseOpacity;
-                
-                // 根据节拍添加微小的缩放效果
-                const baseScale = 1;
-                const beatScale = this.beatDetection ? 0.1 : 0;
-                const totalScale = baseScale + beatScale;
-                
-                // 应用动态样式
-                logoLetter.style.opacity = Math.min(totalOpacity, 0.6);
-                logoLetter.style.transform = `scale(${totalScale})`;
-                
-                // 根据能量改变颜色（轻微的色彩变化）
-                if (this.energyLevel > 180) {
-                    logoLetter.style.color = 'rgba(255, 200, 200, 0.3)';
-                } else if (this.energyLevel > 120) {
-                    logoLetter.style.color = 'rgba(255, 255, 255, 0.25)';
-                } else {
-                    logoLetter.style.color = 'rgba(255, 255, 255, 0.15)';
-                }
-            }
-
-            drawCenterCircle() {
-                this.offScreenCtx.save();
-                
-                // 移动设备缩放因子
-                const mobileScale = this.width <= 768 ? CONFIG.visualization.centerCircle.mobileScale : 1;
-                
-                // 计算动态半径 - 应用移动设备缩放
-                const radius = (CONFIG.visualization.centerCircle.baseRadius + 
-                               this.centerCircle.intensity * CONFIG.visualization.centerCircle.maxEnergyRadius + 
-                               this.centerCircle.pulse * CONFIG.visualization.centerCircle.maxPulseRadius) * mobileScale;
-                
-                // 计算透明度
-                const opacity = 0.7 + this.centerCircle.intensity * 0.3;
-                
-                // 创建径向渐变
-                const gradient = this.offScreenCtx.createRadialGradient(
-                    this.centerX, this.centerY, 0,
-                    this.centerX, this.centerY, radius
-                );
-                
-                gradient.addColorStop(0, `rgba(${this.centerCircle.color.primary}, ${opacity})`);
-                gradient.addColorStop(0.7, `rgba(${this.centerCircle.color.secondary}, ${opacity * 0.7})`);
-                gradient.addColorStop(1, `rgba(${this.centerCircle.color.secondary}, 0)`);
-                
-                this.offScreenCtx.fillStyle = gradient;
-                this.offScreenCtx.beginPath();
-                this.offScreenCtx.arc(this.centerX, this.centerY, radius, 0, Math.PI * 2);
-                this.offScreenCtx.fill();
-                
-                // 添加呼吸感光晕 - 移动设备上减小效果
-                const breathIntensity = this.width <= 768 ? 5 : 10;
-                const breathRadius = radius + 20 + Math.sin(this.time * 2) * breathIntensity;
-                const breathGradient = this.offScreenCtx.createRadialGradient(
-                    this.centerX, this.centerY, radius,
-                    this.centerX, this.centerY, breathRadius
-                );
-                
-                breathGradient.addColorStop(0, `rgba(${this.centerCircle.color.secondary}, ${0.2})`);
-                breathGradient.addColorStop(1, `rgba(${this.centerCircle.color.secondary}, 0)`);
-                
-                this.offScreenCtx.fillStyle = breathGradient;
-                this.offScreenCtx.beginPath();
-                this.offScreenCtx.arc(this.centerX, this.centerY, breathRadius, 0, Math.PI * 2);
-                this.offScreenCtx.fill();
-                
-                this.offScreenCtx.restore();
-            }
-
-            drawAuroraEffect() {
-                this.offScreenCtx.save();
-                
-                // 创建极光背景效果
-                const gradient = this.offScreenCtx.createLinearGradient(0, 0, this.width, this.height);
-                gradient.addColorStop(0, `rgba(102, 126, 234, ${0.1 + this.energyLevel/500})`);
-                gradient.addColorStop(0.5, `rgba(240, 147, 251, ${0.05 + this.energyLevel/600})`);
-                gradient.addColorStop(1, `rgba(79, 172, 254, ${0.02 + this.energyLevel/700})`);
-                
-                this.offScreenCtx.fillStyle = gradient;
-                this.offScreenCtx.fillRect(0, 0, this.width, this.height);
-                
-                // 添加流动线条
-                this.offScreenCtx.strokeStyle = `rgba(255, 255, 255, ${0.1 + this.energyLevel/300})`;
-                this.offScreenCtx.lineWidth = 1;
-                
-                for (let i = 0; i < 5; i++) {
-                    this.offScreenCtx.beginPath();
-                    const y = this.height * 0.3 + i * 80 + Math.sin(this.time * 0.5 + i) * 20;
-                    
-                    for (let x = 0; x <= this.width; x += 10) {
-                        const wave = Math.sin(x * 0.01 + this.time * 0.8 + i) * 30 * (this.energyLevel/255);
-                        if (x === 0) {
-                            this.offScreenCtx.moveTo(x, y + wave);
-                        } else {
-                            this.offScreenCtx.lineTo(x, y + wave);
-                        }
-                    }
-                    
-                    this.offScreenCtx.stroke();
-                }
-                
-                this.offScreenCtx.restore();
-            }
-
-            drawCosmicVisualization() {
-                this.offScreenCtx.save();
-                
-                // 宇宙背景
-                const gradient = this.offScreenCtx.createRadialGradient(
-                    this.centerX, this.centerY, 0,
-                    this.centerX, this.centerY, Math.max(this.width, this.height)
-                );
-                
-                gradient.addColorStop(0, `rgba(10, 10, 30, 0.9)`);
-                gradient.addColorStop(0.5, `rgba(20, 10, 40, 0.7)`);
-                gradient.addColorStop(1, `rgba(5, 5, 15, 0.9)`);
-                
-                this.offScreenCtx.fillStyle = gradient;
-                this.offScreenCtx.fillRect(0, 0, this.width, this.height);
-                
-                // 绘制星星
-                for (let i = 0; i < 100; i++) {
-                    const x = (i * 123.45) % this.width;
-                    const y = (i * 67.89) % this.height;
-                    const size = (Math.sin(this.time * 0.5 + i) * 0.5 + 0.5) * 2;
-                    const brightness = 0.5 + Math.sin(this.time * 0.8 + i) * 0.5;
-                    
-                    this.offScreenCtx.fillStyle = `rgba(255, 255, 255, ${brightness * 0.8})`;
-                    this.offScreenCtx.beginPath();
-                    this.offScreenCtx.arc(x, y, size, 0, Math.PI * 2);
-                    this.offScreenCtx.fill();
-                }
-                
-                this.offScreenCtx.restore();
-            }
-
-            drawNeuralNetwork() {
-                this.offScreenCtx.save();
-                
-                // 神经网络背景
-                this.offScreenCtx.fillStyle = 'rgba(15, 15, 25, 0.8)';
-                this.offScreenCtx.fillRect(0, 0, this.width, this.height);
-                
-                // 绘制节点和连接
-                const nodes = [];
-                const nodeCount = 15;
-                
-                for (let i = 0; i < nodeCount; i++) {
-                    const angle = (i / nodeCount) * Math.PI * 2;
-                    const distance = 150 + Math.sin(this.time * 0.5 + i) * 50;
-                    const x = this.centerX + Math.cos(angle) * distance;
-                    const y = this.centerY + Math.sin(angle) * distance;
-                    
-                    nodes.push({ x, y, energy: this.dataArray[i % this.bufferLength] / 255 });
-                    
-                    // 绘制连接线
-                    for (let j = 0; j < i; j++) {
-                        const distance = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
-                        if (distance < 200) {
-                            const opacity = (1 - distance / 200) * 0.3 * this.energyLevel/255;
-                            this.offScreenCtx.strokeStyle = `rgba(102, 126, 234, ${opacity})`;
-                            this.offScreenCtx.lineWidth = 1;
-                            this.offScreenCtx.beginPath();
-                            this.offScreenCtx.moveTo(nodes[i].x, nodes[i].y);
-                            this.offScreenCtx.lineTo(nodes[j].x, nodes[j].y);
-                            this.offScreenCtx.stroke();
-                        }
-                    }
-                }
-                
-                // 绘制节点
-                nodes.forEach(node => {
-                    const size = 5 + node.energy * 15;
-                    const gradient = this.offScreenCtx.createRadialGradient(
-                        node.x, node.y, 0,
-                        node.x, node.y, size
-                    );
-                    
-                    gradient.addColorStop(0, `rgba(240, 147, 251, ${0.8 + node.energy * 0.2})`);
-                    gradient.addColorStop(1, `rgba(240, 147, 251, 0)`);
-                    
-                    this.offScreenCtx.fillStyle = gradient;
-                    this.offScreenCtx.beginPath();
-                    this.offScreenCtx.arc(node.x, node.y, size, 0, Math.PI * 2);
-                    this.offScreenCtx.fill();
-                });
-                
-                this.offScreenCtx.restore();
-            }
-
-            drawLiquidMorphing() {
-                this.offScreenCtx.save();
-                
-                // 液体背景
-                const gradient = this.offScreenCtx.createLinearGradient(0, 0, this.width, this.height);
-                gradient.addColorStop(0, `rgba(45, 183, 245, ${0.1})`);
-                gradient.addColorStop(0.5, `rgba(84, 160, 255, ${0.05})`);
-                gradient.addColorStop(1, `rgba(162, 155, 254, ${0.1})`);
-                
-                this.offScreenCtx.fillStyle = gradient;
-                this.offScreenCtx.fillRect(0, 0, this.width, this.height);
-                
-                // 绘制液体波浪
-                const waveCount = 3;
-                
-                for (let w = 0; w < waveCount; w++) {
-                    this.offScreenCtx.strokeStyle = `rgba(84, 160, 255, ${0.3 + w * 0.1})`;
-                    this.offScreenCtx.lineWidth = 3;
-                    this.offScreenCtx.beginPath();
-                    
-                    for (let x = 0; x <= this.width; x += 5) {
-                        const audioIndex = Math.floor((x / this.width) * this.bufferLength);
-                        const audioValue = this.dataArray[audioIndex] / 255;
-                        const baseWave = Math.sin((x / this.width) * Math.PI * 4 + this.time * 0.5 + w) * 30;
-                        const audioWave = audioValue * 50;
-                        const y = this.centerY + baseWave + audioWave - w * 30;
-                        
-                        if (x === 0) {
-                            this.offScreenCtx.moveTo(x, y);
-                        } else {
-                            this.offScreenCtx.lineTo(x, y);
-                        }
-                    }
-                    
-                    this.offScreenCtx.stroke();
-                }
-                
-                this.offScreenCtx.restore();
-            }
-
-            drawQuantumField() {
-                this.offScreenCtx.save();
-                
-                // 量子场背景
-                this.offScreenCtx.fillStyle = 'rgba(5, 5, 15, 0.9)';
-                this.offScreenCtx.fillRect(0, 0, this.width, this.height);
-                
-                // 绘制量子粒子
-                const gridSize = 40;
-                const cols = Math.ceil(this.width / gridSize);
-                const rows = Math.ceil(this.height / gridSize);
-                
-                for (let i = 0; i < cols; i++) {
-                    for (let j = 0; j < rows; j++) {
-                        const x = i * gridSize + (Math.sin(this.time + j) * 5);
-                        const y = j * gridSize + (Math.cos(this.time + i) * 5);
-                        const index = (i + j * cols) % this.bufferLength;
-                        const energy = this.dataArray[index] / 255;
-                        
-                        if (energy > 0.2) {
-                            const size = energy * 15;
-                            const opacity = energy * 0.8;
-                            
-                            this.offScreenCtx.fillStyle = `rgba(79, 172, 254, ${opacity})`;
-                            this.offScreenCtx.beginPath();
-                            this.offScreenCtx.arc(x, y, size, 0, Math.PI * 2);
-                            this.offScreenCtx.fill();
-                            
-                            // 添加连接线
-                            if (i > 0 && j > 0) {
-                                const prevEnergy = this.dataArray[((i-1) + (j-1) * cols) % this.bufferLength] / 255;
-                                if (prevEnergy > 0.2) {
-                                    this.offScreenCtx.strokeStyle = `rgba(79, 172, 254, ${opacity * 0.5})`;
-                                    this.offScreenCtx.lineWidth = 1;
-                                    this.offScreenCtx.beginPath();
-                                    this.offScreenCtx.moveTo(x, y);
-                                    this.offScreenCtx.lineTo((i-1) * gridSize, (j-1) * gridSize);
-                                    this.offScreenCtx.stroke();
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                this.offScreenCtx.restore();
-            }
-
-            clearCanvas() {
-                this.offScreenCtx.fillStyle = `rgba(10, 10, 20, ${CONFIG.canvas.clearAlpha})`;
-                this.offScreenCtx.fillRect(0, 0, this.width, this.height);
+                cancelAnimationFrame(this.animationId);
             }
         }
 
-        // 应用状态管理
-        class AppState {
-            constructor() {
-                this.states = {
-                    INITIAL: 'initial',
-                    LOADING: 'loading',
-                    READY: 'ready',
-                    PLAYING: 'playing',
-                    ERROR: 'error'
-                };
-                this.currentState = this.states.INITIAL;
-            }
-            
-            setState(newState, message = '') {
-                this.currentState = newState;
-                this.updateUI(message);
-            }
-            
-            updateUI(message) {
-                const statusEl = document.getElementById('status');
-                const playToggle = document.getElementById('play-toggle');
-                
-                switch(this.currentState) {
-                    case this.states.LOADING:
-                        statusEl.textContent = message;
-                        playToggle.disabled = true;
-                        break;
-                    case this.states.ERROR:
-                        statusEl.textContent = message;
-                        statusEl.style.color = '#ff6b6b';
-                        break;
-                    case this.states.READY:
-                        statusEl.textContent = message;
-                        statusEl.style.color = '';
-                        playToggle.disabled = false;
-                        break;
-                    case this.states.PLAYING:
-                        statusEl.textContent = message;
-                        statusEl.style.color = '';
-                        playToggle.disabled = false;
-                        break;
-                }
-            }
-        }
-
-        // 交互反馈
-        class AppleInteraction {
-            static hapticFeedback(type = 'light') {
-                if ('vibrate' in navigator) {
-                    const patterns = {
-                        light: [10],
-                        medium: [20],
-                        heavy: [30],
-                        success: [20, 40, 20],
-                        warning: [40, 40, 40]
-                    };
-                    navigator.vibrate(patterns[type] || patterns.light);
-                }
-            }
-
-            static showSwipeFeedback(message) {
-                const feedback = document.getElementById('swipe-feedback');
-                feedback.textContent = message;
-                feedback.classList.add('show');
-                
-                setTimeout(() => {
-                    feedback.classList.remove('show');
-                }, 1000);
-            }
-        }
-
-        // 错误处理
-        class ErrorHandler {
-            static handleError(error, context = '') {
-                console.error(`[${context}]`, error);
-                
-                const userFriendlyMessages = {
-                    'NotAllowedError': currentLang === 'zh' ? i18n.zh.error.micPermission : i18n.en.error.micPermission,
-                    'NotFoundError': currentLang === 'zh' ? i18n.zh.error.micNotFound : i18n.en.error.micNotFound,
-                    'NotSupportedError': currentLang === 'zh' ? i18n.zh.error.noSupportAPI : i18n.en.error.noSupportAPI,
-                    'NetworkError': currentLang === 'zh' ? i18n.zh.error.network : i18n.en.error.network
-                };
-                
-                const message = userFriendlyMessages[error.name] || error.message;
-                appState.setState('error', message);
-            }
-            
-            static checkBrowserSupport() {
-                const supports = {
-                    audioContext: !!(window.AudioContext || window.webkitAudioContext),
-                    getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
-                    canvas: !!document.createElement('canvas').getContext
-                };
-                
-                if (!supports.audioContext) {
-                    throw new Error(currentLang === 'zh' ? i18n.zh.error.noSupport : i18n.en.error.noSupport);
-                }
-                
-                return supports;
-            }
-        }
-
-        // 语言管理
-        let currentLang = 'zh';
-
-        function detectLanguage() {
-            const browserLang = navigator.language || navigator.userLanguage;
-            return browserLang.startsWith('zh') ? 'zh' : 'en';
-        }
-
-        function setLanguage(lang) {
-            currentLang = lang;
-            document.documentElement.lang = lang;
-            localStorage.setItem('sonoria-lang', lang);
-            updateUIText();
-        }
-
-        function updateUIText() {
-            const texts = i18n[currentLang];
-            
-            // 更新所有需要本地化的文本
-            document.querySelector('.slogan .zh-only').textContent = texts.slogan;
-            document.querySelector('.slogan .en-only').textContent = texts.slogan;
-            document.getElementById('track-title').innerHTML = `<span class="zh-only">${texts.waiting}</span><span class="en-only">${texts.waiting}</span>`;
-            document.getElementById('track-artist').innerHTML = `<span class="zh-only">${texts.uploadHint}</span><span class="en-only">${texts.uploadHint}</span>`;
-            document.querySelector('.upload-text').innerHTML = `<span class="zh-only">${texts.uploadHint}</span><span class="en-only">${texts.uploadHint}</span>`;
-            document.querySelector('.swipe-hint').innerHTML = `<span class="zh-only">${texts.swipeHint}</span><span class="en-only">${texts.swipeHint}</span>`;
-            
-            // 更新按钮标题
-            document.getElementById('shuffle-button').title = currentLang === 'zh' ? '随机播放' : 'Shuffle';
-            document.getElementById('prev-button').title = currentLang === 'zh' ? '上一首' : 'Previous';
-            document.getElementById('play-toggle').title = currentLang === 'zh' ? '播放' : 'Play';
-            document.getElementById('next-button').title = currentLang === 'zh' ? '下一首' : 'Next';
-            document.getElementById('mic-toggle').title = currentLang === 'zh' ? '麦克风' : 'Microphone';
-            document.getElementById('clear-button').title = currentLang === 'zh' ? '清空列表' : 'Clear All';
-            document.getElementById('sort-button').title = currentLang === 'zh' ? '随机排序' : 'Shuffle';
-        }
-
-        // 应用主逻辑
-        document.addEventListener('DOMContentLoaded', function() {
-            // 初始化语言
-            const savedLang = localStorage.getItem('sonoria-lang');
-            const detectedLang = detectLanguage();
-            setLanguage(savedLang || detectedLang);
-            
-            // 获取DOM元素
+        document.addEventListener('DOMContentLoaded', () => {
             const canvas = document.getElementById('visualizer');
-            const audioUpload = document.getElementById('audio-upload');
+            const playerCard = document.getElementById('player-card');
             const uploadArea = document.getElementById('upload-area');
-            const status = document.getElementById('status');
-            const micToggle = document.getElementById('mic-toggle');
+            const audioUpload = document.getElementById('audio-upload');
             const playToggle = document.getElementById('play-toggle');
+            const playlistToggle = document.getElementById('playlist-toggle');
+            const uploadButton = document.getElementById('upload-button');
+            const micToggle = document.getElementById('mic-toggle');
+            const shuffleButton = document.getElementById('shuffle-button');
+            const loopButton = document.getElementById('loop-button');
+            const clearPlaylist = document.getElementById('clear-playlist');
             const prevButton = document.getElementById('prev-button');
             const nextButton = document.getElementById('next-button');
-            const shuffleButton = document.getElementById('shuffle-button');
-            const clearButton = document.getElementById('clear-button');
-            const sortButton = document.getElementById('sort-button');
-            const themeButtons = document.querySelectorAll('.theme-button');
-            const playerCard = document.getElementById('player-card');
-            const mainContainer = document.getElementById('main-container');
+            const closePlaylist = document.getElementById('close-playlist');
             const progressBar = document.getElementById('progress');
+            const progressBarContainer = document.getElementById('progress-bar');
             const currentTimeEl = document.getElementById('current-time');
             const totalTimeEl = document.getElementById('total-time');
             const trackTitle = document.getElementById('track-title');
             const trackArtist = document.getElementById('track-artist');
+            const playlistSection = document.getElementById('playlist-section');
             const playlistItems = document.getElementById('playlist-items');
             const swipeHint = document.getElementById('swipe-hint');
-            const langToggle = document.getElementById('lang-toggle');
-            
-            // 应用状态
-            const appState = new AppState();
-            
-            // 音频变量
+            const themeButtons = document.querySelectorAll('.theme-button');
+            const status = document.getElementById('status');
+            const onboardingModal = document.getElementById('onboarding-modal');
+            const closeModal = document.getElementById('close-modal');
+            const themeToggle = document.getElementById('theme-toggle');
+            const micControls = document.getElementById('mic-controls');
+            const micVolume = document.getElementById('mic-volume');
+
             let audioContext;
             let audioElement;
             let visualizer;
             let isPlaying = false;
             let isMicActive = false;
-            let currentTrackIndex = 0;
             let isShuffled = false;
-            let inactivityTimer;
-            
-            // 播放列表
+            let isLooping = false;
             let playlist = [];
-            
-            // 初始化音频上下文和可视化器
+            let currentTrack = 0;
+            let currentStream = null;
+
+            // 初始化音频上下文
             function initAudioContext() {
-                try {
-                    ErrorHandler.checkBrowserSupport();
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    visualizer = new AudioVisualizer(canvas, audioContext);
-                    visualizer.start();
-                    
-                    const texts = i18n[currentLang];
-                    appState.setState('ready', texts.ready);
-                    return true;
-                } catch (error) {
-                    ErrorHandler.handleError(error, '音频初始化');
-                    return false;
+                if (!audioContext) {
+                    try {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        visualizer = new AudioVisualizer(canvas, audioContext);
+                        visualizer.start();
+                        console.log('音频上下文初始化成功');
+                    } catch (error) {
+                        console.error('音频上下文初始化失败:', error);
+                    }
                 }
             }
-            
-            // 处理上传的音乐文件
-            function handleFileUpload(files) {
-                if (!files || files.length === 0) return;
+
+            // 设置音频
+            function setupAudio(file, isMic = false) {
+                initAudioContext();
                 
-                // 如果音频上下文未初始化，先初始化
-                if (!audioContext && !initAudioContext()) {
-                    return;
-                }
-                
-                const texts = i18n[currentLang];
-                appState.setState('loading', texts.loading.replace('{count}', files.length));
-                
-                // 将文件添加到播放列表
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    
-                    if (!file.type.startsWith('audio/') && !file.type.startsWith('video/')) {
-                        continue;
+                if (isMic) {
+                    // 麦克风模式
+                    if (audioElement) {
+                        audioElement.pause();
+                        audioElement = null;
                     }
                     
-                    const track = {
-                        id: Date.now() + i,
-                        file: file,
-                        name: file.name.replace(/\.[^/.]+$/, ""),
-                        url: URL.createObjectURL(file),
-                        duration: 0
-                    };
-                    
-                    playlist.push(track);
-                    
-                    // 预加载音频元数据
-                    const audio = new Audio();
-                    audio.src = track.url;
-                    audio.addEventListener('loadedmetadata', function() {
-                        track.duration = audio.duration;
-                        renderPlaylist();
-                    });
+                    visualizer.connectStream(file);
+                    isPlaying = true;
+                    currentStream = file;
+                    updateStatus('正在收听麦克风输入');
+                    playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
+                    trackTitle.textContent = '麦克风输入';
+                    trackArtist.textContent = '实时音频';
+                    micControls.style.display = 'flex';
+                    return;
                 }
-                
-                // 如果播放列表之前为空，自动播放第一首
-                if (playlist.length === files.length) {
-                    currentTrackIndex = 0;
-                    loadTrack(currentTrackIndex);
+
+                // 文件模式
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                    currentStream = null;
+                    isMicActive = false;
+                    micToggle.classList.remove('active');
+                    micControls.style.display = 'none';
                 }
-                
-                renderPlaylist();
-                appState.setState('ready', texts.added.replace('{count}', files.length));
-            }
-            
-            // 加载指定索引的曲目
-            function loadTrack(index) {
-                if (playlist.length === 0 || index < 0 || index >= playlist.length) return;
-                
-                currentTrackIndex = index;
-                const track = playlist[currentTrackIndex];
-                
-                // 创建音频元素
+
                 if (audioElement) {
                     audioElement.pause();
                 }
-                
-                audioElement = new Audio();
-                audioElement.src = track.url;
-                audioElement.crossOrigin = "anonymous";
-                // 添加iOS息屏播放支持
-                audioElement.setAttribute('playsinline', '');
-                audioElement.setAttribute('webkit-playsinline', '');
-                
-                // 连接可视化器
+
+                audioElement = new Audio(URL.createObjectURL(file));
                 visualizer.connectAudio(audioElement);
-                
-                // 更新UI
-                trackTitle.textContent = track.name;
-                trackArtist.textContent = currentLang === 'zh' ? "未知艺术家" : "Unknown Artist";
-                totalTimeEl.textContent = formatTime(track.duration || 0);
-                
-                // 设置音频事件
+
+                // 设置元数据
+                trackTitle.textContent = file.name.replace(/\.[^/.]+$/, "");
+                trackArtist.textContent = '未知艺术家';
+
+                // 设置事件监听
                 audioElement.addEventListener('loadedmetadata', function() {
                     totalTimeEl.textContent = formatTime(audioElement.duration);
+                    file.duration = formatTime(audioElement.duration);
+                    updatePlaylistDisplay();
                 });
-                
-                audioElement.addEventListener('timeupdate', updateProgress);
-                audioElement.addEventListener('ended', playNext);
-                
-                // 启用播放按钮
-                playToggle.disabled = false;
-                
-                const texts = i18n[currentLang];
-                appState.setState('ready', texts.loaded.replace('{name}', track.name));
-                
-                // 更新播放列表高亮
-                renderPlaylist();
-                
-                // 重置不活动计时器
-                resetInactivityTimer();
+
+                audioElement.addEventListener('timeupdate', function() {
+                    updateProgress();
+                    currentTimeEl.textContent = formatTime(audioElement.currentTime);
+                });
+
+                audioElement.addEventListener('ended', function() {
+                    playNext();
+                });
+
+                // 播放音频
+                audioElement.play().then(() => {
+                    isPlaying = true;
+                    playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
+                    updateStatus(`正在播放: ${trackTitle.textContent}`);
+                }).catch(error => {
+                    console.error('播放失败:', error);
+                    updateStatus('播放失败，请点击播放按钮重试');
+                });
             }
-            
-            // 播放音乐
-            function playMusic() {
-                if (!audioElement || !audioContext) return;
-                
-                // 如果音频上下文是暂停状态，恢复它
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-                
-                // iOS Safari需要用户交互才能播放音频
-                const playPromise = audioElement.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        isPlaying = true;
-                        playToggle.innerHTML = '<i class="material-icons">pause</i>';
-                        
-                        const texts = i18n[currentLang];
-                        appState.setState('playing', texts.playing);
-                        
-                        // 添加动态色彩动画
-                        document.body.classList.add('audio-playing');
-                        
-                        // 重置不活动计时器
-                        resetInactivityTimer();
-                        
-                        // 触觉反馈
-                        AppleInteraction.hapticFeedback('light');
-                    }).catch(error => {
-                        console.error('播放失败:', error);
-                        const texts = i18n[currentLang];
-                        appState.setState('error', '播放失败: ' + error.message);
-                    });
-                }
-            }
-            
-            // 暂停音乐
-            function pauseMusic() {
-                if (audioElement && isPlaying) {
-                    audioElement.pause();
-                    isPlaying = false;
-                    playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
-                    
-                    const texts = i18n[currentLang];
-                    appState.setState('ready', texts.paused);
-                    
-                    // 移除动态色彩动画
-                    document.body.classList.remove('audio-playing');
-                }
-            }
-            
-            // 播放下一首
-            function playNext() {
-                if (playlist.length === 0) return;
-                
-                let nextIndex;
-                if (isShuffled) {
-                    nextIndex = Math.floor(Math.random() * playlist.length);
-                } else {
-                    nextIndex = (currentTrackIndex + 1) % playlist.length;
-                }
-                
-                loadTrack(nextIndex);
-                if (isPlaying) {
-                    playMusic();
-                }
-            }
-            
-            // 播放上一首
-            function playPrev() {
-                if (playlist.length === 0) return;
-                
-                let prevIndex;
-                if (isShuffled) {
-                    prevIndex = Math.floor(Math.random() * playlist.length);
-                } else {
-                    prevIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
-                }
-                
-                loadTrack(prevIndex);
-                if (isPlaying) {
-                    playMusic();
-                }
-            }
-            
-            // 更新播放进度
+
+            // 更新进度条
             function updateProgress() {
-                if (!audioElement) return;
-                
-                const progress = (audioElement.currentTime / audioElement.duration) * 100;
-                progressBar.style.width = `${progress}%`;
-                currentTimeEl.textContent = formatTime(audioElement.currentTime);
+                if (audioElement && audioElement.duration) {
+                    const progress = (audioElement.currentTime / audioElement.duration) * 100;
+                    progressBar.style.width = `${progress}%`;
+                }
             }
-            
-            // 格式化时间显示
+
+            // 格式化时间
             function formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
                 const mins = Math.floor(seconds / 60);
                 const secs = Math.floor(seconds % 60);
                 return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
             }
-            
-            // 渲染播放列表
-            function renderPlaylist() {
-                playlistItems.innerHTML = '';
-                
-                playlist.forEach((track, index) => {
-                    const item = document.createElement('div');
-                    item.className = `playlist-item ${index === currentTrackIndex ? 'active' : ''}`;
-                    item.dataset.index = index;
-                    
-                    item.innerHTML = `
-                        <div class="playlist-item-icon">
-                            <i class="material-icons">music_note</i>
-                        </div>
-                        <div class="playlist-item-info">
-                            <div class="playlist-item-title">${track.name}</div>
-                            <div class="playlist-item-artist">${currentLang === 'zh' ? '未知艺术家' : 'Unknown Artist'}</div>
-                        </div>
-                        <div class="playlist-item-duration">${formatTime(track.duration || 0)}</div>
-                    `;
-                    
-                    item.addEventListener('click', () => {
-                        loadTrack(index);
-                        if (isPlaying) {
-                            playMusic();
-                        }
-                    });
-                    
-                    playlistItems.appendChild(item);
-                });
+
+            // 更新状态
+            function updateStatus(message) {
+                status.textContent = message;
+                setTimeout(() => {
+                    if (status.textContent === message) {
+                        status.textContent = '';
+                    }
+                }, 3000);
             }
-            
-            // 切换随机播放
-            function toggleShuffle() {
-                isShuffled = !isShuffled;
-                shuffleButton.classList.toggle('active', isShuffled);
-                
-                const texts = i18n[currentLang];
-                appState.setState('ready', isShuffled ? texts.shuffleOn : texts.shuffleOff);
-                AppleInteraction.hapticFeedback('light');
+
+            // 播放上一首
+            function playPrevious() {
+                if (playlist.length > 1) {
+                    currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
+                    setupAudio(playlist[currentTrack].file);
+                    updatePlaylistDisplay();
+                } else {
+                    updateStatus('播放列表中没有其他歌曲');
+                }
             }
-            
-            // 清空播放列表
-            function clearPlaylist() {
-                if (playlist.length === 0) return;
-                
+
+            // 播放下一首
+            function playNext() {
+                if (playlist.length > 1) {
+                    if (isShuffled) {
+                        let newTrack;
+                        do {
+                            newTrack = Math.floor(Math.random() * playlist.length);
+                        } while (newTrack === currentTrack && playlist.length > 1);
+                        currentTrack = newTrack;
+                    } else {
+                        currentTrack = (currentTrack + 1) % playlist.length;
+                    }
+                    setupAudio(playlist[currentTrack].file);
+                    updatePlaylistDisplay();
+                } else {
+                    updateStatus('播放列表中没有其他歌曲');
+                }
+            }
+
+            // 重置播放器界面
+            function resetPlayerUI() {
                 if (audioElement) {
                     audioElement.pause();
-                    isPlaying = false;
-                    playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
-                    document.body.classList.remove('audio-playing');
+                    audioElement = null;
                 }
-                
-                // 释放URL对象
-                playlist.forEach(track => {
-                    if (track.url && track.url.startsWith('blob:')) {
-                        URL.revokeObjectURL(track.url);
-                    }
-                });
-                
-                playlist = [];
-                currentTrackIndex = 0;
-                
-                const texts = i18n[currentLang];
-                trackTitle.innerHTML = `<span class="zh-only">${texts.waiting}</span><span class="en-only">${texts.waiting}</span>`;
-                trackArtist.innerHTML = `<span class="zh-only">${texts.uploadHint}</span><span class="en-only">${texts.uploadHint}</span>`;
-                
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                    currentStream = null;
+                }
+                isPlaying = false;
+                isMicActive = false;
+                micToggle.classList.remove('active');
+                micControls.style.display = 'none';
+                playToggle.innerHTML = '<i class="material-icons">play_arrow</i><span class="tooltip">播放</span>';
+                trackTitle.textContent = '请上传音乐文件';
+                trackArtist.textContent = '或使用麦克风输入';
                 progressBar.style.width = '0%';
                 currentTimeEl.textContent = '0:00';
                 totalTimeEl.textContent = '0:00';
-                renderPlaylist();
-                
-                appState.setState('ready', texts.playlistCleared);
-                AppleInteraction.hapticFeedback('medium');
             }
-            
-            // 随机排序播放列表
-            function shufflePlaylist() {
-                if (playlist.length === 0) return;
-                
-                for (let i = playlist.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
-                }
-                
-                // 如果正在播放，更新当前索引
-                if (audioElement && isPlaying) {
-                    const currentTrack = playlist.find(track => track.id === playlist[currentTrackIndex].id);
-                    currentTrackIndex = playlist.indexOf(currentTrack);
-                }
-                
-                renderPlaylist();
-                
-                const texts = i18n[currentLang];
-                appState.setState('ready', texts.playlistShuffled);
-                AppleInteraction.hapticFeedback('light');
-            }
-            
-            // 切换麦克风
-            function toggleMicrophone() {
-                if (isMicActive) {
-                    // 关闭麦克风
-                    if (audioElement) {
-                        audioElement.pause();
-                        isPlaying = false;
-                        playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
-                        document.body.classList.remove('audio-playing');
-                    }
-                    isMicActive = false;
-                    micToggle.classList.remove('active');
+
+            // 更新播放列表显示
+            function updatePlaylistDisplay() {
+                playlistItems.innerHTML = '';
+                playlist.forEach((item, index) => {
+                    const playlistItem = document.createElement('div');
+                    playlistItem.className = `playlist-item ${index === currentTrack ? 'active' : ''}`;
+                    playlistItem.innerHTML = `
+                        <i class="material-icons playlist-item-icon">music_note</i>
+                        <div class="playlist-item-info">
+                            <div class="playlist-item-title">${item.title}</div>
+                            <div class="playlist-item-artist">${item.artist}</div>
+                        </div>
+                        <div class="playlist-item-duration">${item.duration || '--:--'}</div>
+                        <i class="material-icons playlist-item-delete" data-index="${index}">delete</i>
+                    `;
                     
-                    const texts = i18n[currentLang];
-                    appState.setState('ready', texts.micOff);
-                } else {
-                    // 开启麦克风
-                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        const texts = i18n[currentLang];
-                        appState.setState('error', texts.error.noSupportAPI);
-                        return;
-                    }
-                    
-                    if (!audioContext && !initAudioContext()) {
-                        return;
-                    }
-                    
-                    const texts = i18n[currentLang];
-                    appState.setState('loading', texts.micOn);
-                    
-                    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-                        .then(function(stream) {
-                            // 创建媒体流源
-                            const source = audioContext.createMediaStreamSource(stream);
-                            source.connect(visualizer.analyser);
-                            
-                            isMicActive = true;
-                            micToggle.classList.add('active');
-                            appState.setState('ready', texts.micOn);
-                            trackTitle.textContent = currentLang === 'zh' ? '麦克风输入' : 'Microphone Input';
-                            trackArtist.textContent = currentLang === 'zh' ? '环境声音' : 'Ambient Sound';
-                            
-                            // 如果正在播放音乐，暂停它
-                            if (isPlaying) {
-                                pauseMusic();
-                            }
-                            
-                            AppleInteraction.hapticFeedback('success');
-                        })
-                        .catch(function(err) {
-                            ErrorHandler.handleError(err, '麦克风访问');
-                        });
-                }
-                
-                // 重置不活动计时器
-                resetInactivityTimer();
-            }
-            
-            // 切换可视化主题
-            function setVisualizationMode(mode) {
-                if (visualizer) {
-                    visualizer.setMode(mode);
-                    
-                    // 更新按钮状态
-                    themeButtons.forEach(button => {
-                        button.classList.toggle('active', button.dataset.mode === mode);
+                    playlistItem.addEventListener('click', () => {
+                        currentTrack = index;
+                        setupAudio(item.file);
+                        updatePlaylistDisplay();
                     });
                     
-                    const texts = i18n[currentLang];
-                    const themeName = texts.themes[mode] || mode;
-                    appState.setState('ready', texts.themeChanged.replace('{theme}', themeName));
-                    AppleInteraction.showSwipeFeedback(themeName);
-                    AppleInteraction.hapticFeedback('light');
-                }
-                
-                // 重置不活动计时器
-                resetInactivityTimer();
+                    playlistItem.querySelector('.playlist-item-delete').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        playlist.splice(index, 1);
+                        if (index === currentTrack) {
+                            if (playlist.length > 0) {
+                                currentTrack = Math.min(currentTrack, playlist.length - 1);
+                                setupAudio(playlist[currentTrack].file);
+                            } else {
+                                resetPlayerUI();
+                            }
+                        } else if (index < currentTrack) {
+                            currentTrack--;
+                        }
+                        updatePlaylistDisplay();
+                        savePlaylist();
+                        updateStatus('已删除歌曲');
+                    });
+                    
+                    playlistItems.appendChild(playlistItem);
+                });
+                savePlaylist();
             }
+
+            // 保存播放列表到本地存储
+            function savePlaylist() {
+                try {
+                    // 只保存必要的信息，不保存文件对象
+                    const playlistData = playlist.map(item => ({
+                        title: item.title,
+                        artist: item.artist,
+                        duration: item.duration
+                    }));
+                    localStorage.setItem('sonoriaPlaylist', JSON.stringify(playlistData));
+                } catch (error) {
+                    console.error('保存播放列表失败:', error);
+                }
+            }
+
+            // 从本地存储加载播放列表
+            function loadPlaylist() {
+                try {
+                    const saved = localStorage.getItem('sonoriaPlaylist');
+                    if (saved) {
+                        const playlistData = JSON.parse(saved);
+                        // 注意：由于安全限制，我们无法重新创建文件对象
+                        // 所以加载的播放列表只显示信息，不能播放
+                        playlist = playlistData.map(item => ({
+                            title: item.title,
+                            artist: item.artist,
+                            duration: item.duration,
+                            file: null // 文件对象无法保存
+                        }));
+                        updatePlaylistDisplay();
+                    }
+                } catch (error) {
+                    console.error('加载播放列表失败:', error);
+                }
+            }
+
+            // 切换播放列表显示
+            function togglePlaylist() {
+                playlistSection.classList.toggle('expanded');
+            }
+
+            // 初始化
+            loadPlaylist();
+            initAudioContext();
             
-            // 重置不活动计时器
-            function resetInactivityTimer() {
-                clearTimeout(inactivityTimer);
-                
-                // 显示完整播放器
-                playerCard.classList.remove('minimized');
-                mainContainer.style.opacity = '1';
-                
-                // 15秒后最小化播放器
-                inactivityTimer = setTimeout(() => {
+            if (!localStorage.getItem('sonoriaOnboarded')) {
+                onboardingModal.classList.add('show');
+                localStorage.setItem('sonoriaOnboarded', 'true');
+            }
+
+            // 事件监听器
+            uploadButton.addEventListener('click', () => audioUpload.click());
+            uploadArea.addEventListener('click', () => audioUpload.click());
+
+            // 文件上传处理
+            audioUpload.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    let validFiles = 0;
+                    
+                    Array.from(files).forEach(file => {
+                        if (file.type.startsWith('audio/')) {
+                            if (file.size > 100 * 1024 * 1024) {
+                                updateStatus(`文件 ${file.name} 过大，需小于100MB`);
+                                return;
+                            }
+                            
+                            // 创建播放列表项
+                            const playlistItem = {
+                                title: file.name.replace(/\.[^/.]+$/, ""),
+                                artist: '未知艺术家',
+                                duration: '--:--',
+                                file: file
+                            };
+                            
+                            playlist.push(playlistItem);
+                            validFiles++;
+                            
+                            // 如果是第一个文件，设置为当前曲目但不自动播放
+                            if (validFiles === 1 && playlist.length === 1) {
+                                currentTrack = 0;
+                                // 不自动播放，等待用户点击播放
+                            }
+                        } else {
+                            updateStatus(`文件 ${file.name} 不是音频文件`);
+                        }
+                    });
+                    
+                    if (validFiles > 0) {
+                        updatePlaylistDisplay();
+                        updateStatus(`已添加 ${validFiles} 个音频文件`);
+                    }
+                    
+                    // 重置文件输入，允许再次选择相同文件
+                    e.target.value = '';
+                }
+            });
+
+            // 播放/暂停按钮
+            playToggle.addEventListener('click', () => {
+                if (isMicActive) {
+                    // 麦克风模式
                     if (isPlaying) {
-                        playerCard.classList.add('minimized');
-                        mainContainer.style.opacity = '0.7';
-                    }
-                }, 15000);
-            }
-            
-            // 显示滑动提示
-            function showSwipeHint() {
-                swipeHint.classList.add('show');
-                setTimeout(() => {
-                    swipeHint.classList.remove('show');
-                }, 3000);
-            }
-            
-            // 键盘快捷键支持
-            function initKeyboardControls() {
-                document.addEventListener('keydown', (e) => {
-                    if (e.target.tagName === 'INPUT') return;
-                    
-                    switch(e.code) {
-                        case 'Space':
-                            e.preventDefault();
-                            playToggle.click();
-                            break;
-                        case 'ArrowRight':
-                            nextButton.click();
-                            break;
-                        case 'ArrowLeft':
-                            prevButton.click();
-                            break;
-                        case 'KeyM':
-                            micToggle.click();
-                            break;
-                        case 'Escape':
-                            // 退出沉浸模式或最小化
-                            playerCard.classList.toggle('minimized');
-                            break;
-                    }
-                });
-            }
-            
-            // 事件监听
-            uploadArea.addEventListener('click', function() {
-                audioUpload.click();
-            });
-            
-            uploadArea.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                uploadArea.style.borderColor = 'rgba(102, 126, 234, 0.7)';
-                uploadArea.style.background = 'rgba(102, 126, 234, 0.1)';
-            });
-            
-            uploadArea.addEventListener('dragleave', function() {
-                uploadArea.style.borderColor = 'var(--border-light)';
-                uploadArea.style.background = 'transparent';
-            });
-            
-            uploadArea.addEventListener('drop', function(e) {
-                e.preventDefault();
-                uploadArea.style.borderColor = 'var(--border-light)';
-                uploadArea.style.background = 'transparent';
-                
-                if (e.dataTransfer.files.length) {
-                    handleFileUpload(e.dataTransfer.files);
-                }
-            });
-            
-            audioUpload.addEventListener('change', function(e) {
-                if (e.target.files.length) {
-                    handleFileUpload(e.target.files);
-                }
-            });
-            
-            playToggle.addEventListener('click', function() {
-                if (isPlaying) {
-                    pauseMusic();
-                } else {
-                    playMusic();
-                }
-            });
-            
-            prevButton.addEventListener('click', playPrev);
-            nextButton.addEventListener('click', playNext);
-            shuffleButton.addEventListener('click', toggleShuffle);
-            clearButton.addEventListener('click', clearPlaylist);
-            sortButton.addEventListener('click', shufflePlaylist);
-            micToggle.addEventListener('click', toggleMicrophone);
-            
-            // 语言切换
-            langToggle.addEventListener('click', function() {
-                setLanguage(currentLang === 'zh' ? 'en' : 'zh');
-            });
-            
-            // 模式切换按钮事件
-            themeButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    setVisualizationMode(this.dataset.mode);
-                });
-            });
-            
-            // 触摸滑动事件
-            let touchStartX = 0;
-            let touchEndX = 0;
-            
-            document.addEventListener('touchstart', function(e) {
-                touchStartX = e.changedTouches[0].screenX;
-            });
-            
-            document.addEventListener('touchend', function(e) {
-                touchEndX = e.changedTouches[0].screenX;
-                handleSwipe();
-            });
-            
-            function handleSwipe() {
-                const swipeThreshold = 50;
-                const diff = touchEndX - touchStartX;
-                
-                if (Math.abs(diff) > swipeThreshold) {
-                    if (diff > 0) {
-                        // 右滑 - 上一个主题
-                        const currentMode = document.querySelector('.theme-button.active').dataset.mode;
-                        const modes = ['aurora', 'cosmic', 'neural', 'liquid', 'quantum'];
-                        const currentIndex = modes.indexOf(currentMode);
-                        const prevIndex = (currentIndex - 1 + modes.length) % modes.length;
-                        setVisualizationMode(modes[prevIndex]);
+                        visualizer.stop();
+                        isPlaying = false;
+                        playToggle.innerHTML = '<i class="material-icons">play_arrow</i><span class="tooltip">播放</span>';
+                        updateStatus('麦克风输入已暂停');
                     } else {
-                        // 左滑 - 下一个主题
-                        const currentMode = document.querySelector('.theme-button.active').dataset.mode;
-                        const modes = ['aurora', 'cosmic', 'neural', 'liquid', 'quantum'];
-                        const currentIndex = modes.indexOf(currentMode);
-                        const nextIndex = (currentIndex + 1) % modes.length;
-                        setVisualizationMode(modes[nextIndex]);
+                        visualizer.start();
+                        isPlaying = true;
+                        playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
+                        updateStatus('正在收听麦克风输入');
                     }
-                    
-                    showSwipeHint();
+                } else if (audioElement) {
+                    // 文件模式 - 有音频元素
+                    if (isPlaying) {
+                        audioElement.pause();
+                        isPlaying = false;
+                        playToggle.innerHTML = '<i class="material-icons">play_arrow</i><span class="tooltip">播放</span>';
+                    } else {
+                        audioElement.play().then(() => {
+                            isPlaying = true;
+                            playToggle.innerHTML = '<i class="material-icons">pause</i><span class="tooltip">暂停</span>';
+                        }).catch(error => {
+                            console.error('播放失败:', error);
+                            updateStatus('播放失败，请检查音频文件');
+                        });
+                    }
+                } else if (playlist.length > 0) {
+                    // 文件模式 - 没有音频元素但有播放列表
+                    currentTrack = 0;
+                    setupAudio(playlist[currentTrack].file);
+                } else {
+                    updateStatus('请先上传音乐文件');
                 }
-            }
-            
-            // 鼠标移动事件 - 重置不活动计时器
-            document.addEventListener('mousemove', resetInactivityTimer);
-            document.addEventListener('touchstart', resetInactivityTimer);
-            
-            // 初始化音频系统
-            if (!initAudioContext()) {
-                const texts = i18n[currentLang];
-                appState.setState('error', texts.error.noSupport);
-            } else {
-                const texts = i18n[currentLang];
-                appState.setState('ready', texts.ready);
-            }
-            
-            // 初始化键盘控制
-            initKeyboardControls();
-            
-            // 显示滑动提示
-            setTimeout(showSwipeHint, 2000);
+            });
+
+            // 麦克风按钮
+            micToggle.addEventListener('click', async () => {
+                if (isMicActive) {
+                    // 关闭麦克风
+                    isMicActive = false;
+                    micToggle.classList.remove('active');
+                    micControls.style.display = 'none';
+                    if (currentStream) {
+                        currentStream.getTracks().forEach(track => track.stop());
+                        currentStream = null;
+                    }
+                    visualizer.stop();
+                    isPlaying = false;
+                    playToggle.innerHTML = '<i class="material-icons">play_arrow</i><span class="tooltip">播放</span>';
+                    updateStatus('麦克风已关闭');
+                    
+                    // 恢复播放列表显示
+                    if (playlist.length > 0) {
+                        trackTitle.textContent = playlist[currentTrack].title;
+                        trackArtist.textContent = playlist[currentTrack].artist;
+                    } else {
+                        trackTitle.textContent = '请上传音乐文件';
+                        trackArtist.textContent = '或使用麦克风输入';
+                    }
+                } else {
+                    // 开启麦克风
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true
+                            } 
+                        });
+                        setupAudio(stream, true);
+                        isMicActive = true;
+                        micToggle.classList.add('active');
+                    } catch (err) {
+                        console.error('麦克风访问失败:', err);
+                        updateStatus('麦克风访问被拒绝或不可用');
+                    }
+                }
+            });
+
+            // 其他事件监听器保持不变
+            micVolume.addEventListener('input', () => {
+                // 麦克风音量控制
+            });
+
+            shuffleButton.addEventListener('click', () => {
+                isShuffled = !isShuffled;
+                shuffleButton.classList.toggle('active');
+                updateStatus(isShuffled ? '随机播放已开启' : '随机播放已关闭');
+            });
+
+            loopButton.addEventListener('click', () => {
+                isLooping = !isLooping;
+                if (audioElement) audioElement.loop = isLooping;
+                loopButton.classList.toggle('active');
+                updateStatus(isLooping ? '循环播放已开启' : '循环播放已关闭');
+            });
+
+            clearPlaylist.addEventListener('click', () => {
+                playlist = [];
+                currentTrack = 0;
+                resetPlayerUI();
+                updatePlaylistDisplay();
+                updateStatus('播放列表已清空');
+            });
+
+            prevButton.addEventListener('click', () => {
+                playPrevious();
+            });
+
+            nextButton.addEventListener('click', () => {
+                playNext();
+            });
+
+            playlistToggle.addEventListener('click', () => {
+                togglePlaylist();
+            });
+
+            closePlaylist.addEventListener('click', () => {
+                togglePlaylist();
+            });
+
+            progressBarContainer.addEventListener('click', (e) => {
+                if (audioElement && audioElement.duration) {
+                    const rect = progressBarContainer.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const percentage = x / rect.width;
+                    audioElement.currentTime = percentage * audioElement.duration;
+                    updateProgress();
+                }
+            });
+
+            themeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    visualizer.setMode(btn.dataset.mode);
+                    themeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+
+            closeModal.addEventListener('click', () => {
+                onboardingModal.classList.remove('show');
+            });
+
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('light');
+                updateStatus(document.body.classList.contains('light') ? '已切换到亮色主题' : '已切换到暗色主题');
+            });
+
+            // 初始化完成
+            updateStatus('欢迎使用 Sonoria - 上传音乐或使用麦克风开始体验');
         });
     </script>
 </body>
