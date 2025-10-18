@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sonoria Pro - 沉浸式音频可视化体验</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -56,7 +56,7 @@
             height: 100vh;
             width: 100vw;
             user-select: none;
-            touch-action: none;
+            touch-action: manipulation; /* 优化移动端触摸体验 */
             line-height: 1.6;
         }
 
@@ -104,6 +104,9 @@
             transition: var(--transition);
             position: relative;
             overflow: hidden;
+            max-height: 90vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* 优化iOS滚动 */
         }
 
         /* 横屏模式优化 */
@@ -114,22 +117,18 @@
                 flex-direction: row;
                 align-items: center;
                 padding: 15px 20px;
+                max-height: 90vh;
             }
             
             .logo-section {
                 margin-bottom: 0;
                 margin-right: 20px;
+                flex-shrink: 0;
             }
-        }
-
-        .player-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            
+            .upload-area {
+                display: none; /* 横屏时隐藏上传区域节省空间 */
+            }
         }
 
         .logo-section {
@@ -200,6 +199,7 @@
         .player-info {
             text-align: center;
             margin-bottom: 20px;
+            padding: 0 10px;
         }
 
         .track-title {
@@ -233,6 +233,7 @@
             font-family: inherit;
             font-size: 0.9rem;
             transition: var(--transition);
+            -webkit-appearance: none; /* 移除iOS默认样式 */
         }
 
         .url-input:focus {
@@ -252,6 +253,7 @@
             font-weight: 500;
             transition: var(--transition);
             width: 100%;
+            -webkit-appearance: none; /* 移除iOS默认样式 */
         }
 
         .parse-button:hover {
@@ -271,6 +273,7 @@
             margin-bottom: 10px;
             cursor: pointer;
             position: relative;
+            touch-action: manipulation;
         }
 
         .progress {
@@ -330,6 +333,7 @@
             backdrop-filter: blur(10px);
             position: relative;
             overflow: hidden;
+            -webkit-tap-highlight-color: transparent; /* 移除移动端点击高亮 */
         }
 
         .icon-button:hover {
@@ -398,9 +402,10 @@
             margin-top: 20px;
             position: relative;
             overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .upload-area:hover {
+        .upload-area:hover, .upload-area.dragover {
             border-color: rgba(102, 126, 234, 0.6);
             background: rgba(102, 126, 234, 0.08);
         }
@@ -435,6 +440,7 @@
             font-size: 14px;
             font-weight: 500;
             backdrop-filter: blur(10px);
+            -webkit-tap-highlight-color: transparent;
         }
 
         .theme-button.active {
@@ -461,6 +467,7 @@
         .playlist-section.expanded {
             max-height: 300px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* 优化iOS滚动 */
         }
 
         .playlist-header {
@@ -497,6 +504,7 @@
             cursor: pointer;
             transition: var(--transition);
             position: relative;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .playlist-item:hover {
@@ -602,6 +610,7 @@
             border-radius: var(--radius-lg);
             padding: 28px;
             max-width: 440px;
+            width: 90%;
             text-align: center;
             box-shadow: var(--shadow);
             border: 1px solid var(--border-light);
@@ -641,6 +650,7 @@
             font-size: 1rem;
             transition: var(--transition);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            -webkit-appearance: none;
         }
 
         .modal-content button:hover {
@@ -689,6 +699,7 @@
             cursor: pointer;
             font-size: 0.8rem;
             transition: var(--transition);
+            -webkit-tap-highlight-color: transparent;
         }
 
         .language-switcher:hover {
@@ -706,6 +717,7 @@
             cursor: pointer;
             font-size: 0.8rem;
             transition: var(--transition);
+            -webkit-tap-highlight-color: transparent;
         }
 
         .performance-toggle.active {
@@ -748,6 +760,13 @@
             }
             .bottom-nav {
                 gap: 12px;
+            }
+            .theme-selector {
+                gap: 8px;
+            }
+            .theme-button {
+                padding: 6px 12px;
+                font-size: 13px;
             }
         }
     </style>
@@ -856,7 +875,7 @@
         </div>
     </div>
 
-    <input type="file" id="audio-upload" accept="audio/mp3,audio/wav,audio/ma, audio/flac,audio/*" multiple>
+    <input type="file" id="audio-upload" accept="audio/mp3,audio/wav,audio/m4a,audio/flac,audio/*" multiple>
 
     <script>
         // 国际化支持
@@ -946,21 +965,39 @@
                     this.performanceMode = true;
                 }
                 
+                // 初始化时清除画布
+                this.clearCanvas();
                 this.resizeCanvas();
-                window.addEventListener('resize', this.resizeCanvas.bind(this));
+                
+                // 使用被动事件监听器优化滚动性能
+                window.addEventListener('resize', this.resizeCanvas.bind(this), { passive: true });
                 
                 // 初始化粒子和波浪
                 this.initParticles();
                 this.initWaves();
             }
 
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
             resizeCanvas() {
-                this.canvas.width = window.innerWidth;
-                this.canvas.height = window.innerHeight;
+                // 防止频繁触发resize导致的性能问题
+                if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
                 
-                // 重新初始化粒子以适应新尺寸
-                this.initParticles();
-                this.initWaves();
+                this.resizeTimeout = setTimeout(() => {
+                    const { innerWidth: width, innerHeight: height } = window;
+                    
+                    // 仅在尺寸变化时重绘
+                    if (this.canvas.width !== width || this.canvas.height !== height) {
+                        this.canvas.width = width;
+                        this.canvas.height = height;
+                        
+                        // 重新初始化粒子以适应新尺寸
+                        this.initParticles();
+                        this.initWaves();
+                    }
+                }, 100); // 节流处理
             }
 
             connectAudio(source) {
@@ -1045,10 +1082,13 @@
 
             getBandAverage(start, end) {
                 let sum = 0;
-                for (let i = start; i <= end; i++) {
+                const count = Math.min(end, this.dataArray.length - 1) - start + 1;
+                if (count <= 0) return 0;
+                
+                for (let i = start; i <= Math.min(end, this.dataArray.length - 1); i++) {
                     sum += this.dataArray[i] || 0;
                 }
-                return sum / (end - start + 1);
+                return sum / count;
             }
 
             animate(timestamp) {
@@ -1295,19 +1335,31 @@
             }
 
             start() {
-                this.isPlaying = true;
-                this.animationId = requestAnimationFrame(this.animate.bind(this));
+                if (!this.isPlaying) {
+                    this.isPlaying = true;
+                    this.animationId = requestAnimationFrame(this.animate.bind(this));
+                }
             }
 
             stop() {
                 this.isPlaying = false;
                 if (this.animationId) {
                     cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
                 }
+            }
+
+            // 清理资源
+            destroy() {
+                this.stop();
+                this.clearCanvas();
+                window.removeEventListener('resize', this.resizeCanvas.bind(this));
+                this.particles = [];
+                this.waves = [];
             }
         }
 
-        // 音频链接解析功能 - 修复版
+        // 音频链接解析功能 - 增强版
         async function parseAudioUrl(url) {
             showLoading(true);
             
@@ -1337,7 +1389,7 @@
                         title: 'B站音频示例',
                         url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' // 实际可用的测试音频
                     };
-                } else if (url.startsWith('http') && (url.endsWith('.mp3') || url.endsWith('.wav') || url.endsWith('.flac'))) {
+                } else if (url.startsWith('http') && (url.endsWith('.mp3') || url.endsWith('.wav') || url.endsWith('.flac') || url.endsWith('.m4a'))) {
                     // 直接可播放的音频URL
                     showNotification('音频URL解析成功');
                     const fileName = url.split('/').pop().split('?')[0];
@@ -1357,7 +1409,7 @@
             }
         }
 
-        // 拖拽排序辅助函数 - 修复版
+        // 拖拽排序辅助函数 - 增强版
         function getDragAfterElement(container, y) {
             const draggableElements = [...container.querySelectorAll('.playlist-item:not(.dragging)')];
             
@@ -1434,23 +1486,24 @@
             const languageSwitcher = document.getElementById('language-switcher');
             const performanceToggle = document.getElementById('performance-toggle');
 
-            let audioContext;
-            let visualizer;
+            let audioContext = null;
+            let visualizer = null;
             let audioElement = null;
             let isPlaying = false;
             let isMicActive = false;
             let playlist = [];
             let currentTrack = 0;
             let currentStream = null;
+            let isUserInteracted = false; // 标记用户是否已交互
 
             // 初始化语言
             const userLang = navigator.language.includes('zh') ? 'zh-CN' : 'en';
             setLanguage(userLang);
 
+            // 确保在用户首次交互后初始化音频上下文（解决浏览器自动播放限制）
             function initAudioContext() {
-                if (!audioContext) {
+                if (!audioContext && isUserInteracted) {
                     try {
-                        // 修复iOS等设备必须用户交互后才能初始化的问题
                         audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         visualizer = new OptimizedVisualizer(canvas, audioContext);
                         
@@ -1470,10 +1523,31 @@
                 }
             }
 
-            // 修复音频连接问题
+            // 标记用户交互
+            function markUserInteraction() {
+                if (!isUserInteracted) {
+                    isUserInteracted = true;
+                    initAudioContext(); // 尝试初始化音频上下文
+                }
+            }
+
+            // 为所有交互元素添加用户交互标记
+            document.querySelectorAll('button, .upload-area, .progress-bar, .url-input').forEach(el => {
+                el.addEventListener('click', markUserInteraction);
+                el.addEventListener('touchstart', markUserInteraction, { once: true });
+            });
+
+            // 音频设置函数 - 增强版
             function setupAudio(source, isUrl = false, isMic = false) {
-                // 确保在用户交互后初始化音频上下文
+                // 确保用户已交互
+                if (!isUserInteracted) {
+                    showNotification('请先点击界面任意位置激活音频功能');
+                    return;
+                }
+                
+                // 确保音频上下文已初始化
                 initAudioContext();
+                if (!audioContext) return;
                 
                 if (isMic) {
                     try {
@@ -1495,7 +1569,9 @@
 
                 if (audioElement) {
                     audioElement.pause();
-                    URL.revokeObjectURL(audioElement.src); // 释放资源
+                    if (audioElement.src.startsWith('blob:')) {
+                        URL.revokeObjectURL(audioElement.src); // 释放blob资源
+                    }
                 }
                 
                 if (currentStream) {
@@ -1519,6 +1595,9 @@
 
                 visualizer.connectAudio(audioElement);
 
+                // 预加载元数据
+                audioElement.load();
+                
                 audioElement.addEventListener('loadedmetadata', function() {
                     totalTimeEl.textContent = formatTime(audioElement.duration);
                     // 更新播放列表中的时长信息
@@ -1539,11 +1618,29 @@
                     playNext();
                 });
 
-                // 错误处理
+                // 错误处理增强
                 audioElement.addEventListener('error', function() {
                     console.error('音频播放错误:', audioElement.error);
-                    showNotification('音频播放失败，请尝试其他文件');
+                    const errorMessages = {
+                        1: '音频加载中断',
+                        2: '音频格式不支持',
+                        3: '音频解码失败',
+                        4: '音频播放中断'
+                    };
+                    showNotification(`播放失败: ${errorMessages[audioElement.error.code] || '未知错误'}`);
                     showLoading(false);
+                });
+
+                // 网络错误处理
+                audioElement.addEventListener('abort', function() {
+                    console.error('音频加载被中止');
+                    showNotification('音频加载被中止');
+                    showLoading(false);
+                });
+
+                audioElement.addEventListener('stalled', function() {
+                    console.error('音频加载停滞');
+                    showNotification('网络不稳定，音频加载停滞');
                 });
 
                 showLoading(true);
@@ -1561,7 +1658,7 @@
             }
 
             function updateProgress() {
-                if (audioElement && !isNaN(audioElement.duration)) {
+                if (audioElement && !isNaN(audioElement.duration) && isFinite(audioElement.duration)) {
                     const progress = (audioElement.currentTime / audioElement.duration) * 100;
                     progressBar.style.width = `${progress}%`;
                 }
@@ -1598,7 +1695,7 @@
                         audioElement.currentTime = 0;
                         isPlaying = false;
                         playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
-                        visualizer.stop();
+                        if (visualizer) visualizer.stop();
                     }
                     showNotification('已播放到列表末尾');
                 }
@@ -1628,7 +1725,7 @@
                 if (visualizer) visualizer.stop();
             }
 
-            // 修复播放列表显示和拖拽排序问题
+            // 播放列表显示和拖拽排序 - 增强版
             function updatePlaylistDisplay() {
                 playlistItems.innerHTML = '';
                 
@@ -1666,12 +1763,24 @@
                         updatePlaylistDisplay();
                     });
                     
-                    // 删除按钮事件
-                    element.querySelector('.playlist-item-delete').addEventListener('click', (e) => {
+                    // 删除按钮事件 - 防止冒泡
+                    const deleteBtn = element.querySelector('.playlist-item-delete');
+                    deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
+                        const idx = parseInt(deleteBtn.dataset.index);
                         // 保存要删除的元素信息
-                        const wasCurrent = index === currentTrack;
-                        playlist.splice(index, 1);
+                        const wasCurrent = idx === currentTrack;
+                        const itemToRemove = playlist[idx];
+                        
+                        // 释放资源
+                        if (!itemToRemove.isUrl && itemToRemove.file) {
+                            if (audioElement && audioElement.src.startsWith('blob:') && 
+                                itemToRemove.file.name === audioElement.src.split('/').pop()) {
+                                URL.revokeObjectURL(audioElement.src);
+                            }
+                        }
+                        
+                        playlist.splice(idx, 1);
                         
                         if (wasCurrent) {
                             if (playlist.length > 0) {
@@ -1681,7 +1790,7 @@
                             } else {
                                 resetPlayerUI();
                             }
-                        } else if (index < currentTrack) {
+                        } else if (idx < currentTrack) {
                             currentTrack--;
                         }
                         
@@ -1749,32 +1858,40 @@
                 }
             }
 
-            // 初始化
-            // 修复音频上下文必须在用户交互后初始化的问题（延迟到首次交互）
-            
+            // 初始化引导模态框
             if (!localStorage.getItem('sonoriaOnboarded')) {
                 onboardingModal.classList.add('show');
                 localStorage.setItem('sonoriaOnboarded', 'true');
             }
 
             // 事件监听器
-            uploadButton.addEventListener('click', () => audioUpload.click());
-            uploadArea.addEventListener('click', () => audioUpload.click());
+            uploadButton.addEventListener('click', () => {
+                markUserInteraction();
+                audioUpload.click();
+            });
+            
+            uploadArea.addEventListener('click', () => {
+                markUserInteraction();
+                audioUpload.click();
+            });
 
-            // 拖放上传
+            // 拖放上传增强
             uploadArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
+                uploadArea.classList.add('dragover');
                 uploadArea.style.borderColor = 'rgba(102, 126, 234, 0.8)';
                 uploadArea.style.background = 'rgba(102, 126, 234, 0.12)';
             });
 
             uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
                 uploadArea.style.borderColor = 'var(--border-light)';
                 uploadArea.style.background = 'transparent';
             });
 
             uploadArea.addEventListener('drop', (e) => {
                 e.preventDefault();
+                uploadArea.classList.remove('dragover');
                 uploadArea.style.borderColor = 'var(--border-light)';
                 uploadArea.style.background = 'transparent';
                 
@@ -1783,7 +1900,9 @@
                     let validFiles = 0;
                     
                     Array.from(files).forEach(file => {
-                        if (file.type.startsWith('audio/')) {
+                        if (file.type.startsWith('audio/') || 
+                            ['.mp3', '.wav', '.flac', '.m4a', '.aac'].includes(file.name.split('.').pop().toLowerCase())) {
+                            
                             if (file.size > 100 * 1024 * 1024) {
                                 showNotification(`文件 ${file.name} 过大，需小于100MB`);
                                 return;
@@ -1814,7 +1933,9 @@
                     let validFiles = 0;
                     
                     Array.from(files).forEach(file => {
-                        if (file.type.startsWith('audio/')) {
+                        if (file.type.startsWith('audio/') || 
+                            ['.mp3', '.wav', '.flac', '.m4a', '.aac'].includes(file.name.split('.').pop().toLowerCase())) {
+                            
                             if (file.size > 100 * 1024 * 1024) {
                                 showNotification(`文件 ${file.name} 过大，需小于100MB`);
                                 return;
@@ -1843,6 +1964,7 @@
 
             // 解析URL按钮事件
             parseButton.addEventListener('click', async () => {
+                markUserInteraction();
                 const url = urlInput.value.trim();
                 if (!url) {
                     showNotification('请输入音频链接');
@@ -1875,12 +1997,7 @@
             });
 
             playToggle.addEventListener('click', () => {
-                // 添加波纹效果
-                playToggle.classList.add('ripple');
-                setTimeout(() => playToggle.classList.remove('ripple'), 600);
-                
-                // 确保首次点击时初始化音频上下文
-                initAudioContext();
+                markUserInteraction();
                 
                 if (isMicActive) {
                     if (isPlaying) {
@@ -1923,12 +2040,7 @@
             });
 
             micToggle.addEventListener('click', async () => {
-                // 添加波纹效果
-                micToggle.classList.add('ripple');
-                setTimeout(() => micToggle.classList.remove('ripple'), 600);
-                
-                // 确保首次点击时初始化音频上下文
-                initAudioContext();
+                markUserInteraction();
                 
                 if (isMicActive) {
                     isMicActive = false;
@@ -1937,7 +2049,7 @@
                         currentStream.getTracks().forEach(track => track.stop());
                         currentStream = null;
                     }
-                    visualizer.stop();
+                    if (visualizer) visualizer.stop();
                     isPlaying = false;
                     playToggle.innerHTML = '<i class="material-icons">play_arrow</i>';
                     showNotification('麦克风已关闭');
@@ -1972,9 +2084,7 @@
             });
 
             clearPlaylist.addEventListener('click', () => {
-                // 添加波纹效果
-                clearPlaylist.classList.add('ripple');
-                setTimeout(() => clearPlaylist.classList.remove('ripple'), 600);
+                markUserInteraction();
                 
                 // 释放资源
                 playlist.forEach(item => {
@@ -1995,39 +2105,28 @@
             });
 
             prevButton.addEventListener('click', () => {
-                // 添加波纹效果
-                prevButton.classList.add('ripple');
-                setTimeout(() => prevButton.classList.remove('ripple'), 600);
-                
+                markUserInteraction();
                 playPrevious();
             });
 
             nextButton.addEventListener('click', () => {
-                // 添加波纹效果
-                nextButton.classList.add('ripple');
-                setTimeout(() => nextButton.classList.remove('ripple'), 600);
-                
+                markUserInteraction();
                 playNext();
             });
 
             playlistToggle.addEventListener('click', () => {
-                // 添加波纹效果
-                playlistToggle.classList.add('ripple');
-                setTimeout(() => playlistToggle.classList.remove('ripple'), 600);
-                
+                markUserInteraction();
                 togglePlaylist();
             });
 
             closePlaylist.addEventListener('click', () => {
-                // 添加波纹效果
-                closePlaylist.classList.add('ripple');
-                setTimeout(() => closePlaylist.classList.remove('ripple'), 600);
-                
+                markUserInteraction();
                 togglePlaylist();
             });
 
             progressBarContainer.addEventListener('click', (e) => {
-                if (audioElement && !isNaN(audioElement.duration)) {
+                markUserInteraction();
+                if (audioElement && !isNaN(audioElement.duration) && isFinite(audioElement.duration)) {
                     const rect = progressBarContainer.getBoundingClientRect();
                     const x = e.clientX - rect.left;
                     const percentage = x / rect.width;
@@ -2036,36 +2135,57 @@
                 }
             });
 
+            // 移动端进度条触摸支持
+            progressBarContainer.addEventListener('touchstart', (e) => {
+                markUserInteraction();
+                if (audioElement && !isNaN(audioElement.duration) && isFinite(audioElement.duration)) {
+                    const rect = progressBarContainer.getBoundingClientRect();
+                    const x = e.touches[0].clientX - rect.left;
+                    const percentage = x / rect.width;
+                    audioElement.currentTime = percentage * audioElement.duration;
+                    updateProgress();
+                }
+                e.preventDefault(); // 防止触摸事件冒泡
+            }, { passive: false });
+
             themeButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    visualizer.setMode(btn.dataset.mode);
-                    themeButtons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
+                    markUserInteraction();
+                    if (visualizer) {
+                        visualizer.setMode(btn.dataset.mode);
+                        themeButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    }
                 });
             });
 
             // 性能模式切换
             performanceToggle.addEventListener('click', () => {
-                const enable = !performanceToggle.classList.contains('active');
-                visualizer.togglePerformanceMode(enable);
-                
-                performanceToggle.classList.toggle('active', enable);
-                const lang = document.documentElement.lang;
-                performanceToggle.textContent = enable 
-                    ? i18n[lang].performanceMode 
-                    : i18n[lang].qualityMode;
-                
-                showNotification(enable ? '性能模式已开启' : '高质量模式已开启');
+                markUserInteraction();
+                if (visualizer) {
+                    const enable = !performanceToggle.classList.contains('active');
+                    visualizer.togglePerformanceMode(enable);
+                    
+                    performanceToggle.classList.toggle('active', enable);
+                    const lang = document.documentElement.lang;
+                    performanceToggle.textContent = enable 
+                        ? i18n[lang].performanceMode 
+                        : i18n[lang].qualityMode;
+                    
+                    showNotification(enable ? '性能模式已开启' : '高质量模式已开启');
+                }
             });
 
             // 语言切换
             languageSwitcher.addEventListener('click', () => {
+                markUserInteraction();
                 const currentLang = document.documentElement.lang;
                 const newLang = currentLang === 'zh-CN' ? 'en' : 'zh-CN';
                 setLanguage(newLang);
             });
 
             closeModal.addEventListener('click', () => {
+                markUserInteraction();
                 onboardingModal.classList.remove('show');
             });
 
@@ -2083,7 +2203,7 @@
             updatePlaylistDisplay();
 
             // 初始化完成
-            showNotification('欢迎使用 Sonoria - 上传音乐或使用麦克风开始体验');
+            showNotification('欢迎使用 Sonoria - 请先点击界面任意位置激活音频功能');
             
             // 窗口关闭时释放资源
             window.addEventListener('beforeunload', () => {
@@ -2092,6 +2212,9 @@
                 }
                 if (currentStream) {
                     currentStream.getTracks().forEach(track => track.stop());
+                }
+                if (visualizer) {
+                    visualizer.destroy();
                 }
             });
         });
