@@ -1,1 +1,321 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoVision - 音乐可视化应用</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 背景图层 -->
+    <div class="background-layer"></div>
+    
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 主视觉区 - 可视化区域 -->
+        <div class="visualizer-container">
+            <canvas id="visualizer"></canvas>
+            
+            <!-- 加载指示器 -->
+            <div id="loading-indicator" class="hidden">
+                <div class="spinner"></div>
+                <p>加载中...</p>
+            </div>
+            
+            <!-- 欢迎提示 -->
+            <div id="welcome-message" class="welcome-message">
+                <h1>EchoVision</h1>
+                <p>音乐可视化体验</p>
+                <div class="welcome-buttons">
+                    <button id="upload-btn" class="btn primary-btn">
+                        <i class="fas fa-upload"></i> 上传音乐
+                    </button>
+                    <button id="mic-btn" class="btn secondary-btn">
+                        <i class="fas fa-microphone"></i> 麦克风输入
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 音乐源管理区 -->
+        <div class="music-source-panel">
+            <div class="panel-header">
+                <h2>音乐源</h2>
+                <button id="toggle-source-panel" class="toggle-btn">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+            
+            <div class="panel-content">
+                <!-- 本地文件上传 -->
+                <div class="upload-section">
+                    <label class="custom-file-upload">
+                        <input type="file" id="file-input" accept="audio/mp3,audio/wav,audio/*" multiple>
+                        <i class="fas fa-upload"></i> 选择音乐文件
+                    </label>
+                    <p class="upload-hint">支持 MP3, WAV, OGG 等格式</p>
+                </div>
+                
+                <!-- 网络链接输入 -->
+                <div class="url-section">
+                    <div class="url-input-group">
+                        <input type="text" id="url-input" placeholder="输入音乐URL">
+                        <button id="load-url-btn" class="btn small-btn">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 麦克风输入 -->
+                <div class="mic-section">
+                    <button id="start-mic-btn" class="btn mic-control-btn">
+                        <i class="fas fa-microphone"></i> 启动麦克风
+                    </button>
+                    <p class="mic-status" id="mic-status">未启动</p>
+                </div>
+                
+                <!-- 播放列表 -->
+                <div class="playlist-section">
+                    <h3>播放列表</h3>
+                    <ul id="playlist" class="playlist">
+                        <!-- 播放列表项将通过JS动态添加 -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 控制区 -->
+        <div class="control-bar">
+            <!-- 播放控制 -->
+            <div class="play-controls">
+                <button id="prev-btn" class="control-btn">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button id="play-btn" class="control-btn main-control">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button id="next-btn" class="control-btn">
+                    <i class="fas fa-step-forward"></i>
+                </button>
+            </div>
+            
+            <!-- 进度条 -->
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <div class="time-display">
+                    <span id="current-time">00:00</span>
+                    <span id="total-time">00:00</span>
+                </div>
+            </div>
+            
+            <!-- 音量控制 -->
+            <div class="volume-control">
+                <button id="mute-btn" class="control-btn">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <div class="volume-slider-container">
+                    <input type="range" id="volume-slider" min="0" max="100" value="80">
+                </div>
+            </div>
+            
+            <!-- 可视化效果切换 -->
+            <div class="visualizer-controls">
+                <button id="toggle-visualizer-panel" class="control-btn">
+                    <i class="fas fa-sliders-h"></i>
+                </button>
+                <div class="visualizer-selector">
+                    <button class="visualizer-btn active" data-type="waveform">
+                        <i class="fas fa-waveform"></i>
+                    </button>
+                    <button class="visualizer-btn" data-type="spectrum">
+                        <i class="fas fa-chart-bar"></i>
+                    </button>
+                    <button class="visualizer-btn" data-type="particles">
+                        <i class="fas fa-circle"></i>
+                    </button>
+                    <button class="visualizer-btn" data-type="fluid">
+                        <i class="fas fa-water"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 全屏按钮 -->
+            <div class="fullscreen-control">
+                <button id="fullscreen-btn" class="control-btn">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 效果配置面板 -->
+        <div id="effect-panel" class="effect-panel hidden">
+            <div class="panel-header">
+                <h2>效果配置</h2>
+                <button id="close-effect-panel" class="toggle-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="panel-content">
+                <!-- 可视化类型选择 -->
+                <div class="effect-section">
+                    <h3>可视化类型</h3>
+                    <div class="visualizer-type-selector">
+                        <label class="visualizer-type-option">
+                            <input type="radio" name="visualizer-type" value="waveform" checked>
+                            <span>波形</span>
+                        </label>
+                        <label class="visualizer-type-option">
+                            <input type="radio" name="visualizer-type" value="spectrum">
+                            <span>频谱</span>
+                        </label>
+                        <label class="visualizer-type-option">
+                            <input type="radio" name="visualizer-type" value="particles">
+                            <span>粒子</span>
+                        </label>
+                        <label class="visualizer-type-option">
+                            <input type="radio" name="visualizer-type" value="fluid">
+                            <span>流体</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- 色彩方案 -->
+                <div class="effect-section">
+                    <h3>色彩方案</h3>
+                    <div class="color-scheme-selector">
+                        <label class="color-scheme-option">
+                            <input type="radio" name="color-scheme" value="default" checked>
+                            <span>默认</span>
+                        </label>
+                        <label class="color-scheme-option">
+                            <input type="radio" name="color-scheme" value="neon">
+                            <span>霓虹</span>
+                        </label>
+                        <label class="color-scheme-option">
+                            <input type="radio" name="color-scheme" value="pastel">
+                            <span>柔和</span>
+                        </label>
+                        <label class="color-scheme-option">
+                            <input type="radio" name="color-scheme" value="fire">
+                            <span>火焰</span>
+                        </label>
+                        <label class="color-scheme-option">
+                            <input type="radio" name="color-scheme" value="ocean">
+                            <span>海洋</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- 动效强度 -->
+                <div class="effect-section">
+                    <h3>动效强度</h3>
+                    <input type="range" id="effect-intensity" min="1" max="10" value="5">
+                    <div class="intensity-labels">
+                        <span>弱</span>
+                        <span>强</span>
+                    </div>
+                </div>
+                
+                <!-- AI情感识别 -->
+                <div class="effect-section ai-section">
+                    <h3>AI情感识别</h3>
+                    <div class="ai-toggle">
+                        <label class="switch">
+                            <input type="checkbox" id="ai-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                        <span>启用AI自动调整</span>
+                    </div>
+                    <p class="ai-description">根据音乐风格自动调整可视化效果和色彩方案</p>
+                    <div id="ai-status" class="ai-status hidden">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>正在分析音乐...</span>
+                    </div>
+                    <div id="ai-result" class="ai-result hidden">
+                        <h4>分析结果</h4>
+                        <p id="ai-genre">风格: 未知</p>
+                        <p id="ai-mood">情绪: 未知</p>
+                    </div>
+                </div>
+                
+                <!-- 高级设置 -->
+                <div class="effect-section advanced-section">
+                    <button id="toggle-advanced" class="advanced-toggle">
+                        <i class="fas fa-chevron-down"></i> 高级设置
+                    </button>
+                    <div id="advanced-settings" class="advanced-settings hidden">
+                        <!-- 波形设置 -->
+                        <div class="advanced-option waveform-options">
+                            <h4>波形设置</h4>
+                            <div class="option-slider">
+                                <label for="waveform-thickness">线条厚度</label>
+                                <input type="range" id="waveform-thickness" min="1" max="10" value="3">
+                            </div>
+                            <div class="option-slider">
+                                <label for="waveform-smoothness">平滑度</label>
+                                <input type="range" id="waveform-smoothness" min="1" max="10" value="5">
+                            </div>
+                        </div>
+                        
+                        <!-- 频谱设置 -->
+                        <div class="advanced-option spectrum-options">
+                            <h4>频谱设置</h4>
+                            <div class="option-slider">
+                                <label for="spectrum-bars">柱形数量</label>
+                                <input type="range" id="spectrum-bars" min="10" max="200" value="100">
+                            </div>
+                            <div class="option-slider">
+                                <label for="spectrum-height">高度比例</label>
+                                <input type="range" id="spectrum-height" min="1" max="10" value="5">
+                            </div>
+                        </div>
+                        
+                        <!-- 粒子设置 -->
+                        <div class="advanced-option particles-options">
+                            <h4>粒子设置</h4>
+                            <div class="option-slider">
+                                <label for="particles-count">粒子数量</label>
+                                <input type="range" id="particles-count" min="50" max="1000" value="200">
+                            </div>
+                            <div class="option-slider">
+                                <label for="particles-speed">运动速度</label>
+                                <input type="range" id="particles-speed" min="1" max="10" value="5">
+                            </div>
+                        </div>
+                        
+                        <!-- 流体设置 -->
+                        <div class="advanced-option fluid-options">
+                            <h4>流体设置</h4>
+                            <div class="option-slider">
+                                <label for="fluid-viscosity">粘度</label>
+                                <input type="range" id="fluid-viscosity" min="1" max="10" value="3">
+                            </div>
+                            <div class="option-slider">
+                                <label for="fluid-turbulence">湍流</label>
+                                <input type="range" id="fluid-turbulence" min="1" max="10" value="5">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 音频元素 -->
+    <audio id="audio-element" preload="metadata"></audio>
+    
+    <!-- JavaScript文件 -->
+    <script src="js/audio.js"></script>
+    <script src="js/visualizer.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/effects/waveform.js"></script>
+    <script src="js/effects/spectrum.js"></script>
+    <script src="js/effects/particles.js"></script>
+    <script src="js/effects/fluid.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
