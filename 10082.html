@@ -254,6 +254,8 @@ body {
     padding: 30px;
     width: 90%;
     max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
     z-index: 200;
     opacity: 0;
     transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
@@ -301,6 +303,7 @@ body {
     display: flex;
     gap: 8px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
 .tab-btn {
@@ -314,6 +317,7 @@ body {
     transition: var(--transition);
     font-weight: 500;
     -webkit-tap-highlight-color: transparent;
+    min-width: 80px;
 }
 
 .tab-btn.active {
@@ -322,11 +326,11 @@ body {
     border-color: transparent;
 }
 
-.url-input-section, .file-input-section {
+.url-input-section, .file-input-section, .library-section, .search-section {
     display: none;
 }
 
-.url-input-section.active, .file-input-section.active {
+.url-input-section.active, .file-input-section.active, .library-section.active, .search-section.active {
     display: block;
 }
 
@@ -457,6 +461,125 @@ body {
     opacity: 1;
 }
 
+/* 音乐库和搜索样式 */
+.library-section, .search-section {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.library-empty, .search-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+}
+
+.library-empty i, .search-empty i {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.library-item, .search-result {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.library-item:hover, .search-result:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+}
+
+.library-item.active, .search-result.active {
+    background: rgba(195, 65%, 55%, 0.1);
+    border-color: var(--dunhuang-cyan);
+}
+
+.library-item-icon, .search-result-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--dunhuang-cyan), var(--dunhuang-vermilion));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.library-item-info, .search-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.library-item-title, .search-result-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.library-item-artist, .search-result-artist {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-input-container {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 16px 16px 16px 48px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 1rem;
+    transition: var(--transition);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--dunhuang-cyan);
+}
+
+.search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+}
+
+.search-loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-dim);
+}
+
+.search-loading .loading-ring {
+    width: 24px;
+    height: 24px;
+    margin: 0 auto 12px;
+}
+
+.search-loading .loading-ring::before {
+    width: 24px;
+    height: 24px;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
     .play-btn {
@@ -482,9 +605,14 @@ body {
         padding: 20px;
     }
     
-    /* 移动端优化 */
-    .play-btn, .close-btn, .tab-btn, .url-hint, .file-drop-area, .confirm-btn {
-        -webkit-tap-highlight-color: transparent;
+    .input-tabs {
+        gap: 6px;
+    }
+    
+    .tab-btn {
+        padding: 10px;
+        min-width: 70px;
+        font-size: 0.85rem;
     }
 }
 
@@ -735,12 +863,46 @@ body {
     </div>
     
     <div class="input-tabs">
-        <button class="tab-btn active" data-tab="url">URL链接</button>
+        <button class="tab-btn active" data-tab="library">音乐库</button>
+        <button class="tab-btn" data-tab="search">搜索</button>
+        <button class="tab-btn" data-tab="url">URL</button>
         <button class="tab-btn" data-tab="file">本地文件</button>
         <button class="tab-btn" data-tab="mic">麦克风</button>
     </div>
     
-    <div class="url-input-section active">
+    <!-- 音乐库部分 -->
+    <div class="library-section active">
+        <div class="library-empty" id="library-empty">
+            <i class="material-icons">library_music</i>
+            <div>未检测到本地音乐</div>
+            <div style="font-size: 0.8rem; margin-top: 8px;">请使用其他音频源</div>
+        </div>
+        <div id="library-items"></div>
+    </div>
+    
+    <!-- 搜索部分 -->
+    <div class="search-section">
+        <div class="search-input-container">
+            <i class="material-icons search-icon">search</i>
+            <input type="text" class="search-input" id="search-input" placeholder="搜索歌曲或艺术家...">
+        </div>
+        
+        <div class="search-loading hidden" id="search-loading">
+            <div class="loading-ring"></div>
+            <div>搜索中...</div>
+        </div>
+        
+        <div class="search-empty hidden" id="search-empty">
+            <i class="material-icons">search_off</i>
+            <div>未找到相关结果</div>
+            <div style="font-size: 0.8rem; margin-top: 8px;">尝试搜索其他关键词</div>
+        </div>
+        
+        <div id="search-results"></div>
+    </div>
+    
+    <!-- URL部分 -->
+    <div class="url-input-section">
         <input type="text" class="url-input" id="url-input" placeholder="输入音频URL链接 (MP3, WAV, OGG等)">
         
         <div class="url-hints">
@@ -750,6 +912,7 @@ body {
         </div>
     </div>
     
+    <!-- 文件上传部分 -->
     <div class="file-input-section">
         <div class="file-drop-area" id="file-drop-area">
             <div class="file-drop-icon">
@@ -762,6 +925,7 @@ body {
         <input type="file" id="file-input" accept="audio/mp3,audio/wav,audio/ogg,audio/aac,audio/m4a,audio/x-m4a,audio/flac,audio/webm" hidden>
     </div>
     
+    <!-- 麦克风部分 -->
     <div class="mic-input-section" style="display: none;">
         <div style="text-align: center; padding: 40px 20px;">
             <div style="font-size: 3rem; margin-bottom: 16px;">🎤</div>
@@ -780,7 +944,7 @@ class SonoriaRevolution {
         this.audio = null;
         this.visualizer = null;
         this.isPlaying = false;
-        this.currentSource = null; // 'mic', 'url', 'file'
+        this.currentSource = null; // 'mic', 'url', 'file', 'library', 'search'
         this.emotionIntensity = 0.5;
         this.visualizationMode = 'dunhuang';
         this.audioContext = null;
@@ -794,6 +958,10 @@ class SonoriaRevolution {
             melody: 0.5,    // 旋律强度
             ambience: 0.5   // 氛围强度
         };
+        
+        // 音乐库和搜索
+        this.musicLibrary = [];
+        this.searchResults = [];
         
         this.init();
     }
@@ -815,6 +983,9 @@ class SonoriaRevolution {
             this.showAudioInfo();
             this.showAudioDimensions();
         }, 1500);
+        
+        // 初始化音乐库
+        this.initMusicLibrary();
         
         // 自动尝试麦克风输入
         this.tryMicrophoneInput();
@@ -855,7 +1026,13 @@ class SonoriaRevolution {
             audioDimensions: document.getElementById('audio-dimensions'),
             rhythmFill: document.getElementById('rhythm-fill'),
             melodyFill: document.getElementById('melody-fill'),
-            ambienceFill: document.getElementById('ambience-fill')
+            ambienceFill: document.getElementById('ambience-fill'),
+            libraryItems: document.getElementById('library-items'),
+            libraryEmpty: document.getElementById('library-empty'),
+            searchInput: document.getElementById('search-input'),
+            searchResults: document.getElementById('search-results'),
+            searchLoading: document.getElementById('search-loading'),
+            searchEmpty: document.getElementById('search-empty')
         };
     }
 
@@ -911,6 +1088,163 @@ class SonoriaRevolution {
             }
         `;
         document.head.appendChild(style);
+    }
+
+    // 初始化音乐库 - 模拟检测本地音乐
+    initMusicLibrary() {
+        // 在实际应用中，这里应该使用适当的API检测本地音乐
+        // 例如在iOS上使用MediaLibrary API，在Android上使用MediaStore API
+        // 这里我们模拟一些示例音乐
+        
+        setTimeout(() => {
+            this.musicLibrary = [
+                {
+                    id: 1,
+                    title: "敦煌之梦",
+                    artist: "Sonoria",
+                    url: "https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3",
+                    source: "library"
+                },
+                {
+                    id: 2,
+                    title: "东方韵律",
+                    artist: "Sonoria",
+                    url: "https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3",
+                    source: "library"
+                },
+                {
+                    id: 3,
+                    title: "时空回响",
+                    artist: "Sonoria",
+                    url: "https://assets.mixkit.co/music/preview/mixkit-deep-urban-623.mp3",
+                    source: "library"
+                }
+            ];
+            
+            this.renderMusicLibrary();
+        }, 1000);
+    }
+
+    renderMusicLibrary() {
+        if (this.musicLibrary.length === 0) {
+            this.el.libraryEmpty.classList.remove('hidden');
+            this.el.libraryItems.innerHTML = '';
+            return;
+        }
+        
+        this.el.libraryEmpty.classList.add('hidden');
+        
+        this.el.libraryItems.innerHTML = this.musicLibrary.map(track => `
+            <div class="library-item" data-id="${track.id}">
+                <div class="library-item-icon">
+                    <i class="material-icons">music_note</i>
+                </div>
+                <div class="library-item-info">
+                    <div class="library-item-title">${track.title}</div>
+                    <div class="library-item-artist">${track.artist}</div>
+                </div>
+            </div>
+        `).join('');
+        
+        // 添加点击事件
+        this.el.libraryItems.querySelectorAll('.library-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const id = parseInt(item.dataset.id);
+                const track = this.musicLibrary.find(t => t.id === id);
+                if (track) {
+                    this.selectLibraryTrack(track);
+                }
+            });
+        });
+    }
+
+    async searchMusic(query) {
+        if (!query.trim()) {
+            this.showStatus('请输入搜索关键词', 2000);
+            return;
+        }
+        
+        this.el.searchLoading.classList.remove('hidden');
+        this.el.searchEmpty.classList.add('hidden');
+        this.el.searchResults.innerHTML = '';
+        
+        try {
+            // 模拟搜索延迟
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // 在实际应用中，这里应该调用音乐API
+            // 例如使用Deezer API、Spotify API等
+            // 这里我们模拟搜索结果
+            
+            const mockResults = [
+                {
+                    id: 101,
+                    title: `${query} - 经典版`,
+                    artist: "Various Artists",
+                    url: "https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3",
+                    source: "search",
+                    quality: "high"
+                },
+                {
+                    id: 102,
+                    title: `${query} - 氛围混音`,
+                    artist: "Sonoria Remix",
+                    url: "https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3",
+                    source: "search",
+                    quality: "high"
+                },
+                {
+                    id: 103,
+                    title: `${query} - 纯音乐版`,
+                    artist: "Instrumental",
+                    url: "https://assets.mixkit.co/music/preview/mixkit-deep-urban-623.mp3",
+                    source: "search",
+                    quality: "medium"
+                }
+            ];
+            
+            this.searchResults = mockResults;
+            this.renderSearchResults();
+            
+        } catch (error) {
+            console.error('搜索失败:', error);
+            this.showStatus('搜索失败，请重试', 2000);
+        } finally {
+            this.el.searchLoading.classList.add('hidden');
+        }
+    }
+
+    renderSearchResults() {
+        if (this.searchResults.length === 0) {
+            this.el.searchEmpty.classList.remove('hidden');
+            this.el.searchResults.innerHTML = '';
+            return;
+        }
+        
+        this.el.searchEmpty.classList.add('hidden');
+        
+        this.el.searchResults.innerHTML = this.searchResults.map(track => `
+            <div class="search-result" data-id="${track.id}">
+                <div class="search-result-icon">
+                    <i class="material-icons">${track.quality === 'high' ? 'hd' : 'music_note'}</i>
+                </div>
+                <div class="search-result-info">
+                    <div class="search-result-title">${track.title}</div>
+                    <div class="search-result-artist">${track.artist}</div>
+                </div>
+            </div>
+        `).join('');
+        
+        // 添加点击事件
+        this.el.searchResults.querySelectorAll('.search-result').forEach(item => {
+            item.addEventListener('click', () => {
+                const id = parseInt(item.dataset.id);
+                const track = this.searchResults.find(t => t.id === id);
+                if (track) {
+                    this.selectSearchResult(track);
+                }
+            });
+        });
     }
 
     bindEvents() {
@@ -1020,18 +1354,18 @@ class SonoriaRevolution {
             }
         });
         
+        // 搜索功能
+        this.el.searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.searchMusic(this.el.searchInput.value);
+                this.triggerHapticFeedback();
+            }
+        });
+        
         // 确认输入
         this.el.confirmInput.addEventListener('click', () => {
             this.handleConfirmInput();
             this.triggerHapticFeedback();
-        });
-        
-        // URL输入回车确认
-        this.el.urlInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.handleConfirmInput();
-                this.triggerHapticFeedback();
-            }
         });
         
         // 空间手势控制（陀螺仪）
@@ -1113,7 +1447,7 @@ class SonoriaRevolution {
         });
         
         // 显示对应的内容区域
-        document.querySelectorAll('.url-input-section, .file-input-section, .mic-input-section')
+        document.querySelectorAll('.url-input-section, .file-input-section, .library-section, .search-section, .mic-input-section')
             .forEach(section => {
                 section.classList.remove('active');
             });
@@ -1122,17 +1456,54 @@ class SonoriaRevolution {
         
         // 更新确认按钮文本
         const buttonTexts = {
+            'library': '使用选中音乐',
+            'search': '使用选中结果', 
             'url': '加载URL音频',
             'file': '使用选中文件', 
             'mic': '启用麦克风'
         };
         this.el.confirmInput.textContent = buttonTexts[tab] || '确认选择';
+        
+        // 如果是搜索标签，聚焦搜索框
+        if (tab === 'search') {
+            setTimeout(() => {
+                this.el.searchInput.focus();
+            }, 300);
+        }
     }
 
     async handleConfirmInput() {
         const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
         
         switch(activeTab) {
+            case 'library':
+                // 库中已选中的音乐
+                const selectedLibraryItem = document.querySelector('.library-item.active');
+                if (selectedLibraryItem) {
+                    const id = parseInt(selectedLibraryItem.dataset.id);
+                    const track = this.musicLibrary.find(t => t.id === id);
+                    if (track) {
+                        this.selectLibraryTrack(track);
+                    }
+                } else {
+                    this.showStatus('请先选择一首音乐', 2000);
+                    return;
+                }
+                break;
+            case 'search':
+                // 搜索结果中已选中的音乐
+                const selectedSearchItem = document.querySelector('.search-result.active');
+                if (selectedSearchItem) {
+                    const id = parseInt(selectedSearchItem.dataset.id);
+                    const track = this.searchResults.find(t => t.id === id);
+                    if (track) {
+                        this.selectSearchResult(track);
+                    }
+                } else {
+                    this.showStatus('请先选择一个搜索结果', 2000);
+                    return;
+                }
+                break;
             case 'url':
                 await this.handleUrlInput();
                 break;
@@ -1150,6 +1521,34 @@ class SonoriaRevolution {
         }
         
         this.closeAudioInputPanel();
+    }
+
+    selectLibraryTrack(track) {
+        this.loadAudioFromUrl(track.url);
+        this.currentAudioTitle = track.title;
+        this.currentAudioUrl = track.url;
+        this.currentSource = 'library';
+        this.showAudioInfo();
+        this.showStatus(`已选择: ${track.title}`, 2000);
+        
+        // 自动开始播放
+        if (!this.isPlaying) {
+            this.startPlayback();
+        }
+    }
+
+    selectSearchResult(track) {
+        this.loadAudioFromUrl(track.url);
+        this.currentAudioTitle = track.title;
+        this.currentAudioUrl = track.url;
+        this.currentSource = 'search';
+        this.showAudioInfo();
+        this.showStatus(`已选择: ${track.title}`, 2000);
+        
+        // 自动开始播放
+        if (!this.isPlaying) {
+            this.startPlayback();
+        }
     }
 
     async handleUrlInput() {
@@ -1235,7 +1634,6 @@ class SonoriaRevolution {
         this.analyser.connect(this.audioContext.destination);
         
         this.visualizer.connect(this.analyser);
-        this.currentSource = 'url';
         
         // 等待音频加载
         await new Promise((resolve, reject) => {
@@ -1267,6 +1665,8 @@ class SonoriaRevolution {
             'mic': '麦克风',
             'url': 'URL音频',
             'file': '本地文件',
+            'library': '音乐库',
+            'search': '搜索',
             'example': '示例音频'
         };
         
@@ -1389,7 +1789,7 @@ class SonoriaRevolution {
         }
         
         // 如果是URL或文件音频，播放音频元素
-        if (this.audio && (this.currentSource === 'url' || this.currentSource === 'file')) {
+        if (this.audio && (this.currentSource === 'url' || this.currentSource === 'file' || this.currentSource === 'library' || this.currentSource === 'search')) {
             this.audio.play().catch(e => {
                 console.error('播放失败:', e);
                 this.showStatus('播放失败，请检查音频文件', 2000);
@@ -1407,7 +1807,7 @@ class SonoriaRevolution {
 
     stopPlayback() {
         // 如果是URL或文件音频，暂停音频元素
-        if (this.audio && (this.currentSource === 'url' || this.currentSource === 'file')) {
+        if (this.audio && (this.currentSource === 'url' || this.currentSource === 'file' || this.currentSource === 'library' || this.currentSource === 'search')) {
             this.audio.pause();
         }
         
