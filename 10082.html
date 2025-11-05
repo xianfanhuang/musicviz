@@ -24,6 +24,11 @@
     /* 情感色彩状态 */
     --emotion-color: var(--dunhuang-cyan);
     --emotion-intensity: 0.5;
+    
+    /* 音频维度感知变量 */
+    --rhythm-intensity: 0.5;
+    --melody-intensity: 0.5;
+    --ambience-intensity: 0.5;
 }
 
 /* 动态情感色彩 */
@@ -95,6 +100,7 @@ body {
         0 0 40px color-mix(in srgb, var(--emotion-color) 30%, transparent);
     position: relative;
     overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .play-btn::before {
@@ -241,7 +247,7 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) scale(0.9);
-    background: rgba(10, 10, 22, 0.9);
+    background: rgba(10, 10, 22, 0.95);
     backdrop-filter: blur(30px);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 24px;
@@ -284,6 +290,7 @@ body {
     justify-content: center;
     cursor: pointer;
     transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
 }
 
 .close-btn:hover {
@@ -306,6 +313,7 @@ body {
     cursor: pointer;
     transition: var(--transition);
     font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .tab-btn.active {
@@ -332,6 +340,7 @@ body {
     font-size: 1rem;
     margin-bottom: 16px;
     transition: var(--transition);
+    -webkit-appearance: none;
 }
 
 .url-input:focus {
@@ -358,6 +367,7 @@ body {
     color: var(--text-dim);
     cursor: pointer;
     transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
 }
 
 .url-hint:hover {
@@ -372,6 +382,7 @@ body {
     cursor: pointer;
     transition: var(--transition);
     margin-bottom: 20px;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .file-drop-area:hover, .file-drop-area.drag-over {
@@ -408,6 +419,7 @@ body {
     cursor: pointer;
     transition: var(--transition);
     box-shadow: 0 4px 20px color-mix(in srgb, var(--dunhuang-cyan) 30%, transparent);
+    -webkit-tap-highlight-color: transparent;
 }
 
 .confirm-btn:hover {
@@ -438,6 +450,7 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .audio-input-hint.show {
@@ -467,6 +480,11 @@ body {
     .audio-input-panel {
         width: 95%;
         padding: 20px;
+    }
+    
+    /* 移动端优化 */
+    .play-btn, .close-btn, .tab-btn, .url-hint, .file-drop-area, .confirm-btn {
+        -webkit-tap-highlight-color: transparent;
     }
 }
 
@@ -535,6 +553,68 @@ body {
     color: var(--text-dim);
 }
 
+/* 音频维度指示器 */
+.audio-dimensions {
+    position: fixed;
+    top: 120px;
+    left: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 100;
+}
+
+.audio-dimensions.show {
+    opacity: 1;
+}
+
+.dimension-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(20px);
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    min-width: 140px;
+}
+
+.dimension-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    width: 40px;
+}
+
+.dimension-bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.dimension-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+.dimension-rhythm .dimension-fill {
+    background: var(--dunhuang-vermilion);
+}
+
+.dimension-melody .dimension-fill {
+    background: var(--dunhuang-cyan);
+}
+
+.dimension-ambience .dimension-fill {
+    background: linear-gradient(90deg, var(--dunhuang-cyan), var(--dunhuang-vermilion));
+}
+
 /* 隐藏状态 */
 .hidden {
     opacity: 0;
@@ -555,6 +635,35 @@ body {
 .overlay.show {
     opacity: 1;
     pointer-events: auto;
+}
+
+/* 触觉反馈模拟 */
+@keyframes hapticPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+.haptic-feedback {
+    animation: hapticPulse 0.1s ease;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .audio-info {
+        top: 20px;
+        left: 20px;
+        max-width: 200px;
+    }
+    
+    .audio-dimensions {
+        top: 100px;
+        left: 20px;
+    }
+    
+    .dimension-indicator {
+        min-width: 120px;
+    }
 }
 </style>
 </head>
@@ -587,6 +696,27 @@ body {
 <div class="audio-info" id="audio-info">
     <div class="audio-title" id="audio-title">欢迎进入音境</div>
     <div class="audio-source" id="audio-source">准备播放音频</div>
+</div>
+
+<div class="audio-dimensions" id="audio-dimensions">
+    <div class="dimension-indicator dimension-rhythm">
+        <div class="dimension-label">节奏</div>
+        <div class="dimension-bar">
+            <div class="dimension-fill" id="rhythm-fill"></div>
+        </div>
+    </div>
+    <div class="dimension-indicator dimension-melody">
+        <div class="dimension-label">旋律</div>
+        <div class="dimension-bar">
+            <div class="dimension-fill" id="melody-fill"></div>
+        </div>
+    </div>
+    <div class="dimension-indicator dimension-ambience">
+        <div class="dimension-label">氛围</div>
+        <div class="dimension-bar">
+            <div class="dimension-fill" id="ambience-fill"></div>
+        </div>
+    </div>
 </div>
 
 <div class="gesture-hint" id="gesture-hint">长按播放按钮选择音频源</div>
@@ -628,7 +758,8 @@ body {
             <div class="file-drop-text">拖放音频文件到这里</div>
             <div class="file-drop-subtext">或点击选择文件</div>
         </div>
-        <input type="file" id="file-input" accept="audio/*" hidden>
+        <!-- iPhone/iPad兼容的文件类型指定 -->
+        <input type="file" id="file-input" accept="audio/mp3,audio/wav,audio/ogg,audio/aac,audio/m4a,audio/x-m4a,audio/flac,audio/webm" hidden>
     </div>
     
     <div class="mic-input-section" style="display: none;">
@@ -641,8 +772,6 @@ body {
     
     <button class="confirm-btn" id="confirm-input">确认选择</button>
 </div>
-
-<input type="file" id="hidden-file-input" accept="audio/*" hidden>
 
 <script>
 /* ================ Sonoria Revolution 核心引擎 ================ */
@@ -659,6 +788,13 @@ class SonoriaRevolution {
         this.currentAudioUrl = null;
         this.currentAudioTitle = '欢迎进入音境';
         
+        // 音频维度感知
+        this.audioDimensions = {
+            rhythm: 0.5,    // 节奏强度
+            melody: 0.5,    // 旋律强度
+            ambience: 0.5   // 氛围强度
+        };
+        
         this.init();
     }
 
@@ -668,16 +804,31 @@ class SonoriaRevolution {
         this.initParticles();
         this.bindEvents();
         
+        // 检测设备类型
+        this.detectDeviceType();
+        
         // 模拟加载过程
         setTimeout(() => {
             this.hideLoading();
             this.showStatus('点击播放按钮开始体验', 3000);
             this.showGestureHint('长按播放按钮选择音频源', 2000);
             this.showAudioInfo();
+            this.showAudioDimensions();
         }, 1500);
         
         // 自动尝试麦克风输入
         this.tryMicrophoneInput();
+    }
+
+    detectDeviceType() {
+        this.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        this.isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        
+        if (this.isIOS) {
+            document.body.classList.add('ios-device');
+        }
+        
+        console.log(`设备检测: ${this.isMobile ? '移动端' : '桌面端'} ${this.isIOS ? '(iOS)' : ''}`);
     }
 
     bindElements() {
@@ -700,7 +851,11 @@ class SonoriaRevolution {
             urlHints: document.querySelectorAll('.url-hint'),
             audioInfo: document.getElementById('audio-info'),
             audioTitle: document.getElementById('audio-title'),
-            audioSource: document.getElementById('audio-source')
+            audioSource: document.getElementById('audio-source'),
+            audioDimensions: document.getElementById('audio-dimensions'),
+            rhythmFill: document.getElementById('rhythm-fill'),
+            melodyFill: document.getElementById('melody-fill'),
+            ambienceFill: document.getElementById('ambience-fill')
         };
     }
 
@@ -713,7 +868,7 @@ class SonoriaRevolution {
 
     initParticles() {
         const container = document.querySelector('.emotion-particles');
-        const particleCount = 30;
+        const particleCount = this.isMobile ? 20 : 30; // 移动端减少粒子数量
         
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
@@ -760,26 +915,30 @@ class SonoriaRevolution {
 
     bindEvents() {
         // 主播放按钮
-        this.el.playBtn.addEventListener('click', () => this.togglePlayback());
+        this.el.playBtn.addEventListener('click', () => {
+            this.togglePlayback();
+            this.triggerHapticFeedback();
+        });
         
         // 长按打开音频输入面板
         let pressTimer;
-        this.el.playBtn.addEventListener('mousedown', () => {
+        const startPress = () => {
             pressTimer = setTimeout(() => {
                 this.openAudioInputPanel();
+                this.triggerHapticFeedback();
             }, 800);
-        });
-        
-        this.el.playBtn.addEventListener('touchstart', () => {
-            pressTimer = setTimeout(() => {
-                this.openAudioInputPanel();
-            }, 800);
-        });
+        };
         
         const cancelPress = () => clearTimeout(pressTimer);
+        
+        // 移动端和桌面端分别处理
+        this.el.playBtn.addEventListener('mousedown', startPress);
         this.el.playBtn.addEventListener('mouseup', cancelPress);
         this.el.playBtn.addEventListener('mouseleave', cancelPress);
+        
+        this.el.playBtn.addEventListener('touchstart', startPress);
         this.el.playBtn.addEventListener('touchend', cancelPress);
+        this.el.playBtn.addEventListener('touchcancel', cancelPress);
         
         // 双击切换可视化风格
         let lastTap = 0;
@@ -788,6 +947,7 @@ class SonoriaRevolution {
             const tapLength = currentTime - lastTap;
             if (tapLength < 300 && tapLength > 0) {
                 this.switchVisualizationMode();
+                this.triggerHapticFeedback();
                 this.showGestureHint(`切换到${this.getModeName(this.visualizationMode)}模式`, 1500);
             }
             lastTap = currentTime;
@@ -802,10 +962,14 @@ class SonoriaRevolution {
         // 音频输入提示点击
         this.el.audioInputHint.addEventListener('click', () => {
             this.openAudioInputPanel();
+            this.triggerHapticFeedback();
         });
         
         // 音频输入面板事件
-        this.el.closePanel.addEventListener('click', () => this.closeAudioInputPanel());
+        this.el.closePanel.addEventListener('click', () => {
+            this.closeAudioInputPanel();
+            this.triggerHapticFeedback();
+        });
         this.el.overlay.addEventListener('click', () => this.closeAudioInputPanel());
         
         // 标签切换
@@ -813,6 +977,7 @@ class SonoriaRevolution {
             btn.addEventListener('click', () => {
                 const tab = btn.dataset.tab;
                 this.switchTab(tab);
+                this.triggerHapticFeedback();
             });
         });
         
@@ -820,17 +985,20 @@ class SonoriaRevolution {
         this.el.urlHints.forEach(hint => {
             hint.addEventListener('click', () => {
                 this.el.urlInput.value = hint.dataset.url;
+                this.triggerHapticFeedback();
             });
         });
         
         // 文件拖放
         this.el.fileDropArea.addEventListener('click', () => {
             this.el.fileInput.click();
+            this.triggerHapticFeedback();
         });
         
         this.el.fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 this.handleFileSelect(e.target.files[0]);
+                this.triggerHapticFeedback();
             }
         });
         
@@ -848,23 +1016,26 @@ class SonoriaRevolution {
             this.el.fileDropArea.classList.remove('drag-over');
             if (e.dataTransfer.files.length > 0) {
                 this.handleFileSelect(e.dataTransfer.files[0]);
+                this.triggerHapticFeedback();
             }
         });
         
         // 确认输入
         this.el.confirmInput.addEventListener('click', () => {
             this.handleConfirmInput();
+            this.triggerHapticFeedback();
         });
         
         // URL输入回车确认
         this.el.urlInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.handleConfirmInput();
+                this.triggerHapticFeedback();
             }
         });
         
         // 空间手势控制（陀螺仪）
-        if (window.DeviceOrientationEvent) {
+        if (window.DeviceOrientationEvent && this.isMobile) {
             window.addEventListener('deviceorientation', (e) => {
                 if (!this.isPlaying) return;
                 
@@ -872,6 +1043,9 @@ class SonoriaRevolution {
                 const tilt = Math.abs(e.beta || 0) + Math.abs(e.gamma || 0);
                 const intensity = Math.min(1, tilt / 90);
                 this.setEmotionIntensity(intensity);
+                
+                // 传递陀螺仪数据给可视化器
+                this.visualizer.updateGyroData(e.beta, e.gamma, e.alpha);
             });
         }
         
@@ -887,6 +1061,38 @@ class SonoriaRevolution {
                 this.tryMicrophoneInput();
             }
         });
+        
+        // 防止移动端缩放
+        document.addEventListener('touchmove', (e) => {
+            if (e.scale !== 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // 防止移动端双击缩放
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    }
+
+    triggerHapticFeedback() {
+        if (this.isMobile) {
+            // 尝试使用振动API
+            if (navigator.vibrate) {
+                navigator.vibrate(10);
+            } else {
+                // 回退到视觉反馈
+                document.body.classList.add('haptic-feedback');
+                setTimeout(() => {
+                    document.body.classList.remove('haptic-feedback');
+                }, 100);
+            }
+        }
     }
 
     openAudioInputPanel() {
@@ -979,8 +1185,14 @@ class SonoriaRevolution {
     }
 
     handleFileSelect(file) {
-        if (!file.type.startsWith('audio/')) {
-            this.showStatus('请选择音频文件', 2000);
+        // 验证文件类型
+        const validTypes = [
+            'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac', 
+            'audio/m4a', 'audio/x-m4a', 'audio/flac', 'audio/webm'
+        ];
+        
+        if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg|aac|m4a|flac|webm)$/i)) {
+            this.showStatus('不支持的音频格式', 2000);
             return;
         }
         
@@ -1013,8 +1225,9 @@ class SonoriaRevolution {
         // 设置音频分析
         if (!this.audioContext) {
             this.audioContext = new AudioContext();
+            // 移动端性能优化：使用较小的FFT大小
             this.analyser = this.audioContext.createAnalyser();
-            this.analyser.fftSize = 2048;
+            this.analyser.fftSize = this.isMobile ? 1024 : 2048;
         }
         
         const source = this.audioContext.createMediaElementSource(this.audio);
@@ -1028,6 +1241,8 @@ class SonoriaRevolution {
         await new Promise((resolve, reject) => {
             this.audio.onloadedmetadata = resolve;
             this.audio.onerror = reject;
+            // 设置超时
+            setTimeout(() => reject(new Error('音频加载超时')), 10000);
         });
     }
 
@@ -1060,9 +1275,33 @@ class SonoriaRevolution {
         this.el.audioInfo.classList.add('show');
     }
 
+    showAudioDimensions() {
+        this.el.audioDimensions.classList.add('show');
+    }
+
+    updateAudioDimensions(dimensions) {
+        this.audioDimensions = dimensions;
+        
+        // 更新CSS变量
+        document.documentElement.style.setProperty('--rhythm-intensity', dimensions.rhythm);
+        document.documentElement.style.setProperty('--melody-intensity', dimensions.melody);
+        document.documentElement.style.setProperty('--ambience-intensity', dimensions.ambience);
+        
+        // 更新视觉指示器
+        this.el.rhythmFill.style.width = `${dimensions.rhythm * 100}%`;
+        this.el.melodyFill.style.width = `${dimensions.melody * 100}%`;
+        this.el.ambienceFill.style.width = `${dimensions.ambience * 100}%`;
+    }
+
     async tryMicrophoneInput() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                } 
+            });
             this.startMicrophoneInput(stream);
             this.currentAudioTitle = '实时麦克风输入';
             this.currentSource = 'mic';
@@ -1094,8 +1333,9 @@ class SonoriaRevolution {
         }
         
         this.audioContext = new AudioContext();
+        // 移动端性能优化
         this.analyser = this.audioContext.createAnalyser();
-        this.analyser.fftSize = 2048;
+        this.analyser.fftSize = this.isMobile ? 1024 : 2048;
         
         const source = this.audioContext.createMediaStreamSource(stream);
         source.connect(this.analyser);
@@ -1107,8 +1347,9 @@ class SonoriaRevolution {
     useExampleAudio() {
         // 创建示例音频（白噪音）
         this.audioContext = new AudioContext();
+        // 移动端性能优化
         this.analyser = this.audioContext.createAnalyser();
-        this.analyser.fftSize = 2048;
+        this.analyser.fftSize = this.isMobile ? 1024 : 2048;
         
         // 创建简单的音频源
         const bufferSize = 4096;
@@ -1149,7 +1390,10 @@ class SonoriaRevolution {
         
         // 如果是URL或文件音频，播放音频元素
         if (this.audio && (this.currentSource === 'url' || this.currentSource === 'file')) {
-            this.audio.play();
+            this.audio.play().catch(e => {
+                console.error('播放失败:', e);
+                this.showStatus('播放失败，请检查音频文件', 2000);
+            });
         }
         
         this.isPlaying = true;
@@ -1255,6 +1499,8 @@ class EmotionVisualizer {
         this.mode = 'dunhuang';
         this.data = null;
         this.isActive = false;
+        this.gyroData = { beta: 0, gamma: 0, alpha: 0 };
+        this.audioHistory = [];
         this.resize();
         window.addEventListener('resize', () => this.resize());
     }
@@ -1272,6 +1518,10 @@ class EmotionVisualizer {
 
     setMode(mode) { 
         this.mode = mode; 
+    }
+
+    updateGyroData(beta, gamma, alpha) {
+        this.gyroData = { beta, gamma, alpha };
     }
 
     start() { 
@@ -1293,6 +1543,15 @@ class EmotionVisualizer {
 
         if (this.analyser && this.data) {
             this.analyser.getByteFrequencyData(this.data);
+            
+            // 分析音频维度
+            const dimensions = this.analyzeAudioDimensions();
+            
+            // 更新全局音频维度显示
+            if (window.sonoriaApp) {
+                window.sonoriaApp.updateAudioDimensions(dimensions);
+            }
+            
             const energy = this.data.reduce((a, b) => a + b) / this.data.length;
             const bass = this.data.slice(0, 20).reduce((a, b) => a + b) / 20;
             const emotionIntensity = energy / 256;
@@ -1301,12 +1560,67 @@ class EmotionVisualizer {
             document.documentElement.style.setProperty('--emotion-intensity', emotionIntensity);
             
             // 根据模式渲染
-            this[`render_${this.mode}`](bass, energy, emotionIntensity);
+            this[`render_${this.mode}`](bass, energy, emotionIntensity, dimensions);
         } else {
             // 空闲状态渲染
             this.render_idle();
         }
     };
+
+    analyzeAudioDimensions() {
+        if (!this.data) return { rhythm: 0.5, melody: 0.5, ambience: 0.5 };
+        
+        // 节奏分析 - 低频能量的变化率
+        const lowFreq = this.data.slice(0, 10);
+        const midFreq = this.data.slice(10, 50);
+        const highFreq = this.data.slice(50, 100);
+        
+        // 计算能量变化（模拟节奏）
+        const lowEnergy = lowFreq.reduce((a, b) => a + b) / lowFreq.length;
+        const midEnergy = midFreq.reduce((a, b) => a + b) / midFreq.length;
+        const highEnergy = highFreq.reduce((a, b) => a + b) / highFreq.length;
+        
+        // 保存历史数据用于变化检测
+        this.audioHistory.push({ lowEnergy, midEnergy, highEnergy });
+        if (this.audioHistory.length > 10) {
+            this.audioHistory.shift();
+        }
+        
+        // 计算变化率（节奏强度）
+        let rhythm = 0.5;
+        if (this.audioHistory.length > 1) {
+            const current = this.audioHistory[this.audioHistory.length - 1];
+            const previous = this.audioHistory[this.audioHistory.length - 2];
+            const change = Math.abs(current.lowEnergy - previous.lowEnergy) / 256;
+            rhythm = Math.min(1, change * 10);
+        }
+        
+        // 旋律分析 - 中高频的分布和变化
+        const melody = Math.min(1, midEnergy / 128);
+        
+        // 氛围分析 - 整体频谱的宽度和平滑度
+        const spectralCentroid = this.calculateSpectralCentroid();
+        const ambience = Math.min(1, spectralCentroid / 100);
+        
+        return {
+            rhythm: rhythm,
+            melody: melody,
+            ambience: ambience
+        };
+    }
+
+    calculateSpectralCentroid() {
+        // 计算频谱质心（音色亮度）
+        let total = 0;
+        let weightedTotal = 0;
+        
+        for (let i = 0; i < this.data.length; i++) {
+            total += this.data[i];
+            weightedTotal += this.data[i] * i;
+        }
+        
+        return total > 0 ? weightedTotal / total : 0;
+    }
 
     render_idle() {
         const time = Date.now() * 0.001;
@@ -1326,23 +1640,25 @@ class EmotionVisualizer {
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    render_dunhuang(bass, energy, emotionIntensity) {
+    render_dunhuang(bass, energy, emotionIntensity, dimensions) {
         const width = this.canvas.width / devicePixelRatio;
         const height = this.canvas.height / devicePixelRatio;
         const centerX = width / 2;
         const centerY = height / 2;
         
-        // 基于情感强度调整颜色
-        const hue = 195 + (emotionIntensity * 60); // 从石青到朱砂红的过渡
-        const color1 = `hsla(${hue}, 65%, 55%, 0.8)`;
-        const color2 = `hsla(${12 + emotionIntensity * 30}, 78%, 52%, 0.6)`;
+        // 基于情感强度和音频维度调整颜色
+        const hue = 195 + (emotionIntensity * 60) + (dimensions.melody * 30);
+        const color1 = `hsla(${hue}, 65%, 55%, ${0.5 + dimensions.ambience * 0.3})`;
+        const color2 = `hsla(${12 + emotionIntensity * 30}, 78%, 52%, ${0.4 + dimensions.rhythm * 0.3})`;
+        
+        // 基于节奏调整粒子数量
+        const particleCount = 30 + Math.floor(dimensions.rhythm * 30);
         
         // 绘制情感粒子场
-        const particleCount = 50 + Math.floor(energy * 0.5);
         for (let i = 0; i < particleCount; i++) {
-            const angle = (i / particleCount) * Math.PI * 2 + Date.now() * 0.001;
-            const distance = 100 + bass * 0.5 + Math.sin(angle * 3) * 50;
-            const size = 2 + energy * 0.05;
+            const angle = (i / particleCount) * Math.PI * 2 + Date.now() * 0.001 * (1 + dimensions.rhythm);
+            const distance = 100 + bass * 0.5 + Math.sin(angle * 3) * (50 + dimensions.melody * 50);
+            const size = 2 + energy * 0.05 + dimensions.rhythm * 3;
             
             const x = centerX + Math.cos(angle) * distance;
             const y = centerY + Math.sin(angle) * distance;
@@ -1353,33 +1669,47 @@ class EmotionVisualizer {
             this.ctx.fill();
         }
         
-        // 绘制敦煌风格的能量环
-        const ringCount = 3;
+        // 绘制敦煌风格的能量环 - 基于旋律强度调整
+        const ringCount = 2 + Math.floor(dimensions.melody * 3);
         for (let i = 0; i < ringCount; i++) {
-            const radius = 80 + i * 60 + bass * 0.3;
+            const radius = 80 + i * 60 + bass * 0.3 + dimensions.rhythm * 40;
             const pulse = Math.sin(Date.now() * 0.002 + i) * 0.5 + 0.5;
             
-            this.ctx.strokeStyle = `hsla(${hue + i * 20}, 65%, 55%, ${0.3 + pulse * 0.3})`;
-            this.ctx.lineWidth = 2 + energy * 0.02;
+            this.ctx.strokeStyle = `hsla(${hue + i * 20}, 65%, 55%, ${0.3 + pulse * 0.3 + dimensions.ambience * 0.2})`;
+            this.ctx.lineWidth = 2 + energy * 0.02 + dimensions.rhythm * 2;
             this.ctx.beginPath();
             this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             this.ctx.stroke();
         }
+        
+        // 陀螺仪交互 - 基于设备倾斜调整视角
+        if (this.gyroData) {
+            const tiltX = (this.gyroData.gamma || 0) / 45;
+            const tiltY = (this.gyroData.beta || 0) / 45;
+            
+            // 添加基于陀螺仪的视觉效果
+            this.ctx.save();
+            this.ctx.translate(tiltX * 20, tiltY * 20);
+            this.ctx.restore();
+        }
     }
 
-    render_aurora(bass, energy, emotionIntensity) {
-        // 极光模式实现
+    render_aurora(bass, energy, emotionIntensity, dimensions) {
+        // 极光模式实现 - 增强音频维度感知
         const width = this.canvas.width / devicePixelRatio;
         const height = this.canvas.height / devicePixelRatio;
         
-        // 极光流动效果
-        for (let i = 0; i < 5; i++) {
-            this.ctx.strokeStyle = `hsla(${195 + i * 20}, 70%, 60%, ${0.3 + emotionIntensity * 0.4})`;
-            this.ctx.lineWidth = 3 + energy * 0.02;
+        // 基于音频维度调整极光效果
+        const waveCount = 3 + Math.floor(dimensions.melody * 3);
+        const waveAmplitude = 30 + bass + dimensions.rhythm * 40;
+        
+        for (let i = 0; i < waveCount; i++) {
+            this.ctx.strokeStyle = `hsla(${195 + i * 20}, 70%, 60%, ${0.3 + emotionIntensity * 0.4 + dimensions.ambience * 0.2})`;
+            this.ctx.lineWidth = 3 + energy * 0.02 + dimensions.rhythm * 2;
             this.ctx.beginPath();
             
             for (let x = 0; x < width; x += 10) {
-                const wave = Math.sin(x * 0.01 + Date.now() * 0.001 + i) * (30 + bass) + 
+                const wave = Math.sin(x * 0.01 + Date.now() * 0.001 * (1 + dimensions.rhythm) + i) * waveAmplitude + 
                             Math.sin(x * 0.02 + Date.now() * 0.0005) * 20;
                 const y = height * 0.3 + wave + i * 30;
                 
@@ -1393,29 +1723,30 @@ class EmotionVisualizer {
         }
     }
 
-    render_cosmic(bass, energy, emotionIntensity) {
-        // 宇宙模式实现
+    render_cosmic(bass, energy, emotionIntensity, dimensions) {
+        // 宇宙模式实现 - 增强音频维度感知
         const width = this.canvas.width / devicePixelRatio;
         const height = this.canvas.height / devicePixelRatio;
         const centerX = width / 2;
         const centerY = height / 2;
         
-        // 绘制星空
-        const starCount = 100 + Math.floor(energy * 0.3);
+        // 基于氛围强度调整星星数量
+        const starCount = 80 + Math.floor(dimensions.ambience * 70);
         for (let i = 0; i < starCount; i++) {
             const x = Math.random() * width;
             const y = Math.random() * height;
             const size = Math.random() * 2 + 0.5;
             const brightness = Math.random() * 100 + 155;
             
-            this.ctx.fillStyle = `rgba(${brightness}, ${brightness}, 255, ${0.5 + emotionIntensity * 0.3})`;
+            this.ctx.fillStyle = `rgba(${brightness}, ${brightness}, 255, ${0.5 + emotionIntensity * 0.3 + dimensions.melody * 0.2})`;
             this.ctx.beginPath();
             this.ctx.arc(x, y, size, 0, Math.PI * 2);
             this.ctx.fill();
         }
         
-        // 绘制行星
-        const planetSize = 60 + bass * 0.2;
+        // 基于节奏调整行星脉动
+        const planetPulse = Math.sin(Date.now() * 0.005) * 0.5 + 0.5;
+        const planetSize = 60 + bass * 0.2 + dimensions.rhythm * 20;
         const gradient = this.ctx.createRadialGradient(
             centerX, centerY, 0, 
             centerX, centerY, planetSize
@@ -1429,22 +1760,24 @@ class EmotionVisualizer {
         this.ctx.fill();
     }
 
-    render_liquid(bass, energy, emotionIntensity) {
-        // 液态模式实现
+    render_liquid(bass, energy, emotionIntensity, dimensions) {
+        // 液态模式实现 - 增强音频维度感知
         const width = this.canvas.width / devicePixelRatio;
         const height = this.canvas.height / devicePixelRatio;
         
-        // 绘制液体表面
-        this.ctx.fillStyle = `hsla(195, 65%, 40%, ${0.2 + emotionIntensity * 0.2})`;
+        // 基于氛围强度调整液体透明度
+        const liquidOpacity = 0.2 + emotionIntensity * 0.2 + dimensions.ambience * 0.3;
+        this.ctx.fillStyle = `hsla(195, 65%, 40%, ${liquidOpacity})`;
         this.ctx.fillRect(0, height * 0.6, width, height * 0.4);
         
-        // 绘制波浪
-        this.ctx.strokeStyle = `hsla(195, 65%, 65%, ${0.6 + emotionIntensity * 0.2})`;
-        this.ctx.lineWidth = 3;
+        // 基于节奏调整波浪强度
+        const waveIntensity = 20 + bass * 0.2 + dimensions.rhythm * 30;
+        this.ctx.strokeStyle = `hsla(195, 65%, 65%, ${0.6 + emotionIntensity * 0.2 + dimensions.melody * 0.2})`;
+        this.ctx.lineWidth = 3 + dimensions.rhythm * 2;
         this.ctx.beginPath();
         
         for (let x = 0; x < width; x += 5) {
-            const wave = Math.sin(x * 0.01 + Date.now() * 0.001) * (20 + bass * 0.2) + 
+            const wave = Math.sin(x * 0.01 + Date.now() * 0.001 * (1 + dimensions.rhythm)) * waveIntensity + 
                         Math.sin(x * 0.02 + Date.now() * 0.0007) * 10;
             const y = height * 0.6 + wave * (1 + emotionIntensity * 0.5);
             
@@ -1460,7 +1793,8 @@ class EmotionVisualizer {
 
 /* ================ 启动应用 ================ */
 document.addEventListener('DOMContentLoaded', () => {
-    new SonoriaRevolution();
+    const app = new SonoriaRevolution();
+    window.sonoriaApp = app; // 暴露给全局以便可视化器调用
 });
 </script>
 </body>
