@@ -3,23 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Sonoria v3.0 – 空间音境</title>
+<title>Sonoria Revolution - 沉浸音境</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 <style>
-/* ================ 顶级设计系统 ================ */
+/* ================ 极简设计系统 ================ */
 :root {
-    /* 敦煌东方色彩体系 */
-    --dunhuang-vermilion: hsl(12, 78%, 52%);    /* 朱砂红 */
+    /* 纯粹敦煌色彩 - 只保留两种核心颜色 */
     --dunhuang-cyan: hsl(195, 65%, 55%);        /* 石青 */
-    --dunhuang-gold: hsl(45, 75%, 55%);         /* 泥金 */
-    --dunhuang-ochre: hsl(30, 65%, 50%);        /* 赭石 */
-    --dunhuang-indigo: hsl(265, 45%, 45%);      /* 青金石 */
-    
-    /* 空间计算色彩系统 */
-    --space-primary: var(--dunhuang-cyan);
-    --space-secondary: var(--dunhuang-vermilion);
-    --space-accent: var(--dunhuang-gold);
+    --dunhuang-vermilion: hsl(12, 78%, 52%);    /* 朱砂红 */
     
     --bg: #0a0a16;
     --glass: rgba(255, 255, 255, 0.045);
@@ -27,33 +19,20 @@
     --text: #fafaff;
     --text-dim: rgba(255, 255, 255, 0.68);
     --glow: 0 0 40px rgba(195, 65%, 55%, 0.35);
-    --radius: 32px;
     --transition: all 0.44s cubic-bezier(0.23, 1, 0.32, 1);
-    --depth-shadow: 0 16px 48px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.18);
     
-    /* 空间计算变量 */
-    --depth: 0px;
-    --tilt-x: 0deg;
-    --tilt-y: 0deg;
+    /* 情感色彩状态 */
+    --emotion-color: var(--dunhuang-cyan);
+    --emotion-intensity: 0.5;
 }
 
-/* 动态情绪色相 - 敦煌色彩循环 */
-@keyframes dunhuangHue {
-    0% { --space-primary: var(--dunhuang-cyan); --space-secondary: var(--dunhuang-vermilion); }
-    25% { --space-primary: var(--dunhuang-vermilion); --space-secondary: var(--dunhuang-gold); }
-    50% { --space-primary: var(--dunhuang-gold); --space-secondary: var(--dunhuang-ochre); }
-    75% { --space-primary: var(--dunhuang-ochre); --space-secondary: var(--dunhuang-indigo); }
-    100% { --space-primary: var(--dunhuang-indigo); --space-secondary: var(--dunhuang-cyan); }
+/* 动态情感色彩 */
+@keyframes emotionShift {
+    0% { --emotion-color: var(--dunhuang-cyan); }
+    50% { --emotion-color: var(--dunhuang-vermilion); }
+    100% { --emotion-color: var(--dunhuang-cyan); }
 }
-body.emotion-breath { animation: dunhuangHue 24s infinite ease-in-out; }
-
-/* 环境光反射 */
-body::before {
-    content:''; position:fixed; inset:0; z-index:-2;
-    background: radial-gradient(ellipse at top, rgba(120,120,255,0.08), transparent 60%);
-    filter: blur(80px); opacity:0; transition:opacity .6s;
-}
-body.active::before { opacity:1; }
+body.emotion-active { animation: emotionShift 8s infinite ease-in-out; }
 
 /* ================ 全局 ================ */
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -64,6 +43,7 @@ body {
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
+    transition: background-color 2s ease;
 }
 
 /* ================ 画布 ================ */
@@ -81,282 +61,85 @@ body {
     mix-blend-mode: overlay;
 }
 
-/* ================ 主容器 ================ */
-.container {
-    position: relative; z-index: 3; height: 100dvh;
-    display: flex; justify-content: center; align-items: center;
-    padding: 20px; perspective: 1200px;
+/* ================ 极简控制界面 ================ */
+.control-center {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* ================ 播放器卡片（空间玻璃）============ */
-.player-card {
-    background: var(--glass);
-    backdrop-filter: blur(28px) saturate(200%);
-    border: 1.5px solid var(--glass-border);
-    border-radius: var(--radius);
-    padding: 36px;
-    width: 100%; max-width: 540px;
-    box-shadow: var(--depth-shadow), var(--glow);
-    transition: var(--transition);
-    position: relative;
-    transform-style: preserve-3d;
-    transform: 
-        translateZ(var(--depth)) 
-        rotateX(var(--tilt-x)) 
-        rotateY(var(--tilt-y))
-        scale(calc(1 - (var(--depth) * 0.001)));
-}
-
-/* 3D 悬浮交互 */
-.player-card:hover {
-    --depth: 20px;
-    --tilt-x: 2deg;
-    --tilt-y: 1deg;
-    box-shadow: 0 24px 64px rgba(0,0,0,0.36), var(--glow);
-}
-
-/* 环境反射层 */
-.player-card::before {
-    content:''; position:absolute; inset:0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 50%, transparent);
-    border-radius: var(--radius); pointer-events:none;
-    transform: translateZ(1px);
-}
-
-/* 最小化状态 */
-.player-card.minimized {
-    padding: 20px; border-radius: 56px; max-width: 340px;
-    transform: translateZ(0) scale(0.88);
-}
-.minimized > *:not(.control-row):not(.logo-section) { 
-    opacity:0; transform:translateY(8px); pointer-events:none; 
-}
-
-/* ================ Logo & 标题 ================ */
-.logo-section { text-align:center; margin-bottom:32px; }
-.logo-orbit {
-    width:96px; height:96px; margin:0 auto 18px;
-    position:relative; display:flex; align-items:center; justify-content:center;
-}
-.logo-ring {
-    position:absolute; inset:0; border-radius:50%;
-    background: conic-gradient(from 0deg, var(--space-primary), var(--space-secondary), var(--space-primary));
-    animation: spin 8s linear infinite;
-    filter: blur(1px);
-}
-.logo-core {
-    width:72px; height:72px; border-radius:50%;
-    background: radial-gradient(circle at 30% 30%, white, var(--space-primary));
-    display:flex; align-items:center; justify-content:center;
-    box-shadow: inset 0 4px 12px rgba(0,0,0,0.3), var(--glow);
-    z-index:1;
-}
-.logo-icon { 
-    font-size:2.8rem; 
-    color:white; 
-    filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4));
-    transform: rotate(-15deg);
-}
-
-@keyframes spin { to { transform:rotate(360deg); } }
-
-.title {
-    font-size:2.6rem; font-weight:800; letter-spacing:-1.2px;
-    background: linear-gradient(90deg, var(--space-primary), var(--space-secondary), var(--dunhuang-gold));
-    -webkit-background-clip: text; background-clip: text;
-    color: transparent;
-    text-shadow: 0 2px 12px rgba(0,0,0,0.25);
-    position:relative;
-}
-.title::after {
-    content:attr(data-text); position:absolute; left:0; top:0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    -webkit-background-clip: text; background-clip: text;
-    color: transparent; animation: shimmer 3s infinite;
-}
-@keyframes shimmer { 0%,100% {transform:translateX(-100%)} 50% {transform:translateX(100%)} }
-
-/* ================ 播放信息 ================ */
-.player-info { text-align:center; margin:24px 0; }
-.track-title {
-    font-size:1.4rem; font-weight:700; margin-bottom:8px;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    background: linear-gradient(90deg, var(--text), var(--text-dim));
-    -webkit-background-clip: text; background-clip: text;
-    color: transparent;
-}
-.track-artist { font-size:0.98rem; color:var(--text-dim); font-weight:500; }
-
-/* ================ 进度条（拟物）============ */
-.progress-section { margin:32px 0; }
-.progress-container {
-    height:9px; background:rgba(255,255,255,0.1); border-radius:5px;
-    overflow:hidden; cursor:pointer; position:relative;
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
-}
-.progress-fill {
-    height:100%; width:0%;
-    background: linear-gradient(90deg, var(--space-primary), var(--space-secondary));
-    border-radius:5px; position:relative; overflow:hidden;
-    box-shadow: 0 0 20px rgba(195, 65%, 55%, 0.4);
-}
-.progress-fill::before {
-    content:''; position:absolute; inset:0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: flow 2s infinite linear;
-}
-@keyframes flow { to { transform:translateX(100%); } }
-
-.progress-knob {
-    position:absolute; right:0; top:50%; transform:translate(50%, -50%);
-    width:18px; height:18px; border-radius:50%;
-    background: white; box-shadow:0 0 20px white, 0 4px 12px rgba(0,0,0,0.3);
-    opacity:0; transition:opacity .3s;
-}
-.progress-container:hover .progress-knob { opacity:1; }
-
-.time-display {
-    display:flex; justify-content:space-between; font-size:0.86rem; color:var(--text-dim); margin-top:10px;
-    font-variant-numeric: tabular-nums;
-}
-
-/* ================ 控制按钮（3D 拟物）============ */
-.control-row {
-    display:flex; justify-content:center; align-items:center; gap:18px; margin-top:28px;
-}
-.control-btn {
-    width:56px; height:56px; border-radius:50%;
-    background: var(--glass); border:1.5px solid var(--glass-border);
-    color: white; display:flex; align-items:center; justify-content:center;
-    cursor:pointer; transition: var(--transition); backdrop-filter: blur(16px);
-    position:relative; transform-style:preserve-3d;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-}
-.control-btn::before {
-    content:''; position:absolute; inset:0; border-radius:50%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-    opacity:0; transition:opacity .3s;
-}
-.control-btn:hover {
-    transform: translateY(-4px) translateZ(12px);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.3), var(--glow);
-}
-.control-btn:hover::before { opacity:1; }
-.control-btn:active {
-    transform: translateY(2px) translateZ(0);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-}
-
+/* 主播放按钮 */
 .play-btn {
-    width:72px; height:72px;
-    background: linear-gradient(135deg, var(--space-primary), var(--space-secondary));
-    box-shadow: 0 8px 24px rgba(195, 65%, 55%, 0.4), var(--glow);
-}
-.play-btn i { font-size:1.8rem; }
-
-/* ================ 辅助控件 ================ */
-.secondary-controls {
-    display:flex; justify-content:center; gap:16px; margin-top:24px;
-}
-.control-btn.small { width:48px; height:48px; }
-
-/* 音量条（悬浮弹出） */
-.volume-popup {
-    position:absolute; bottom:88px; left:50%; transform:translateX(-50%);
-    background:var(--glass); backdrop-filter:blur(24px); border-radius:24px;
-    padding:12px 20px; display:flex; align-items:center; gap:12px;
-    box-shadow: var(--depth-shadow), var(--glow); opacity:0; pointer-events:none;
-    transition: var(--transition); z-index:10;
-    border:1.5px solid var(--glass-border);
-}
-.volume-popup.show {
-    opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(-12px);
-}
-.volume-slider {
-    -webkit-appearance:none; width:120px; height:6px; border-radius:3px;
-    background:rgba(255,255,255,0.15); outline:none;
-}
-.volume-slider::-webkit-slider-thumb {
-    -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
-    background:white; cursor:pointer; box-shadow:0 0 16px white;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--emotion-color), color-mix(in srgb, var(--emotion-color) 70%, transparent));
+    border: 2px solid rgba(255,255,255,0.2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    backdrop-filter: blur(20px);
+    box-shadow: 
+        0 8px 32px rgba(0,0,0,0.3),
+        0 0 0 1px rgba(255,255,255,0.1),
+        0 0 40px color-mix(in srgb, var(--emotion-color) 30%, transparent);
+    position: relative;
+    overflow: hidden;
 }
 
-/* 上传区域（磁吸动画） */
-.upload-zone {
-    border:2px dashed var(--glass-border); border-radius:20px; padding:28px;
-    text-align:center; cursor:pointer; transition:var(--transition); margin-top:28px;
-    display:flex; flex-direction:column; align-items:center; gap:12px;
-    position:relative; overflow:hidden;
-}
-.upload-zone::before {
-    content:''; position:absolute; inset:0; background:rgba(102,126,234,0.08);
-    opacity:0; transition:opacity .4s; border-radius:20px;
-}
-.upload-zone:hover::before { opacity:1; }
-.upload-zone.drag-over { border-color:var(--space-primary); transform:scale(1.02); }
-
-/* 主题切换（胶囊按钮） */
-.theme-capsule {
-    display:flex; justify-content:center; gap:12px; margin-top:28px; flex-wrap:wrap;
-    padding:8px; background:rgba(255,255,255,0.06); border-radius:28px;
-    backdrop-filter:blur(12px); border:1.5px solid var(--glass-border);
-}
-.theme-btn {
-    padding:10px 20px; border-radius:22px; font-size:0.94rem; font-weight:600;
-    background:transparent; color:var(--text-dim); cursor:pointer;
-    transition:var(--transition); position:relative; min-width:80px;
-}
-.theme-btn.active {
-    background: linear-gradient(135deg, var(--space-primary), var(--space-secondary));
-    color:white; box-shadow: var(--glow); transform:scale(1.06);
-    font-weight:700;
+.play-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
 }
 
-/* 播放列表（毛玻璃抽屉） */
-.playlist-drawer {
-    max-height:0; overflow:hidden; transition:max-height .6s ease;
-    background:rgba(0,0,0,0.3); border-radius:20px; margin-top:28px;
-    backdrop-filter:blur(20px); border:1.5px solid var(--glass-border);
-}
-.playlist-drawer.expanded {
-    max-height:360px; overflow-y:auto; padding:20px;
+.play-btn:hover::before {
+    opacity: 1;
 }
 
-/* 播放列表项 */
-.playlist-item {
-    display:flex; align-items:center; padding:12px 16px;
-    border-radius:14px; margin-bottom:8px; cursor:pointer;
-    transition:var(--transition);
-}
-.playlist-item:hover {
-    background:rgba(255,255,255,0.08);
-}
-.playlist-item.active {
-    background:rgba(195, 65%, 55%, 0.15);
-    border-left:3px solid var(--space-primary);
+.play-btn i {
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+    transition: transform 0.3s;
 }
 
-/* 状态提示（悬浮气泡） */
-.status-bubble {
-    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
-    background:rgba(0,0,0,0.75); backdrop-filter:blur(20px); color:white;
-    padding:12px 24px; border-radius:24px; font-size:0.92rem; font-weight:500;
-    box-shadow:0 8px 24px rgba(0,0,0,0.3); z-index:100;
-    opacity:0; transition:opacity .5s, transform .5s; white-space:nowrap;
-    border:1px solid rgba(255,255,255,0.1);
-}
-.status-bubble.show {
-    opacity:1; transform:translateX(-50%) translateY(-8px);
+.play-btn.playing i {
+    transform: scale(0.9);
 }
 
-/* 滑动提示 */
-.swipe-guide {
-    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
-    background:rgba(0,0,0,0.6); backdrop-filter:blur(16px); padding:10px 20px;
-    border-radius:22px; font-size:0.88rem; color:var(--text-dim); z-index:10;
-    opacity:0; transition:opacity .6s;
+/* 状态指示器 */
+.status-indicator {
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(20px);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.5s ease;
+    border: 1px solid rgba(255,255,255,0.1);
+    white-space: nowrap;
 }
-.swipe-guide.show { opacity:1; }
+
+.status-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+}
 
 /* 敦煌纹理背景 */
 .dunhuang-texture {
@@ -366,53 +149,412 @@ body {
     width: 100%;
     height: 100%;
     background-image: 
-        radial-gradient(circle at 20% 80%, rgba(195, 65%, 55%, 0.05) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(45, 75%, 55%, 0.05) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(45, 75%, 55%, 0.03) 0%, transparent 50%);
+        radial-gradient(circle at 20% 80%, color-mix(in srgb, var(--emotion-color) 10%, transparent) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, color-mix(in srgb, var(--dunhuang-vermilion) 10%, transparent) 0%, transparent 50%);
     z-index: 0;
     pointer-events: none;
+    opacity: calc(0.3 + var(--emotion-intensity) * 0.4);
+    transition: opacity 2s ease;
 }
 
-/* 空间粒子效果 */
-.space-particles {
+/* 情感粒子系统 */
+.emotion-particles {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 0;
+    z-index: 1;
     pointer-events: none;
 }
 
-/* ================ 响应式 ================ */
-@media (max-width:640px) {
-    .player-card { padding:28px; }
-    .title { font-size:2.2rem; }
-    .control-row { gap:14px; }
-    .play-btn { width:64px; height:64px; }
-    .theme-capsule { padding:6px; }
-    .theme-btn { min-width:70px; padding:8px 16px; font-size:0.9rem; }
-}
-
-/* Vision Pro 空间手势提示 */
+/* 手势提示 */
 .gesture-hint {
     position: fixed;
-    bottom: 100px;
+    top: 40px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0,0,0,0.7);
     backdrop-filter: blur(20px);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 20px;
-    font-size: 0.9rem;
+    color: var(--text-dim);
+    padding: 8px 16px;
+    border-radius: 16px;
+    font-size: 0.85rem;
     opacity: 0;
     transition: opacity 0.5s;
     z-index: 100;
     border: 1px solid rgba(255,255,255,0.1);
 }
+
 .gesture-hint.show {
     opacity: 1;
+}
+
+/* 加载状态 */
+.loading-state {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: opacity 0.8s ease;
+}
+
+.loading-logo {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.loading-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--dunhuang-cyan), var(--dunhuang-vermilion), var(--dunhuang-cyan));
+    animation: spin 2s linear infinite;
+    filter: blur(1px);
+}
+
+.loading-core {
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, white, var(--dunhuang-cyan));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-text {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    font-weight: 500;
+}
+
+/* 音频输入面板 */
+.audio-input-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    background: rgba(10, 10, 22, 0.9);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.audio-input-panel.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.audio-input-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.audio-input-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.close-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.input-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, var(--dunhuang-cyan), var(--dunhuang-vermilion));
+    color: white;
+    border-color: transparent;
+}
+
+.url-input-section, .file-input-section {
+    display: none;
+}
+
+.url-input-section.active, .file-input-section.active {
+    display: block;
+}
+
+.url-input {
+    width: 100%;
+    padding: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 1rem;
+    margin-bottom: 16px;
+    transition: var(--transition);
+}
+
+.url-input:focus {
+    outline: none;
+    border-color: var(--dunhuang-cyan);
+}
+
+.url-input::placeholder {
+    color: var(--text-dim);
+}
+
+.url-hints {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.url-hint {
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.url-hint:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.file-drop-area {
+    border: 2px dashed rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-bottom: 20px;
+}
+
+.file-drop-area:hover, .file-drop-area.drag-over {
+    border-color: var(--dunhuang-cyan);
+    background: rgba(195, 65%, 55%, 0.05);
+}
+
+.file-drop-icon {
+    font-size: 3rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+}
+
+.file-drop-text {
+    color: var(--text-dim);
+    margin-bottom: 8px;
+}
+
+.file-drop-subtext {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    opacity: 0.7;
+}
+
+.confirm-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--dunhuang-cyan), var(--dunhuang-vermilion));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--dunhuang-cyan) 30%, transparent);
+}
+
+.confirm-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px color-mix(in srgb, var(--dunhuang-cyan) 40%, transparent);
+}
+
+.confirm-btn:active {
+    transform: translateY(0);
+}
+
+/* 音频输入提示 */
+.audio-input-hint {
+    position: fixed;
+    top: 40px;
+    right: 40px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(20px);
+    color: var(--text-dim);
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 100;
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.audio-input-hint.show {
+    opacity: 1;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .play-btn {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .play-btn i {
+        font-size: 1.8rem;
+    }
+    
+    .control-center {
+        bottom: 30px;
+    }
+    
+    .audio-input-hint {
+        top: 20px;
+        right: 20px;
+    }
+    
+    .audio-input-panel {
+        width: 95%;
+        padding: 20px;
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 情感强度指示器 */
+.emotion-intensity {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.emotion-intensity.show {
+    opacity: 1;
+}
+
+.emotion-intensity-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--dunhuang-cyan), var(--dunhuang-vermilion));
+    border-radius: 2px;
+    transition: width 1s ease;
+}
+
+/* 音频信息显示 */
+.audio-info {
+    position: fixed;
+    top: 40px;
+    left: 40px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(20px);
+    padding: 12px 16px;
+    border-radius: 16px;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 100;
+    border: 1px solid rgba(255,255,255,0.1);
+    max-width: 300px;
+}
+
+.audio-info.show {
+    opacity: 1;
+}
+
+.audio-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.audio-source {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+}
+
+/* 隐藏状态 */
+.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(5px);
+    z-index: 150;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+}
+
+.overlay.show {
+    opacity: 1;
+    pointer-events: auto;
 }
 </style>
 </head>
@@ -421,472 +563,697 @@ body {
 <canvas id="visualizer"></canvas>
 <div class="canvas-overlay"></div>
 <div class="dunhuang-texture"></div>
-<div class="space-particles"></div>
+<div class="emotion-particles"></div>
+<div class="overlay" id="overlay"></div>
 
-<div class="container">
-    <div class="player-card" id="player-card">
-        <div class="logo-section">
-            <div class="logo-orbit">
-                <div class="logo-ring"></div>
-                <div class="logo-core"><i class="material-icons logo-icon">music_note</i></div>
-            </div>
-            <h1 class="title" data-text="Sonoria">Sonoria</h1>
-        </div>
-
-        <div class="player-info">
-            <div class="track-title" id="track-title">欢迎进入音境</div>
-            <div class="track-artist" id="track-artist">上传音乐，开启空间之旅</div>
-        </div>
-
-        <div class="progress-section">
-            <div class="progress-container" id="progress-container">
-                <div class="progress-fill" id="progress-fill">
-                    <div class="progress-knob"></div>
-                </div>
-            </div>
-            <div class="time-display">
-                <span id="current-time">0:00</span>
-                <span id="total-time">0:00</span>
-            </div>
-        </div>
-
-        <div class="control-row">
-            <button class="control-btn" id="prev-btn"><i class="material-icons">skip_previous</i></button>
-            <button class="control-btn play-btn" id="play-btn"><i class="material-icons">play_arrow</i></button>
-            <button class="control-btn" id="next-btn"><i class="material-icons">skip_next</i></button>
-            <button class="control-btn small" id="volume-btn"><i class="material-icons">volume_up</i></button>
-        </div>
-
-        <div class="volume-popup" id="volume-popup">
-            <i class="material-icons">volume_up</i>
-            <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="75">
-        </div>
-
-        <div class="secondary-controls">
-            <button class="control-btn small" id="list-btn"><i class="material-icons">queue_music</i></button>
-            <button class="control-btn small" id="upload-btn"><i class="material-icons">cloud_upload</i></button>
-            <button class="control-btn small" id="mic-btn"><i class="material-icons">graphic_eq</i></button>
-        </div>
-
-        <div class="upload-zone" id="upload-zone">
-            <i class="material-icons">cloud_upload</i>
-            <div>拖放音乐文件或点击上传</div>
-        </div>
-
-        <div class="theme-capsule" id="theme-capsule"></div>
-
-        <div class="playlist-drawer" id="playlist-drawer">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <div style="font-weight:700; font-size:1.1rem;">播放列表</div>
-                <button class="control-btn small" id="close-list"><i class="material-icons">close</i></button>
-            </div>
-            <div id="playlist-items"></div>
-        </div>
+<div class="loading-state" id="loading-state">
+    <div class="loading-logo">
+        <div class="loading-ring"></div>
+        <div class="loading-core"></div>
     </div>
+    <div class="loading-text">准备沉浸体验</div>
 </div>
 
-<div class="status-bubble" id="status-bubble"></div>
-<div class="swipe-guide" id="swipe-guide">左右滑动切换可视化主题</div>
-<div class="gesture-hint" id="gesture-hint">手势控制已激活</div>
-<input type="file" id="file-input" accept="audio/*,video/mp4" multiple hidden>
+<div class="control-center">
+    <div class="emotion-intensity" id="emotion-intensity">
+        <div class="emotion-intensity-fill" id="emotion-intensity-fill"></div>
+    </div>
+    <button class="play-btn" id="play-btn">
+        <i class="material-icons">play_arrow</i>
+    </button>
+    <div class="status-indicator" id="status-indicator">点击开始体验</div>
+</div>
+
+<div class="audio-info" id="audio-info">
+    <div class="audio-title" id="audio-title">欢迎进入音境</div>
+    <div class="audio-source" id="audio-source">准备播放音频</div>
+</div>
+
+<div class="gesture-hint" id="gesture-hint">长按播放按钮选择音频源</div>
+<div class="audio-input-hint" id="audio-input-hint">
+    <i class="material-icons" style="font-size: 1.1rem;">input</i>
+    <span>音频源</span>
+</div>
+
+<!-- 音频输入面板 -->
+<div class="audio-input-panel" id="audio-input-panel">
+    <div class="audio-input-header">
+        <div class="audio-input-title">选择音频源</div>
+        <button class="close-btn" id="close-panel">
+            <i class="material-icons">close</i>
+        </button>
+    </div>
+    
+    <div class="input-tabs">
+        <button class="tab-btn active" data-tab="url">URL链接</button>
+        <button class="tab-btn" data-tab="file">本地文件</button>
+        <button class="tab-btn" data-tab="mic">麦克风</button>
+    </div>
+    
+    <div class="url-input-section active">
+        <input type="text" class="url-input" id="url-input" placeholder="输入音频URL链接 (MP3, WAV, OGG等)">
+        
+        <div class="url-hints">
+            <div class="url-hint" data-url="https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3">电子音乐</div>
+            <div class="url-hint" data-url="https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3">氛围音乐</div>
+            <div class="url-hint" data-url="https://assets.mixkit.co/music/preview/mixkit-deep-urban-623.mp3">城市节拍</div>
+        </div>
+    </div>
+    
+    <div class="file-input-section">
+        <div class="file-drop-area" id="file-drop-area">
+            <div class="file-drop-icon">
+                <i class="material-icons">cloud_upload</i>
+            </div>
+            <div class="file-drop-text">拖放音频文件到这里</div>
+            <div class="file-drop-subtext">或点击选择文件</div>
+        </div>
+        <input type="file" id="file-input" accept="audio/*" hidden>
+    </div>
+    
+    <div class="mic-input-section" style="display: none;">
+        <div style="text-align: center; padding: 40px 20px;">
+            <div style="font-size: 3rem; margin-bottom: 16px;">🎤</div>
+            <div style="color: var(--text); margin-bottom: 8px;">麦克风输入</div>
+            <div style="color: var(--text-dim); font-size: 0.9rem;">使用设备麦克风实时输入音频</div>
+        </div>
+    </div>
+    
+    <button class="confirm-btn" id="confirm-input">确认选择</button>
+</div>
+
+<input type="file" id="hidden-file-input" accept="audio/*" hidden>
 
 <script>
-/* ================ 顶级交互引擎 ================ */
-class SonoriaPro {
+/* ================ Sonoria Revolution 核心引擎 ================ */
+class SonoriaRevolution {
     constructor() {
         this.audio = null;
         this.visualizer = null;
-        this.playlist = [];
-        this.current = -1;
-        this.volume = 0.75;
-        this.isMic = false;
-        this.inactivityTimer = null;
-        this.gyroscopeEnabled = false;
-
+        this.isPlaying = false;
+        this.currentSource = null; // 'mic', 'url', 'file'
+        this.emotionIntensity = 0.5;
+        this.visualizationMode = 'dunhuang';
+        this.audioContext = null;
+        this.analyser = null;
+        this.currentAudioUrl = null;
+        this.currentAudioTitle = '欢迎进入音境';
+        
         this.init();
     }
 
-    init() {
+    async init() {
         this.bindElements();
         this.initVisualizer();
         this.initParticles();
-        this.renderThemes();
         this.bindEvents();
-        this.showStatus('欢迎进入 Sonoria v3.0');
-        setTimeout(() => document.body.classList.add('active', 'emotion-breath'), 800);
         
-        // 初始化空间手势控制
-        this.initSpatialGestures();
+        // 模拟加载过程
+        setTimeout(() => {
+            this.hideLoading();
+            this.showStatus('点击播放按钮开始体验', 3000);
+            this.showGestureHint('长按播放按钮选择音频源', 2000);
+            this.showAudioInfo();
+        }, 1500);
+        
+        // 自动尝试麦克风输入
+        this.tryMicrophoneInput();
     }
 
     bindElements() {
         this.el = {
-            card: document.getElementById('player-card'),
-            progressContainer: document.getElementById('progress-container'),
-            progressFill: document.getElementById('progress-fill'),
-            currentTime: document.getElementById('current-time'),
-            totalTime: document.getElementById('total-time'),
-            title: document.getElementById('track-title'),
-            artist: document.getElementById('track-artist'),
             playBtn: document.getElementById('play-btn'),
-            prevBtn: document.getElementById('prev-btn'),
-            nextBtn: document.getElementById('next-btn'),
-            volumeBtn: document.getElementById('volume-btn'),
-            volumePopup: document.getElementById('volume-popup'),
-            volumeSlider: document.getElementById('volume-slider'),
-            listBtn: document.getElementById('list-btn'),
-            uploadBtn: document.getElementById('upload-btn'),
-            micBtn: document.getElementById('mic-btn'),
-            uploadZone: document.getElementById('upload-zone'),
+            statusIndicator: document.getElementById('status-indicator'),
+            gestureHint: document.getElementById('gesture-hint'),
+            audioInputHint: document.getElementById('audio-input-hint'),
+            loadingState: document.getElementById('loading-state'),
+            emotionIntensity: document.getElementById('emotion-intensity'),
+            emotionIntensityFill: document.getElementById('emotion-intensity-fill'),
+            audioInputPanel: document.getElementById('audio-input-panel'),
+            closePanel: document.getElementById('close-panel'),
+            urlInput: document.getElementById('url-input'),
+            fileDropArea: document.getElementById('file-drop-area'),
             fileInput: document.getElementById('file-input'),
-            playlistDrawer: document.getElementById('playlist-drawer'),
-            playlistItems: document.getElementById('playlist-items'),
-            closeList: document.getElementById('close-list'),
-            themeCapsule: document.getElementById('theme-capsule'),
-            status: document.getElementById('status-bubble'),
-            swipeGuide: document.getElementById('swipe-guide'),
-            gestureHint: document.getElementById('gesture-hint')
+            confirmInput: document.getElementById('confirm-input'),
+            overlay: document.getElementById('overlay'),
+            tabBtns: document.querySelectorAll('.tab-btn'),
+            urlHints: document.querySelectorAll('.url-hint'),
+            audioInfo: document.getElementById('audio-info'),
+            audioTitle: document.getElementById('audio-title'),
+            audioSource: document.getElementById('audio-source')
         };
     }
 
     initVisualizer() {
         const canvas = document.getElementById('visualizer');
         const ctx = canvas.getContext('2d');
-        this.visualizer = new SpatialVisualizer(canvas, ctx);
+        this.visualizer = new EmotionVisualizer(canvas, ctx);
         this.visualizer.start();
     }
 
     initParticles() {
-        const container = document.querySelector('.space-particles');
-        const particleCount = 50;
+        const container = document.querySelector('.emotion-particles');
+        const particleCount = 30;
         
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
             particle.style.position = 'absolute';
-            particle.style.width = Math.random() * 3 + 1 + 'px';
+            particle.style.width = Math.random() * 4 + 1 + 'px';
             particle.style.height = particle.style.width;
-            particle.style.background = `hsla(${Math.random() * 60 + 195}, 70%, 70%, ${Math.random() * 0.5 + 0.1})`;
+            particle.style.background = `var(--emotion-color)`;
             particle.style.borderRadius = '50%';
             particle.style.left = Math.random() * 100 + '%';
             particle.style.top = Math.random() * 100 + '%';
+            particle.style.opacity = Math.random() * 0.3 + 0.1;
             particle.style.boxShadow = '0 0 10px currentColor';
-            particle.style.animation = `float ${Math.random() * 20 + 10}s infinite linear`;
+            particle.style.animation = `floatParticle ${Math.random() * 20 + 10}s infinite linear`;
+            particle.style.willChange = 'transform, opacity';
             container.appendChild(particle);
         }
         
-        // 添加CSS动画
+        // 添加粒子浮动动画
         const style = document.createElement('style');
         style.textContent = `
-            @keyframes float {
-                0% { transform: translate(0, 0) rotate(0deg); }
-                25% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(90deg); }
-                50% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(180deg); }
-                75% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(270deg); }
-                100% { transform: translate(0, 0) rotate(360deg); }
+            @keyframes floatParticle {
+                0% { 
+                    transform: translate(0, 0) rotate(0deg) scale(1);
+                    opacity: ${Math.random() * 0.3 + 0.1};
+                }
+                25% { 
+                    transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(90deg) scale(${Math.random() * 0.5 + 0.8});
+                }
+                50% { 
+                    transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(180deg) scale(${Math.random() * 0.5 + 1.2});
+                    opacity: ${Math.random() * 0.5 + 0.3};
+                }
+                75% { 
+                    transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(270deg) scale(${Math.random() * 0.5 + 0.8});
+                }
+                100% { 
+                    transform: translate(0, 0) rotate(360deg) scale(1);
+                    opacity: ${Math.random() * 0.3 + 0.1};
+                }
             }
         `;
         document.head.appendChild(style);
     }
 
-    renderThemes() {
-        const themes = [
-            { name: '敦煌', mode: 'dunhuang', icon: 'palette' },
-            { name: '极光', mode: 'aurora', icon: 'auto_awesome' },
-            { name: '宇宙', mode: 'cosmic', icon: 'language' },
-            { name: '液态', mode: 'liquid', icon: 'waves' },
-            { name: '量子', mode: 'quantum', icon: 'category' }
-        ];
-        this.el.themeCapsule.innerHTML = themes.map((t, i) => `
-            <button class="theme-btn ${i===0?'active':''}" data-mode="${t.mode}">
-                <i class="material-icons" style="font-size:1.1rem;vertical-align:middle;">${t.icon}</i> ${t.name}
-            </button>
-        `).join('');
-        this.el.themeCapsule.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.el.themeCapsule.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.visualizer.setMode(btn.dataset.mode);
-            });
-        });
-    }
-
-    initSpatialGestures() {
-        // 陀螺仪空间控制
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (e) => {
-                if (!this.gyroscopeEnabled) return;
-                
-                const tiltX = (e.beta || 0) / 45; // -45 to 45 degrees
-                const tiltY = (e.gamma || 0) / 45; // -45 to 45 degrees
-                
-                document.documentElement.style.setProperty('--tilt-x', `${tiltX}deg`);
-                document.documentElement.style.setProperty('--tilt-y', `${tiltY}deg`);
-                
-                // 深度效果基于设备移动
-                const depth = Math.abs(tiltX) + Math.abs(tiltY);
-                document.documentElement.style.setProperty('--depth', `${depth * 2}px`);
-            });
-            
-            // 启用陀螺仪控制的提示
-            this.showGestureHint('空间手势控制已准备就绪');
-        }
+    bindEvents() {
+        // 主播放按钮
+        this.el.playBtn.addEventListener('click', () => this.togglePlayback());
         
-        // 手势控制播放/暂停
+        // 长按打开音频输入面板
+        let pressTimer;
+        this.el.playBtn.addEventListener('mousedown', () => {
+            pressTimer = setTimeout(() => {
+                this.openAudioInputPanel();
+            }, 800);
+        });
+        
+        this.el.playBtn.addEventListener('touchstart', () => {
+            pressTimer = setTimeout(() => {
+                this.openAudioInputPanel();
+            }, 800);
+        });
+        
+        const cancelPress = () => clearTimeout(pressTimer);
+        this.el.playBtn.addEventListener('mouseup', cancelPress);
+        this.el.playBtn.addEventListener('mouseleave', cancelPress);
+        this.el.playBtn.addEventListener('touchend', cancelPress);
+        
+        // 双击切换可视化风格
         let lastTap = 0;
         document.addEventListener('touchend', (e) => {
             const currentTime = new Date().getTime();
             const tapLength = currentTime - lastTap;
             if (tapLength < 300 && tapLength > 0) {
-                // 双击手势 - 播放/暂停
-                this.toggle();
-                this.showGestureHint('播放控制');
+                this.switchVisualizationMode();
+                this.showGestureHint(`切换到${this.getModeName(this.visualizationMode)}模式`, 1500);
             }
             lastTap = currentTime;
         });
         
-        // 滑动手势控制音量
-        let startY = 0;
-        document.addEventListener('touchstart', (e) => {
-            startY = e.touches[0].clientY;
+        // 鼠标双击（桌面端）
+        document.addEventListener('dblclick', () => {
+            this.switchVisualizationMode();
+            this.showGestureHint(`切换到${this.getModeName(this.visualizationMode)}模式`, 1500);
         });
         
-        document.addEventListener('touchmove', (e) => {
-            if (e.touches.length !== 1) return;
-            
-            const deltaY = startY - e.touches[0].clientY;
-            if (Math.abs(deltaY) > 50) {
-                const volumeChange = deltaY > 0 ? 0.1 : -0.1;
-                const newVolume = Math.max(0, Math.min(1, this.volume + volumeChange));
-                this.setVolume(newVolume);
-                startY = e.touches[0].clientY;
-                this.showGestureHint(`音量: ${Math.round(newVolume * 100)}%`);
+        // 音频输入提示点击
+        this.el.audioInputHint.addEventListener('click', () => {
+            this.openAudioInputPanel();
+        });
+        
+        // 音频输入面板事件
+        this.el.closePanel.addEventListener('click', () => this.closeAudioInputPanel());
+        this.el.overlay.addEventListener('click', () => this.closeAudioInputPanel());
+        
+        // 标签切换
+        this.el.tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                this.switchTab(tab);
+            });
+        });
+        
+        // URL提示点击
+        this.el.urlHints.forEach(hint => {
+            hint.addEventListener('click', () => {
+                this.el.urlInput.value = hint.dataset.url;
+            });
+        });
+        
+        // 文件拖放
+        this.el.fileDropArea.addEventListener('click', () => {
+            this.el.fileInput.click();
+        });
+        
+        this.el.fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.handleFileSelect(e.target.files[0]);
+            }
+        });
+        
+        this.el.fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.el.fileDropArea.classList.add('drag-over');
+        });
+        
+        this.el.fileDropArea.addEventListener('dragleave', () => {
+            this.el.fileDropArea.classList.remove('drag-over');
+        });
+        
+        this.el.fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            this.el.fileDropArea.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                this.handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+        
+        // 确认输入
+        this.el.confirmInput.addEventListener('click', () => {
+            this.handleConfirmInput();
+        });
+        
+        // URL输入回车确认
+        this.el.urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.handleConfirmInput();
+            }
+        });
+        
+        // 空间手势控制（陀螺仪）
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', (e) => {
+                if (!this.isPlaying) return;
+                
+                // 基于设备倾斜调整情感强度
+                const tilt = Math.abs(e.beta || 0) + Math.abs(e.gamma || 0);
+                const intensity = Math.min(1, tilt / 90);
+                this.setEmotionIntensity(intensity);
+            });
+        }
+        
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                this.togglePlayback();
+            } else if (e.code === 'KeyI') {
+                e.preventDefault();
+                this.openAudioInputPanel();
+            } else if (e.code === 'KeyM') {
+                this.tryMicrophoneInput();
             }
         });
     }
 
-    showGestureHint(message) {
+    openAudioInputPanel() {
+        this.el.audioInputPanel.classList.add('show');
+        this.el.overlay.classList.add('show');
+        this.showGestureHint('', 0); // 隐藏手势提示
+    }
+
+    closeAudioInputPanel() {
+        this.el.audioInputPanel.classList.remove('show');
+        this.el.overlay.classList.remove('show');
+    }
+
+    switchTab(tab) {
+        // 更新激活的标签
+        this.el.tabBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tab);
+        });
+        
+        // 显示对应的内容区域
+        document.querySelectorAll('.url-input-section, .file-input-section, .mic-input-section')
+            .forEach(section => {
+                section.classList.remove('active');
+            });
+        
+        document.querySelector(`.${tab}-input-section`).classList.add('active');
+        
+        // 更新确认按钮文本
+        const buttonTexts = {
+            'url': '加载URL音频',
+            'file': '使用选中文件', 
+            'mic': '启用麦克风'
+        };
+        this.el.confirmInput.textContent = buttonTexts[tab] || '确认选择';
+    }
+
+    async handleConfirmInput() {
+        const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+        
+        switch(activeTab) {
+            case 'url':
+                await this.handleUrlInput();
+                break;
+            case 'file':
+                if (this.el.fileInput.files.length > 0) {
+                    this.handleFileSelect(this.el.fileInput.files[0]);
+                } else {
+                    this.showStatus('请先选择音频文件', 2000);
+                    return;
+                }
+                break;
+            case 'mic':
+                await this.tryMicrophoneInput();
+                break;
+        }
+        
+        this.closeAudioInputPanel();
+    }
+
+    async handleUrlInput() {
+        const url = this.el.urlInput.value.trim();
+        if (!url) {
+            this.showStatus('请输入有效的音频URL', 2000);
+            return;
+        }
+        
+        this.showStatus('加载音频中...', 2000);
+        
+        try {
+            // 验证URL有效性
+            if (!this.isValidAudioUrl(url)) {
+                this.showStatus('不支持的音频格式', 2000);
+                return;
+            }
+            
+            await this.loadAudioFromUrl(url);
+            this.currentAudioTitle = this.extractTitleFromUrl(url);
+            this.currentAudioUrl = url;
+            this.showAudioInfo();
+            this.showStatus('URL音频加载成功', 2000);
+            
+            // 自动开始播放
+            if (!this.isPlaying) {
+                this.startPlayback();
+            }
+        } catch (error) {
+            console.error('URL音频加载失败:', error);
+            this.showStatus('音频加载失败，请检查URL', 2000);
+        }
+    }
+
+    handleFileSelect(file) {
+        if (!file.type.startsWith('audio/')) {
+            this.showStatus('请选择音频文件', 2000);
+            return;
+        }
+        
+        this.showStatus('加载文件中...', 2000);
+        
+        const url = URL.createObjectURL(file);
+        this.loadAudioFromUrl(url);
+        this.currentAudioTitle = file.name.replace(/\.[^/.]+$/, "");
+        this.currentAudioUrl = url;
+        this.currentSource = 'file';
+        this.showAudioInfo();
+        this.showStatus('文件加载成功', 2000);
+        
+        // 自动开始播放
+        if (!this.isPlaying) {
+            this.startPlayback();
+        }
+    }
+
+    async loadAudioFromUrl(url) {
+        if (this.audio) {
+            this.audio.pause();
+            this.audio = null;
+        }
+        
+        this.audio = new Audio();
+        this.audio.crossOrigin = "anonymous";
+        this.audio.src = url;
+        
+        // 设置音频分析
+        if (!this.audioContext) {
+            this.audioContext = new AudioContext();
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 2048;
+        }
+        
+        const source = this.audioContext.createMediaElementSource(this.audio);
+        source.connect(this.analyser);
+        this.analyser.connect(this.audioContext.destination);
+        
+        this.visualizer.connect(this.analyser);
+        this.currentSource = 'url';
+        
+        // 等待音频加载
+        await new Promise((resolve, reject) => {
+            this.audio.onloadedmetadata = resolve;
+            this.audio.onerror = reject;
+        });
+    }
+
+    isValidAudioUrl(url) {
+        const audioExtensions = ['.mp3', '.wav', '.ogg', '.aac', '.m4a', '.flac', '.webm'];
+        return audioExtensions.some(ext => url.toLowerCase().includes(ext));
+    }
+
+    extractTitleFromUrl(url) {
+        try {
+            const urlObj = new URL(url);
+            const pathname = urlObj.pathname;
+            const filename = pathname.split('/').pop();
+            return filename.replace(/\.[^/.]+$/, "") || '网络音频';
+        } catch {
+            return '网络音频';
+        }
+    }
+
+    showAudioInfo() {
+        const sourceNames = {
+            'mic': '麦克风',
+            'url': 'URL音频',
+            'file': '本地文件',
+            'example': '示例音频'
+        };
+        
+        this.el.audioTitle.textContent = this.currentAudioTitle;
+        this.el.audioSource.textContent = sourceNames[this.currentSource] || '未知来源';
+        this.el.audioInfo.classList.add('show');
+    }
+
+    async tryMicrophoneInput() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.startMicrophoneInput(stream);
+            this.currentAudioTitle = '实时麦克风输入';
+            this.currentSource = 'mic';
+            this.showAudioInfo();
+            this.showStatus('麦克风输入已激活', 2000);
+            this.el.audioInputHint.innerHTML = '<i class="material-icons" style="font-size: 1.1rem;">mic</i><span>麦克风</span>';
+            this.el.audioInputHint.style.color = 'var(--dunhuang-vermilion)';
+            
+            // 自动开始播放
+            if (!this.isPlaying) {
+                this.startPlayback();
+            }
+        } catch (error) {
+            this.showStatus('麦克风权限被拒绝', 2000);
+            this.el.audioInputHint.innerHTML = '<i class="material-icons" style="font-size: 1.1rem;">mic_off</i><span>麦克风</span>';
+            this.el.audioInputHint.style.color = 'var(--text-dim)';
+            
+            // 如果没有音频输入，使用示例音频
+            if (!this.audio) {
+                this.useExampleAudio();
+            }
+        }
+        this.el.audioInputHint.classList.add('show');
+    }
+
+    startMicrophoneInput(stream) {
+        if (this.audioContext) {
+            this.audioContext.close();
+        }
+        
+        this.audioContext = new AudioContext();
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = 2048;
+        
+        const source = this.audioContext.createMediaStreamSource(stream);
+        source.connect(this.analyser);
+        
+        this.visualizer.connect(this.analyser);
+        this.currentSource = 'mic';
+    }
+
+    useExampleAudio() {
+        // 创建示例音频（白噪音）
+        this.audioContext = new AudioContext();
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = 2048;
+        
+        // 创建简单的音频源
+        const bufferSize = 4096;
+        const noiseGenerator = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
+        noiseGenerator.onaudioprocess = (e) => {
+            const output = e.outputBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = (Math.random() * 2 - 1) * 0.1; // 低音量白噪音
+            }
+        };
+        
+        noiseGenerator.connect(this.analyser);
+        this.analyser.connect(this.audioContext.destination);
+        
+        this.visualizer.connect(this.analyser);
+        this.currentSource = 'example';
+        this.currentAudioTitle = '情感示例音频';
+        this.showAudioInfo();
+        this.showStatus('使用示例音频', 2000);
+    }
+
+    togglePlayback() {
+        if (this.isPlaying) {
+            this.stopPlayback();
+        } else {
+            this.startPlayback();
+        }
+    }
+
+    startPlayback() {
+        if (!this.audioContext) {
+            this.useExampleAudio();
+        }
+        
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+        
+        // 如果是URL或文件音频，播放音频元素
+        if (this.audio && (this.currentSource === 'url' || this.currentSource === 'file')) {
+            this.audio.play();
+        }
+        
+        this.isPlaying = true;
+        this.el.playBtn.classList.add('playing');
+        this.el.playBtn.innerHTML = '<i class="material-icons">pause</i>';
+        this.showStatus('播放中', 1000);
+        this.el.emotionIntensity.classList.add('show');
+        
+        document.body.classList.add('emotion-active');
+    }
+
+    stopPlayback() {
+        // 如果是URL或文件音频，暂停音频元素
+        if (this.audio && (this.currentSource === 'url' || this.currentSource === 'file')) {
+            this.audio.pause();
+        }
+        
+        this.isPlaying = false;
+        this.el.playBtn.classList.remove('playing');
+        this.el.playBtn.innerHTML = '<i class="material-icons">play_arrow</i>';
+        this.showStatus('已暂停', 1000);
+        this.el.emotionIntensity.classList.remove('show');
+        
+        document.body.classList.remove('emotion-active');
+    }
+
+    switchVisualizationMode() {
+        const modes = ['dunhuang', 'aurora', 'cosmic', 'liquid'];
+        const currentIndex = modes.indexOf(this.visualizationMode);
+        this.visualizationMode = modes[(currentIndex + 1) % modes.length];
+        this.visualizer.setMode(this.visualizationMode);
+        
+        // 根据模式调整情感强度范围
+        this.setEmotionIntensity(this.emotionIntensity);
+    }
+
+    getModeName(mode) {
+        const names = {
+            'dunhuang': '敦煌',
+            'aurora': '极光', 
+            'cosmic': '宇宙',
+            'liquid': '液态'
+        };
+        return names[mode] || mode;
+    }
+
+    setEmotionIntensity(intensity) {
+        this.emotionIntensity = intensity;
+        document.documentElement.style.setProperty('--emotion-intensity', intensity);
+        this.el.emotionIntensityFill.style.width = `${intensity * 100}%`;
+        
+        // 基于情感强度调整整体体验
+        this.adjustExperienceByEmotion(intensity);
+    }
+
+    adjustExperienceByEmotion(intensity) {
+        // 调整粒子动画速度
+        const particles = document.querySelectorAll('.emotion-particles div');
+        particles.forEach(particle => {
+            const duration = 20 - (intensity * 10); // 高强度时动画更快
+            particle.style.animationDuration = `${duration}s`;
+        });
+        
+        // 调整背景纹理强度
+        const texture = document.querySelector('.dunhuang-texture');
+        texture.style.opacity = 0.3 + (intensity * 0.4);
+    }
+
+    showStatus(message, duration = 2000) {
+        this.el.statusIndicator.textContent = message;
+        this.el.statusIndicator.classList.add('show');
+        
+        clearTimeout(this.statusTimer);
+        this.statusTimer = setTimeout(() => {
+            this.el.statusIndicator.classList.remove('show');
+        }, duration);
+    }
+
+    showGestureHint(message, duration = 2000) {
         this.el.gestureHint.textContent = message;
         this.el.gestureHint.classList.add('show');
+        
         clearTimeout(this.gestureTimer);
         this.gestureTimer = setTimeout(() => {
             this.el.gestureHint.classList.remove('show');
-        }, 2000);
+        }, duration);
     }
 
-    bindEvents() {
-        // 播放控制
-        this.el.playBtn.onclick = () => this.toggle();
-        this.el.prevBtn.onclick = () => this.prev();
-        this.el.nextBtn.onclick = () => this.next();
-
-        // 进度条
-        this.el.progressContainer.onclick = (e) => {
-            if (!this.audio) return;
-            const rect = this.el.progressContainer.getBoundingClientRect();
-            const pct = (e.clientX - rect.left) / rect.width;
-            this.audio.currentTime = pct * this.audio.duration;
-        };
-
-        // 音量
-        this.el.volumeBtn.onclick = () => this.el.volumePopup.classList.toggle('show');
-        this.el.volumeSlider.oninput = (e) => this.setVolume(e.target.value / 100);
-
-        // 上传
-        this.el.uploadBtn.onclick = this.el.uploadZone.onclick = () => this.el.fileInput.click();
-        this.el.fileInput.onchange = (e) => this.addFiles(e.target.files);
-
-        // 拖放
-        this.el.uploadZone.ondragover = (e) => { e.preventDefault(); this.el.uploadZone.classList.add('drag-over'); };
-        this.el.uploadZone.ondragleave = () => this.el.uploadZone.classList.remove('drag-over');
-        this.el.uploadZone.ondrop = (e) => {
-            e.preventDefault(); this.el.uploadZone.classList.remove('drag-over');
-            this.addFiles(e.dataTransfer.files);
-        };
-
-        // 播放列表
-        this.el.listBtn.onclick = () => this.el.playlistDrawer.classList.toggle('expanded');
-        this.el.closeList.onclick = () => this.el.playlistDrawer.classList.remove('expanded');
-
-        // 麦克风
-        this.el.micBtn.onclick = async () => {
-            if (this.isMic) {
-                this.stopMic();
-            } else {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    this.startMic(stream);
-                } catch { this.showStatus('麦克风权限被拒绝'); }
-            }
-        };
-
-        // 滑动切换主题
-        let startX = 0;
-        document.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-        document.addEventListener('touchend', e => {
-            const diff = startX - e.changedTouches[0].clientX;
-            if (Math.abs(diff) > 70) {
-                const btns = this.el.themeCapsule.querySelectorAll('.theme-btn');
-                const active = Array.from(btns).findIndex(b => b.classList.contains('active'));
-                const next = (active + (diff > 0 ? 1 : -1) + btns.length) % btns.length;
-                btns.forEach(b => b.classList.remove('active'));
-                btns[next].classList.add('active');
-                this.visualizer.setMode(btns[next].dataset.mode);
-                this.el.swipeGuide.classList.add('show');
-                setTimeout(() => this.el.swipeGuide.classList.remove('show'), 2000);
-            }
-        });
-
-        // 自动最小化
-        const reset = () => {
-            clearTimeout(this.inactivityTimer);
-            this.el.card.classList.remove('minimized');
-            this.inactivityTimer = setTimeout(() => this.el.card.classList.add('minimized'), 5000);
-        };
-        ['mousemove', 'touchstart'].forEach(ev => document.addEventListener(ev, reset));
-        reset();
-
-        // 鼠标跟随光晕
-        document.addEventListener('mousemove', (e) => {
-            document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
-            document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
-        });
-
-        // 陀螺仪开关
-        document.addEventListener('click', (e) => {
-            if (e.target === this.el.card || e.target.closest('.player-card')) {
-                this.gyroscopeEnabled = !this.gyroscopeEnabled;
-                this.showGestureHint(this.gyroscopeEnabled ? '空间控制已激活' : '空间控制已关闭');
-            }
-        });
-    }
-
-    addFiles(files) {
-        const valid = [...files].filter(f => f.type.match(/audio|video/));
-        if (!valid.length) return this.showStatus('不支持的文件格式');
-        this.playlist.push(...valid);
-        if (this.playlist.length === valid.length) this.play(0);
-        this.renderPlaylist();
-        this.showStatus(`已添加 ${valid.length} 个音频文件`);
-    }
-
-    play(index) {
-        if (this.audio) this.audio.pause();
-        const file = this.playlist[index];
-        this.audio = new Audio(URL.createObjectURL(file));
-        this.audio.volume = this.volume;
-        this.visualizer.connect(this.audio);
-
-        this.audio.onloadedmetadata = () => {
-            this.el.totalTime.textContent = this.format(this.audio.duration);
-            this.updateMediaSession(file.name);
-        };
-        this.audio.ontimeupdate = () => this.updateProgress();
-        this.audio.onended = () => this.next();
-
-        this.audio.play();
-        this.current = index;
-        this.updateUI(file);
-        this.renderPlaylist();
-        this.el.playBtn.innerHTML = '<i class="material-icons">pause</i>';
-        this.showStatus(`正在播放: ${file.name.replace(/\.[^/.]+$/, "")}`);
-    }
-
-    toggle() {
-        if (!this.audio) return;
-        this.audio.paused ? this.audio.play() : this.audio.pause();
-        this.el.playBtn.innerHTML = `<i class="material-icons">${this.audio.paused ? 'play_arrow' : 'pause'}</i>`;
-    }
-
-    prev() { 
-        if (this.playlist.length === 0) return;
-        this.play((this.current - 1 + this.playlist.length) % this.playlist.length); 
-    }
-    next() { 
-        if (this.playlist.length === 0) return;
-        this.play(Math.floor(Math.random() * this.playlist.length)); 
-    }
-
-    updateProgress() {
-        if (!this.audio?.duration) return;
-        const pct = this.audio.currentTime / this.audio.duration;
-        this.el.progressFill.style.width = `${pct * 100}%`;
-        this.el.currentTime.textContent = this.format(this.audio.currentTime);
-    }
-
-    format(s) {
-        const m = Math.floor(s / 60);
-        const sec = Math.floor(s % 60);
-        return `${m}:${sec.toString().padStart(2, '0')}`;
-    }
-
-    updateUI(file) {
-        const name = file.name.replace(/\.[^/.]+$/, "");
-        this.el.title.textContent = name;
-        this.el.artist.textContent = "Sonoria v3.0";
-    }
-
-    renderPlaylist() {
-        this.el.playlistItems.innerHTML = this.playlist.map((f, i) => `
-            <div class="playlist-item ${i===this.current?'active':''}" data-index="${i}">
-                <i class="material-icons">music_note</i>
-                <div style="flex:1; overflow:hidden; margin-left:12px;">
-                    <div style="font-size:0.94rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${f.name.replace(/\.[^/.]+$/, "")}</div>
-                </div>
-            </div>
-        `).join('');
-        this.el.playlistItems.querySelectorAll('.playlist-item').forEach(item => {
-            item.onclick = () => this.play(+item.dataset.index);
-        });
-    }
-
-    showStatus(msg, time = 2800) {
-        this.el.status.textContent = msg;
-        this.el.status.classList.add('show');
-        clearTimeout(this.statusTimer);
-        this.statusTimer = setTimeout(() => this.el.status.classList.remove('show'), time);
-    }
-
-    setVolume(v) {
-        this.volume = v;
-        if (this.audio) this.audio.volume = v;
-        this.el.volumeSlider.value = v * 100;
-        const icon = v === 0 ? 'volume_off' : v < 0.5 ? 'volume_down' : 'volume_up';
-        this.el.volumeBtn.innerHTML = `<i class="material-icons">${icon}</i>`;
-    }
-
-    startMic(stream) {
-        this.isMic = true;
-        this.el.micBtn.classList.add('active');
-        this.visualizer.connect(stream);
-        this.showStatus('实时音频监听中');
-    }
-
-    stopMic() {
-        this.isMic = false;
-        this.el.micBtn.classList.remove('active');
-        this.visualizer.disconnect();
-        this.showStatus('麦克风已关闭');
-    }
-
-    updateMediaSession(name) {
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: name.replace(/\.[^/.]+$/, ""),
-                artist: 'Sonoria',
-                album: 'v3.0'
-            });
-        }
+    hideLoading() {
+        this.el.loadingState.classList.add('hidden');
+        setTimeout(() => {
+            this.el.loadingState.style.display = 'none';
+        }, 800);
     }
 }
 
-/* ================ 空间可视化引擎 ================ */
-class SpatialVisualizer {
+/* ================ 情感可视化引擎 ================ */
+class EmotionVisualizer {
     constructor(canvas, ctx) {
         this.canvas = canvas;
         this.ctx = ctx;
         this.analyser = null;
         this.mode = 'dunhuang';
-        this.hue = 195; // 石青的基础色相
+        this.data = null;
         this.isActive = false;
         this.resize();
         window.addEventListener('resize', () => this.resize());
@@ -898,134 +1265,123 @@ class SpatialVisualizer {
         this.ctx.scale(devicePixelRatio, devicePixelRatio);
     }
 
-    connect(source) {
-        if (!this.audioContext) {
-            this.audioContext = new AudioContext();
-            this.analyser = this.audioContext.createAnalyser();
-            this.analyser.fftSize = 2048;
-            this.data = new Uint8Array(this.analyser.frequencyBinCount);
-        }
-        const src = source instanceof MediaStream ? 
-            this.audioContext.createMediaStreamSource(source) : 
-            this.audioContext.createMediaElementSource(source);
-        src.connect(this.analyser);
-        this.analyser.connect(this.audioContext.destination);
-        this.isActive = true;
+    connect(analyser) {
+        this.analyser = analyser;
+        this.data = new Uint8Array(this.analyser.frequencyBinCount);
     }
 
-    disconnect() {
-        if (this.audioContext) {
-            this.audioContext.close();
-            this.audioContext = null;
-            this.analyser = null;
-        }
+    setMode(mode) { 
+        this.mode = mode; 
     }
 
-    setMode(mode) { this.mode = mode; }
+    start() { 
+        this.isActive = true; 
+        this.animate();
+    }
 
-    start() { this.isActive = true; this.animate(); }
+    stop() { 
+        this.isActive = false; 
+    }
 
     animate = () => {
         if (!this.isActive) return;
         requestAnimationFrame(this.animate);
 
-        if (this.analyser) {
+        // 清空画布
+        this.ctx.fillStyle = 'rgba(10,10,22,0.1)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if (this.analyser && this.data) {
             this.analyser.getByteFrequencyData(this.data);
-            const bass = this.data.slice(0,40).reduce((a,b)=>a+b)/40;
-            const energy = this.data.reduce((a,b)=>a+b)/this.data.length;
-            this.hue = (this.hue + 0.6 + energy/60) % 360;
-            document.documentElement.style.setProperty('--hue', this.hue);
-
-            this.ctx.fillStyle = 'rgba(10,10,22,0.09)';
-            this.ctx.fillRect(0,0,innerWidth,innerHeight);
-
-            this[`render_${this.mode}`](bass, energy);
+            const energy = this.data.reduce((a, b) => a + b) / this.data.length;
+            const bass = this.data.slice(0, 20).reduce((a, b) => a + b) / 20;
+            const emotionIntensity = energy / 256;
+            
+            // 更新情感强度
+            document.documentElement.style.setProperty('--emotion-intensity', emotionIntensity);
+            
+            // 根据模式渲染
+            this[`render_${this.mode}`](bass, energy, emotionIntensity);
         } else {
-            // 默认动画，当没有音频时
-            this.hue = (this.hue + 0.3) % 360;
-            document.documentElement.style.setProperty('--hue', this.hue);
-            
-            this.ctx.fillStyle = 'rgba(10,10,22,0.09)';
-            this.ctx.fillRect(0,0,innerWidth,innerHeight);
-            
+            // 空闲状态渲染
             this.render_idle();
         }
     };
 
     render_idle() {
-        // 空闲状态下的默认动画 - 敦煌风格
         const time = Date.now() * 0.001;
-        const centerX = innerWidth / 2;
-        const centerY = innerHeight / 2;
-        const radius = Math.min(innerWidth, innerHeight) * 0.3;
+        const centerX = this.canvas.width / 2 / devicePixelRatio;
+        const centerY = this.canvas.height / 2 / devicePixelRatio;
         
-        // 绘制敦煌风格的莲花图案
-        this.ctx.strokeStyle = `hsla(${this.hue}, 78%, 62%, 0.4)`;
-        this.ctx.lineWidth = 4;
-        this.ctx.beginPath();
+        // 绘制呼吸光晕
+        const pulse = Math.sin(time) * 0.5 + 0.5;
+        const gradient = this.ctx.createRadialGradient(
+            centerX, centerY, 0, 
+            centerX, centerY, 200
+        );
+        gradient.addColorStop(0, `hsla(195, 65%, 55%, ${pulse * 0.1})`);
+        gradient.addColorStop(1, 'transparent');
         
-        for (let i = 0; i < 8; i++) {
-            const angle = time + i * Math.PI / 4;
-            const x = centerX + Math.cos(angle) * radius;
-            const y = centerY + Math.sin(angle) * radius;
-            
-            if (i === 0) {
-                this.ctx.moveTo(x, y);
-            } else {
-                this.ctx.lineTo(x, y);
-            }
-        }
-        
-        this.ctx.closePath();
-        this.ctx.stroke();
-        
-        // 添加敦煌风格的祥云图案
-        this.ctx.fillStyle = `hsla(${this.hue + 40}, 65%, 55%, 0.2)`;
-        for (let i = 0; i < 5; i++) {
-            const x = centerX + Math.cos(time * 0.5 + i) * (radius * 0.7);
-            const y = centerY + Math.sin(time * 0.3 + i) * (radius * 0.7);
-            this.drawCloud(x, y, 30 + i * 10);
-        }
-    }
-    
-    drawCloud(x, y, size) {
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, size, 0, Math.PI * 2);
-        this.ctx.arc(x + size * 0.5, y - size * 0.3, size * 0.6, 0, Math.PI * 2);
-        this.ctx.arc(x + size * 0.8, y, size * 0.7, 0, Math.PI * 2);
-        this.ctx.arc(x + size * 0.6, y + size * 0.3, size * 0.5, 0, Math.PI * 2);
-        this.ctx.fill();
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    render_dunhuang(bass, energy) {
-        const width = innerWidth;
-        const height = innerHeight;
+    render_dunhuang(bass, energy, emotionIntensity) {
+        const width = this.canvas.width / devicePixelRatio;
+        const height = this.canvas.height / devicePixelRatio;
         const centerX = width / 2;
         const centerY = height / 2;
         
-        // 敦煌色彩调色板
-        const colors = [
-            `hsla(12, 78%, 52%, 0.8)`,   // 朱砂红
-            `hsla(195, 65%, 55%, 0.8)`,  // 石青
-            `hsla(45, 75%, 55%, 0.8)`,   // 泥金
-            `hsla(30, 65%, 50%, 0.8)`,   // 赭石
-            `hsla(265, 45%, 45%, 0.8)`   // 青金石
-        ];
+        // 基于情感强度调整颜色
+        const hue = 195 + (emotionIntensity * 60); // 从石青到朱砂红的过渡
+        const color1 = `hsla(${hue}, 65%, 55%, 0.8)`;
+        const color2 = `hsla(${12 + emotionIntensity * 30}, 78%, 52%, 0.6)`;
         
-        // 绘制敦煌飞天飘带
-        for (let i = 0; i < 5; i++) {
-            const color = colors[i];
-            const amplitude = 50 + bass * 0.5;
-            const frequency = 0.01 + i * 0.005;
-            const speed = 0.001 + i * 0.0005;
+        // 绘制情感粒子场
+        const particleCount = 50 + Math.floor(energy * 0.5);
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (i / particleCount) * Math.PI * 2 + Date.now() * 0.001;
+            const distance = 100 + bass * 0.5 + Math.sin(angle * 3) * 50;
+            const size = 2 + energy * 0.05;
             
-            this.ctx.strokeStyle = color;
-            this.ctx.lineWidth = 3 + i;
+            const x = centerX + Math.cos(angle) * distance;
+            const y = centerY + Math.sin(angle) * distance;
+            
+            this.ctx.fillStyle = i % 2 === 0 ? color1 : color2;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, size, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        // 绘制敦煌风格的能量环
+        const ringCount = 3;
+        for (let i = 0; i < ringCount; i++) {
+            const radius = 80 + i * 60 + bass * 0.3;
+            const pulse = Math.sin(Date.now() * 0.002 + i) * 0.5 + 0.5;
+            
+            this.ctx.strokeStyle = `hsla(${hue + i * 20}, 65%, 55%, ${0.3 + pulse * 0.3})`;
+            this.ctx.lineWidth = 2 + energy * 0.02;
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            this.ctx.stroke();
+        }
+    }
+
+    render_aurora(bass, energy, emotionIntensity) {
+        // 极光模式实现
+        const width = this.canvas.width / devicePixelRatio;
+        const height = this.canvas.height / devicePixelRatio;
+        
+        // 极光流动效果
+        for (let i = 0; i < 5; i++) {
+            this.ctx.strokeStyle = `hsla(${195 + i * 20}, 70%, 60%, ${0.3 + emotionIntensity * 0.4})`;
+            this.ctx.lineWidth = 3 + energy * 0.02;
             this.ctx.beginPath();
             
-            for (let x = 0; x < width; x += 5) {
-                const wave = Math.sin(x * frequency + Date.now() * speed) * amplitude;
-                const y = centerY + wave + Math.sin(x * 0.02) * 20;
+            for (let x = 0; x < width; x += 10) {
+                const wave = Math.sin(x * 0.01 + Date.now() * 0.001 + i) * (30 + bass) + 
+                            Math.sin(x * 0.02 + Date.now() * 0.0005) * 20;
+                const y = height * 0.3 + wave + i * 30;
                 
                 if (x === 0) {
                     this.ctx.moveTo(x, y);
@@ -1033,65 +1389,78 @@ class SpatialVisualizer {
                     this.ctx.lineTo(x, y);
                 }
             }
-            
             this.ctx.stroke();
         }
+    }
+
+    render_cosmic(bass, energy, emotionIntensity) {
+        // 宇宙模式实现
+        const width = this.canvas.width / devicePixelRatio;
+        const height = this.canvas.height / devicePixelRatio;
+        const centerX = width / 2;
+        const centerY = height / 2;
         
-        // 绘制敦煌壁画风格的圆形图案
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const pulse = Math.sin(Date.now() * 0.002 + i) * 0.5 + 0.5;
-            const radius = 80 + bass * 0.3 + pulse * 40;
+        // 绘制星空
+        const starCount = 100 + Math.floor(energy * 0.3);
+        for (let i = 0; i < starCount; i++) {
+            const x = Math.random() * width;
+            const y = Math.random() * height;
+            const size = Math.random() * 2 + 0.5;
+            const brightness = Math.random() * 100 + 155;
             
-            const x = centerX + Math.cos(angle) * radius;
-            const y = centerY + Math.sin(angle) * radius;
-            
-            const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, 40 + energy * 2);
-            gradient.addColorStop(0, colors[i % colors.length]);
-            gradient.addColorStop(1, 'transparent');
-            
-            this.ctx.fillStyle = gradient;
+            this.ctx.fillStyle = `rgba(${brightness}, ${brightness}, 255, ${0.5 + emotionIntensity * 0.3})`;
             this.ctx.beginPath();
-            this.ctx.arc(x, y, 40 + energy * 2, 0, Math.PI * 2);
+            this.ctx.arc(x, y, size, 0, Math.PI * 2);
             this.ctx.fill();
-            
-            // 添加敦煌纹样
-            this.ctx.strokeStyle = colors[(i + 2) % colors.length];
-            this.ctx.lineWidth = 2;
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, 20 + energy, 0, Math.PI * 2);
-            this.ctx.stroke();
         }
         
-        // 添加敦煌风格的祥云
-        this.ctx.fillStyle = `hsla(195, 65%, 55%, ${0.2 + energy * 0.3})`;
-        for (let i = 0; i < 3; i++) {
-            const x = centerX + Math.cos(Date.now() * 0.0005 + i * 2) * (200 + bass);
-            const y = centerY + Math.sin(Date.now() * 0.0003 + i) * (150 + bass);
-            this.drawCloud(x, y, 40 + energy * 10);
+        // 绘制行星
+        const planetSize = 60 + bass * 0.2;
+        const gradient = this.ctx.createRadialGradient(
+            centerX, centerY, 0, 
+            centerX, centerY, planetSize
+        );
+        gradient.addColorStop(0, `hsla(195, 70%, 70%, 1)`);
+        gradient.addColorStop(1, `hsla(12, 70%, 40%, 1)`);
+        
+        this.ctx.fillStyle = gradient;
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, planetSize, 0, Math.PI * 2);
+        this.ctx.fill();
+    }
+
+    render_liquid(bass, energy, emotionIntensity) {
+        // 液态模式实现
+        const width = this.canvas.width / devicePixelRatio;
+        const height = this.canvas.height / devicePixelRatio;
+        
+        // 绘制液体表面
+        this.ctx.fillStyle = `hsla(195, 65%, 40%, ${0.2 + emotionIntensity * 0.2})`;
+        this.ctx.fillRect(0, height * 0.6, width, height * 0.4);
+        
+        // 绘制波浪
+        this.ctx.strokeStyle = `hsla(195, 65%, 65%, ${0.6 + emotionIntensity * 0.2})`;
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        
+        for (let x = 0; x < width; x += 5) {
+            const wave = Math.sin(x * 0.01 + Date.now() * 0.001) * (20 + bass * 0.2) + 
+                        Math.sin(x * 0.02 + Date.now() * 0.0007) * 10;
+            const y = height * 0.6 + wave * (1 + emotionIntensity * 0.5);
+            
+            if (x === 0) {
+                this.ctx.moveTo(x, y);
+            } else {
+                this.ctx.lineTo(x, y);
+            }
         }
-    }
-
-    render_aurora(bass, energy) {
-        // 极光模式实现...
-    }
-
-    render_cosmic(bass, energy) {
-        // 宇宙模式实现...
-    }
-
-    render_liquid(bass, energy) {
-        // 液态模式实现...
-    }
-
-    render_quantum(bass, energy) {
-        // 量子模式实现...
+        this.ctx.stroke();
     }
 }
 
-/* ================ 启动 ================ */
+/* ================ 启动应用 ================ */
 document.addEventListener('DOMContentLoaded', () => {
-    new SonoriaPro();
+    new SonoriaRevolution();
 });
 </script>
 </body>
