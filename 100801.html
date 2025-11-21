@@ -2,13 +2,46 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     <title>Sonoria - 动人心绚，乐音之境</title>
-    <!-- 使用 BootCDN 加速引入外部字体和图标 -->
+
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://cdn.bootcdn.net/ajax/libs/inter-ui/4.0.2/inter.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/music-metadata-browser@latest/dist/index.min.js"></script>
     <style>
-        /* 其余内容不变 ... */
+        /* 新增动画样式 */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes beat-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .cover-art {
+            position: absolute;
+            top: 0; left: 0;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 2;
+            animation: rotate 40s linear infinite;
+        }
+        .cover-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cover-art.beat-pulse {
+            animation: beat-pulse 0.6s ease;
+        }
+
+        /* 原始样式 */
         * {
             margin: 0;
             padding: 0;
@@ -108,6 +141,7 @@
             flex-direction: column;
             align-items: center;
             margin-bottom: 25px;
+            position: relative;
         }
 
         .logo-circle {
@@ -122,6 +156,7 @@
             box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
             position: relative;
             overflow: hidden;
+            transition: opacity 0.5s ease;
         }
 
         .logo-circle::after {
@@ -569,12 +604,15 @@
     <div class="container" id="main-container">
         <div class="player-card" id="player-card">
             <div class="logo-section">
+                <div class="cover-art" id="cover-art">
+                    <img id="cover-img" src="" alt="专辑封面">
+                </div>
                 <div class="logo-circle" id="logo-circle">
                     <i class="material-icons logo-icon">music_note</i>
                 </div>
                 <div class="brand">
                     <h1 class="title">Sonoria</h1>
-                    <p class="slogan"></p>
+                    <p class="slogan">动人心绚，乐音之境</p>
                 </div>
             </div>
 
@@ -636,6 +674,10 @@
                     <i class="material-icons">loop</i>
                     <span>循环播放</span>
                 </div>
+                <div class="menu-item" id="share-visual">
+                    <i class="material-icons">share</i>
+                    <span>分享可视化</span>
+                </div>
                 <div class="menu-item" id="clear-option">
                     <i class="material-icons">clear_all</i>
                     <span>清空列表</span>
@@ -653,6 +695,7 @@
                 <button class="theme-button" data-mode="neural">神经</button>
                 <button class="theme-button" data-mode="liquid">液态</button>
                 <button class="theme-button" data-mode="quantum">量子</button>
+                <button class="theme-button" data-mode="spectrum">频谱</button>
             </div>
 
             <div class="playlist-section" id="playlist-section">
@@ -976,6 +1019,34 @@
                         });
                         this.ctx.globalAlpha = 1;
                         break;
+                    case 'spectrum':
+                        const bars = 128;
+                        const barWidth = this.canvas.width / bars * 1.2;
+                        this.ctx.shadowBlur = 20 + bass / 6;
+                        this.ctx.shadowColor = `hsla(${this.hue},100%,60%,1)`;
+
+                        for (let i = 0; i < bars / 2; i++) {
+                            const dataIndex = Math.floor(i / (bars / 2) * 200); // 重点低频
+                            let height = this.dataArray[dataIndex] / 255 * this.canvas.height * 0.7;
+                            if (isBeat) height *= 1.35;
+
+                            this.ctx.fillStyle = `hsla(${(this.hue + i * (720 / bars)) % 360}, 90%, 65%, 0.85)`;
+
+                            let leftX = this.canvas.width / 2 - (i + 1) * barWidth;
+                            this.ctx.fillRect(leftX, this.canvas.height - height, barWidth, height);
+
+                            let rightX = this.canvas.width / 2 + i * barWidth;
+                            this.ctx.fillRect(rightX, this.canvas.height - height, barWidth, height);
+                        }
+                        break;
+                }
+
+                // 新增：beat振动 + 专辑封面脉冲
+                if (isBeat) {
+                    navigator.vibrate?.(50);
+                    const coverArt = document.getElementById('cover-art');
+                    coverArt?.classList.add('beat-pulse');
+                    setTimeout(() => coverArt?.classList.remove('beat-pulse'), 600);
                 }
 
                 this.hue = (this.hue + treble / 8) % 360;
@@ -1013,6 +1084,7 @@
             const micToggle = document.getElementById('mic-toggle');
             const shuffleOption = document.getElementById('shuffle-option');
             const loopOption = document.getElementById('loop-option');
+            const shareVisual = document.getElementById('share-visual');
             const clearOption = document.getElementById('clear-option');
             const prevButton = document.getElementById('prev-button');
             const nextButton = document.getElementById('next-button');
@@ -1027,6 +1099,9 @@
             const swipeHint = document.getElementById('swipe-hint');
             const themeButtons = document.querySelectorAll('.theme-button');
             const status = document.getElementById('status');
+            const coverArt = document.getElementById('cover-art');
+            const coverImg = document.getElementById('cover-img');
+            const logoCircle = document.getElementById('logo-circle');
 
             let audioContext;
             let analyser;
@@ -1049,14 +1124,106 @@
                 visualizer.start();
             }
 
+            // 新增分享可视化功能
+            shareVisual.addEventListener('click', () => {
+                visualizer.getVisualizationAsBlob(blob => {
+                    if (!blob) return;
+                    const trackName = playlist[currentTrack]?.title || 'visual';
+                    const file = new File([blob], `Sonoria - ${trackName}.jpg`, {type: 'image/jpeg'});
+                    if (navigator.canShare && navigator.canShare({files: [file]})) {
+                        navigator.share({
+                            title: 'Sonoria 可视化',
+                            text: '这视觉效果绝了！',
+                            files: [file]
+                        }).catch(() => fallbackDownload(file));
+                    } else {
+                        fallbackDownload(file);
+                    }
+                });
+                moreMenu.classList.remove('show');
+            });
+
+            function fallbackDownload(file) {
+                const url = URL.createObjectURL(file);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                a.click();
+            }
+
+            // 关键：上传文件处理改为异步 + metadata解析
+            async function handleFiles(files) {
+                if (files.length === 0) return;
+
+                const oldLength = playlist.length;
+
+                // 先快速添加占位项
+                const tempItems = Array.from(files).map(file => ({
+                    file,
+                    title: file.name.replace(/\.[^/.]+$/, ''),
+                    artist: '加载中...',
+                    coverUrl: null,
+                    duration: 0
+                }));
+                playlist.push(...tempItems);
+                updatePlaylistDisplay();
+
+                // 如果原来没歌曲，播放第一个新上传的
+                if (oldLength === 0 && tempItems.length > 0) {
+                    currentTrack = oldLength;
+                    setupAudio(tempItems[0].file);
+                }
+
+                // 异步解析metadata
+                try {
+                    const metas = await Promise.all(Array.from(files).map(file => 
+                        musicMetadata.parseBlob(file).catch(() => ({common: {}, format: {duration: 0}}))
+                    ));
+
+                    metas.forEach((meta, i) => {
+                        const idx = oldLength + i;
+                        const item = playlist[idx];
+                        item.title = meta.common.title || item.title;
+                        item.artist = meta.common.artist || '未知艺术家';
+                        item.duration = meta.format.duration || 0;
+
+                        if (meta.common.picture && meta.common.picture.length > 0) {
+                            const pic = meta.common.picture[0];
+                            const blob = new Blob([pic.data], {type: pic.format});
+                            item.coverUrl = URL.createObjectURL(blob);
+                        }
+
+                        // 如果是当前播放歌曲，立即更新UI
+                        if (idx === currentTrack) {
+                            trackTitle.textContent = item.title;
+                            trackArtist.textContent = item.artist;
+                            totalTimeEl.textContent = formatTime(item.duration) || '0:00';
+                            if (item.coverUrl) {
+                                coverImg.src = item.coverUrl;
+                                coverArt.style.opacity = '1';
+                                logoCircle.style.opacity = '0';
+                            }
+                        }
+                    });
+                    updatePlaylistDisplay();
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
             function setupAudio(fileOrStream, isMic = false) {
                 if (!audioContext) initAudioContext();
 
                 if (isMic) {
                     visualizer.connectStream(fileOrStream);
                     isPlaying = true;
-                    updateStatus('正在收听麦克风输入');
                     playToggle.innerHTML = '<i class="material-icons">pause</i>';
+                    trackTitle.textContent = '麦克风输入';
+                    trackArtist.textContent = '实时音频';
+                    totalTimeEl.textContent = 'LIVE';
+                    coverArt.style.opacity = '0';
+                    logoCircle.style.opacity = '1';
+                    updateStatus('正在收听麦克风输入');
                     updateMediaSessionMetadata('麦克风输入', '实时音频', true);
                     return;
                 }
@@ -1065,16 +1232,26 @@
                 audioElement = new Audio(URL.createObjectURL(fileOrStream));
                 visualizer.connectAudio(audioElement);
 
-                const trackName = fileOrStream.name.replace(/\.[^/.]+$/, "");
-                trackTitle.textContent = trackName;
-                trackArtist.textContent = "Sonoria";
+                const track = playlist[currentTrack];
+                trackTitle.textContent = track.title;
+                trackArtist.textContent = track.artist;
+                totalTimeEl.textContent = track.duration ? formatTime(track.duration) : '0:00';
+
+                if (track.coverUrl) {
+                    coverImg.src = track.coverUrl;
+                    coverArt.style.opacity = '1';
+                    logoCircle.style.opacity = '0';
+                } else {
+                    coverArt.style.opacity = '0';
+                    logoCircle.style.opacity = '1';
+                }
 
                 // 设置音频事件监听
                 audioElement.addEventListener('loadedmetadata', function() {
                     updateTimeDisplay();
                     updateMediaSessionMetadata(
-                        trackName,
-                        'Sonoria',
+                        track.title,
+                        track.artist,
                         false
                     );
                 });
@@ -1091,7 +1268,7 @@
                 audioElement.play();
                 isPlaying = true;
                 playToggle.innerHTML = '<i class="material-icons">pause</i>';
-                updateStatus(`正在播放: ${fileOrStream.name}`);
+                updateStatus(`正在播放: ${track.title}`);
             }
 
             function updateProgress() {
@@ -1111,6 +1288,7 @@
             }
 
             function formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
                 const mins = Math.floor(seconds / 60);
                 const secs = Math.floor(seconds % 60);
                 return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -1180,7 +1358,7 @@
             function playPrevious() {
                 if (playlist.length > 1) {
                     currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
-                    setupAudio(playlist[currentTrack]);
+                    setupAudio(playlist[currentTrack].file);
                     updatePlaylistDisplay();
                 }
             }
@@ -1192,7 +1370,7 @@
                     } else {
                         currentTrack = (currentTrack + 1) % playlist.length;
                     }
-                    setupAudio(playlist[currentTrack]);
+                    setupAudio(playlist[currentTrack].file);
                     updatePlaylistDisplay();
                 }
             }
@@ -1209,6 +1387,8 @@
                 progressBar.style.width = '0%';
                 currentTimeEl.textContent = '0:00';
                 totalTimeEl.textContent = '0:00';
+                coverArt.style.opacity = '0';
+                logoCircle.style.opacity = '1';
                 if (mediaSessionUpdateInterval) {
                     clearInterval(mediaSessionUpdateInterval);
                 }
@@ -1219,23 +1399,23 @@
 
             function updatePlaylistDisplay() {
                 playlistItems.innerHTML = '';
-                playlist.forEach((file, index) => {
-                    const item = document.createElement('div');
-                    item.className = `playlist-item ${index === currentTrack ? 'active' : ''}`;
-                    item.innerHTML = `
+                playlist.forEach((item, index) => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = `playlist-item ${index === currentTrack ? 'active' : ''}`;
+                    itemEl.innerHTML = `
                         <i class="material-icons playlist-item-icon">music_note</i>
                         <div class="playlist-item-info">
-                            <div class="playlist-item-title">${file.name.replace(/\.[^/.]+$/, "")}</div>
-                            <div class="playlist-item-artist">Sonoria</div>
+                            <div class="playlist-item-title">${item.title}</div>
+                            <div class="playlist-item-artist">${item.artist}</div>
                         </div>
-                        <div class="playlist-item-duration">--:--</div>
+                        <div class="playlist-item-duration">${formatTime(item.duration) || '--:--'}</div>
                     `;
-                    item.addEventListener('click', () => {
+                    itemEl.addEventListener('click', () => {
                         currentTrack = index;
-                        setupAudio(playlist[currentTrack]);
+                        setupAudio(item.file);
                         updatePlaylistDisplay();
                     });
-                    playlistItems.appendChild(item);
+                    playlistItems.appendChild(itemEl);
                 });
             }
 
@@ -1247,17 +1427,7 @@
             uploadButton.addEventListener('click', () => audioUpload.click());
             uploadArea.addEventListener('click', () => audioUpload.click());
 
-            audioUpload.addEventListener('change', (e) => {
-                const files = e.target.files;
-                if (files) {
-                    Array.from(files).forEach(file => playlist.push(file));
-                    if (playlist.length > 0) {
-                        currentTrack = 0;
-                        setupAudio(playlist[currentTrack]);
-                        updatePlaylistDisplay();
-                    }
-                }
-            });
+            audioUpload.addEventListener('change', e => handleFiles(e.target.files));
 
             playToggle.addEventListener('click', () => {
                 if (isPlaying) {
@@ -1274,13 +1444,14 @@
                         audioElement.play();
                         isPlaying = true;
                         playToggle.innerHTML = '<i class="material-icons">pause</i>';
-                    updateMediaSessionMetadata(
-                        playlist[currentTrack]?.name.replace(/\.[^/.]+$/, "") || '未知曲目',
-                        'Sonoria',
-                        false
-                    );
+                        const track = playlist[currentTrack];
+                        updateMediaSessionMetadata(
+                            track?.title || '未知曲目',
+                            track?.artist || 'Sonoria',
+                            false
+                        );
                     } else if (playlist.length > 0) {
-                        setupAudio(playlist[currentTrack]);
+                        setupAudio(playlist[currentTrack].file);
                     } else {
                         updateStatus('请先上传音乐文件');
                     }
@@ -1406,20 +1577,7 @@
                 e.preventDefault();
                 uploadArea.style.borderColor = 'var(--border-light)';
                 uploadArea.style.background = 'transparent';
-
-                const files = e.dataTransfer.files;
-                if (files) {
-                    Array.from(files).forEach(file => {
-                        if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
-                            playlist.push(file);
-                        }
-                    });
-                    if (playlist.length > 0) {
-                        currentTrack = 0;
-                        setupAudio(playlist[currentTrack]);
-                        updatePlaylistDisplay();
-                    }
-                }
+                handleFiles(e.dataTransfer.files);
             });
 
             // 初始化
