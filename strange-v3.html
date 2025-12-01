@@ -3,1086 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#000000">
-    <title>Sonoria | Lorenz Chaos Evolved v3.0 (Dec 2025)</title>
-    
-    <!-- Enhanced PWA with Service Worker (2025 Standard) -->
-    <link rel="manifest" href="data:application/manifest+json,{
-        'name': 'Sonoria Lorenz Chaos v3.0',
-        'short_name': 'Sonoria 3',
-        'start_url': '/',
-        'display': 'standalone',
-        'background_color': '#000000',
-        'theme_color': '#000000',
-        'icons': [{'src': 'data:image/svg+xml;base64,...', 'sizes': '192x192', 'type': 'image/png'}],
-        'categories': ['music', 'art', 'productivity']
-    }">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
+    <title>Sonoria | Lorenz Chaos v3.1 – Rainbow Edition</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/music-metadata-browser@2.5.10/dist/index.min.js"></script>
-    <!-- Three.js with WebGPU Renderer (2025 Cutting Edge) -->
-    <script src="https://unpkg.com/three@0.160.0/build/three.module.js"></script>
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-            }
-        }
-    </script>
-    <!-- TensorFlow.js for AI Emotion Detection -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
-    <!-- GSAP for Animations -->
+    <!-- 同步加载 Three.js（关键修复） -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
     <script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
-    <!-- MediaPipe for Gesture Control (New) -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    
     <style>
-        /* --- 极简主义设计系统 (v3.0: Dark Mode + Accessibility) --- */
-        :root {
-            --glass-bg: rgba(0, 0, 0, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --text-primary: rgba(255, 255, 255, 0.95);
-            --text-secondary: rgba(255, 255, 255, 0.5);
-            --accent: #ffffff;
-            --accent-glow: 0 0 20px rgba(255,255,255,0.3);
-            --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
-            --ai-color: #ff6b6b; /* For emotion indicators */
+        :root{
+            --glass-bg:rgba(0,0,0,0.45);
+            --glass-border:rgba(255,255,255,0.1);
+            --text-primary:#fff;
+            --text-secondary:rgba(255,255,255,0.6);
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #000;
-            color: var(--text-primary);
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            cursor: default;
-            user-select: none;
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{
+            font-family:'Inter',sans-serif;
+            background:#000;
+            color:#fff;
+            overflow:hidden;
+            height:100vh;
+            cursor:default;
+            user-select:none;
         }
-
-        #visualizer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+        #visualizer{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;}
+        .vignette{
+            position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;
+            pointer-events:none;
+            background:radial-gradient(circle at center,transparent 40%,rgba(0,0,0,0.9) 100%);
         }
-
-        /* Gesture Overlay (New) */
-        #gesture-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none;
+        .ui-layer{
+            position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;
+            pointer-events:none;display:flex;flex-direction:column;
+            justify-content:space-between;padding:40px;transition:opacity .8s cubic-bezier(.215,.61,.355,1);
         }
+        .ui-layer.idle{opacity:0;}
+        .top-bar{display:flex;justify-content:space-between;align-items:center;pointer-events:auto;}
+        .brand{font-size:1.3rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;opacity:.9;}
 
-        /* 晕影遮罩 */
-        .vignette {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
-            pointer-events: none;
-            background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.8) 100%);
+        /* 新增：配色模式切换 */
+        .color-modes{display:flex;gap:10px;}
+        .color-btn{
+            width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+            background:var(--c, #333);box-shadow:0 0 15px rgba(255,255,255,.2);
+            transition:all .3s;
         }
+        .color-btn.active{transform:scale(1.15);box-shadow:0 0 25px var(--c, #fff);}
 
-        /* UI 层 (Enhanced with AI Indicator) */
-        .ui-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-            pointer-events: none; display: flex; flex-direction: column;
-            justify-content: space-between; padding: 40px; 
-            transition: opacity 0.8s var(--ease-out);
+        .control-island{
+            pointer-events:auto;max-width:720px;margin:0 auto;
+            background:var(--glass-bg);backdrop-filter:blur(40px) saturate(180%);
+            border:1px solid var(--glass-border);border-radius:28px;padding:28px 36px;
+            box-shadow:0 30px 80px rgba(0,0,0,.6);
         }
-        
-        .ui-layer.idle { opacity: 0; }
-        
-        .top-bar { pointer-events: auto; display: flex; justify-content: space-between; align-items: center; }
-        .brand { font-size: 1.2rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; opacity: 0.8; mix-blend-mode: overlay; }
-        
-        /* Viz Modes + New Rossler */
-        .viz-modes { display: flex; gap: 10px; }
-        .viz-btn { 
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); 
-            border-radius: 50%; width: 40px; height: 40px; color: var(--text-secondary); 
-            cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; 
+        .track-title{font-size:1.7rem;font-weight:500;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        .track-artist{font-size:1rem;color:var(--text-secondary);}
+
+        .progress-container{display:flex;align-items:center;gap:15px;margin:24px 0;font-variant-numeric:tabular-nums;}
+        .progress-bar-bg{flex:1;height:5px;background:rgba(255,255,255,.1);border-radius:3px;position:relative;cursor:pointer;overflow:hidden;}
+        .progress-fill{position:absolute;left:0;top:0;height:100%;width:0%;background:linear-gradient(90deg,#00ffff,#ff00ff);box-shadow:0 0 20px rgba(255,0,255,.8);transition:width .1s linear;}
+
+        .controls-row{display:flex;justify-content:space-between;align-items:center;}
+        .main-controls{display:flex;gap:28px;align-items:center;}
+        .btn-icon{border:none;background:none;color:#fff;cursor:pointer;font-size:28px;transition:all .3s;opacity:.8;}
+        .btn-icon:hover{opacity:1;transform:scale(1.15);}
+        .btn-play{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);}
+        .btn-play:hover{background:rgba(255,255,255,.25);box-shadow:0 0 40px rgba(255,255,255,.3);}
+
+        .drag-overlay{
+            position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);
+            backdrop-filter:blur(10px);z-index:100;display:flex;flex-direction:column;
+            justify-content:center;align-items:center;opacity:0;pointer-events:none;transition:opacity .4s;
         }
-        .viz-btn.active { background: var(--accent); color: #000; box-shadow: var(--accent-glow); }
-        .viz-btn:hover { opacity: 0.8; transform: scale(1.05); }
-        
-        /* New: AI Emotion Badge */
-        .ai-badge { 
-            position: absolute; top: -10px; right: -10px; 
-            background: var(--ai-color); border-radius: 50%; width: 20px; height: 20px; 
-            display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #000; 
-            opacity: 0; transition: opacity 0.3s; 
+        .drag-overlay.active{opacity:1;pointer-events:auto;}
+        .drag-txt{font-size:64px;color:#fff;}
+
+        .toast{
+            position:fixed;top:40px;left:50%;transform:translateX(-50%) translateY(-30px);
+            background:rgba(255,255,255,.15);backdrop-filter:blur(12px);
+            padding:10px 24px;border-radius:30px;font-size:.9rem;
+            border:1px solid rgba(255,255,255,.1);opacity:0;z-index:200;
+            transition:all .4s;
         }
-        .ai-badge.active { opacity: 1; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-        .control-island {
-            pointer-events: auto; width: 100%; max-width: 680px; margin: 0 auto; 
-            background: var(--glass-bg);
-            backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%);
-            border: 1px solid var(--glass-border); border-radius: 24px; padding: 24px 32px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.4); 
-            transform: translateY(0); transition: transform 0.6s var(--ease-out);
-            position: relative;
-        }
-        .ui-layer.idle .control-island { transform: translateY(40px); }
-
-        .track-info { text-align: center; margin-bottom: 24px; }
-        .track-title { font-size: 1.5rem; font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .track-artist { font-size: 0.9rem; font-weight: 300; color: var(--text-secondary); letter-spacing: 0.5px; }
-        .emotion-indicator { font-size: 0.8rem; color: var(--ai-color); margin-top: 4px; opacity: 0.7; }
-
-        .progress-container { display: flex; align-items: center; gap: 15px; margin-bottom: 24px; font-size: 0.75rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-        .progress-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; cursor: pointer; transition: height 0.2s; overflow: hidden; }
-        .progress-bar-bg:hover { height: 6px; }
-        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: var(--accent); box-shadow: var(--accent-glow); transition: width 0.1s linear; }
-
-        .sensitivity-container { margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
-        .sensitivity-slider { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; appearance: none; }
-        .sensitivity-slider::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; cursor: pointer; }
-        .sensitivity-value { font-size: 0.75rem; color: var(--text-secondary); min-width: 30px; text-align: right; }
-
-        .controls-row { display: flex; justify-content: space-between; align-items: center; }
-        .main-controls { display: flex; align-items: center; gap: 24px; }
-        
-        .btn-icon { background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.7; transition: all 0.3s ease; }
-        .btn-icon:hover { opacity: 1; transform: scale(1.1); }
-        .btn-icon i { font-size: 24px; }
-        
-        .btn-play { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); opacity: 1; }
-        .btn-play:hover { background: rgba(255,255,255,0.2); box-shadow: 0 0 30px rgba(255,255,255,0.15); }
-        .btn-play i { font-size: 28px; }
-
-        .btn-secondary { color: var(--text-secondary); }
-        .btn-secondary:hover { color: var(--text-primary); }
-        .btn-secondary.active { color: var(--accent); text-shadow: 0 0 10px rgba(255,255,255,0.5); opacity: 1; transform: scale(1.1); }
-
-        /* New: Gesture Toggle */
-        .gesture-toggle { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.5); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-
-        .playlist-drawer { position: fixed; bottom: 20px; right: 20px; width: 320px; max-height: 50vh; background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(30px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; transform: translateX(120%); transition: transform 0.5s var(--ease-out); z-index: 20; overflow-y: auto; pointer-events: auto; display: flex; flex-direction: column; }
-        .playlist-drawer.open { transform: translateX(0); }
-        .playlist-item { display: flex; align-items: center; padding: 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; margin-bottom: 4px; }
-        .playlist-item:hover { background: rgba(255,255,255,0.05); }
-        .playlist-item.active { background: rgba(255,255,255,0.1); }
-        .playlist-item.active .item-title { color: var(--accent); }
-        .item-info { flex: 1; overflow: hidden; margin-left: 10px; }
-        .item-title { font-size: 0.9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .item-artist { font-size: 0.75rem; color: var(--text-secondary); }
-
-        .toast { position: fixed; top: 40px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.1); opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 30; }
-        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-        .drag-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; flex-direction: column; gap: 20px; }
-        .drag-overlay.active { opacity: 1; pointer-events: auto; }
-        .drag-icon { font-size: 64px; color: var(--text-secondary); }
-
-        /* Video Recorder Overlay (New) */
-        .recorder-overlay { position: fixed; top: 20px; right: 20px; z-index: 15; pointer-events: auto; }
-        .rec-btn { background: rgba(255,0,0,0.7); border: none; border-radius: 50%; width: 50px; height: 50px; color: white; cursor: pointer; transition: all 0.3s; }
-        .rec-btn.recording { background: #ff0000; box-shadow: 0 0 20px #ff0000; animation: blink 1s infinite; }
-        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0.5; } }
-
-        @media (max-width: 768px) {
-            .ui-layer { padding: 20px; }
-            .control-island { padding: 20px; border-radius: 20px; margin-bottom: 20px;}
-            .playlist-drawer { bottom: 0; right: 0; width: 100%; border-radius: 20px 20px 0 0; transform: translateY(110%); max-height: 60vh; }
-            .playlist-drawer.open { transform: translateY(0); }
-            .viz-modes { gap: 5px; }
-            .viz-btn { width: 36px; height: 36px; }
+        @media(max-width:768px){
+            .ui-layer{padding:20px;}
+            .control-island{padding:20px;border-radius:20px;}
         }
     </style>
 </head>
 <body>
-    <video id="gesture-video" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; z-index: -1; display: none;"></video>
-    <canvas id="gesture-canvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: -1;"></canvas>
-    <div id="gesture-overlay"></div>
-    
     <div id="visualizer"></div>
     <div class="vignette"></div>
-    
+
     <div class="ui-layer" id="ui-layer">
         <div class="top-bar">
-            <div class="brand">LORENZ CHAOS v3.0</div>
-            <div class="viz-modes">
-                <button class="viz-btn active" data-mode="lorenz" title="Lorenz Attractor"><i class="material-icons-round">3d_rotation</i></button>
-                <button class="viz-btn" data-mode="rossler" title="Rossler Attractor"><i class="material-icons-round">autorenew</i></button>
-                <button class="viz-btn" data-mode="particles" title="Particle Swarm"><i class="material-icons-round">scatter_plot</i></button>
+            <div class="brand">LORENZ CHAOS v3.1</div>
+
+            <!-- 配色模式切换 -->
+            <div class="color-modes">
+                <button class="color-btn active" data-color="classic" style="--c:#00ffff;" title="经典青紫"></button>
+                <button class="color-btn" data-color="rainbow" style="--c:linear-gradient(45deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);" title="彩虹狂欢"></button>
+                <button class="color-btn" data-color="emotion" style="--c:#ff6b6b;" title="情绪色彩"></button>
             </div>
-            <button class="btn-icon btn-secondary" id="playlist-toggle" title="Playlist">
-                <i class="material-icons-round">queue_music</i>
-            </button>
         </div>
-        
+
         <div class="control-island">
-            <div class="ai-badge" id="ai-badge"></div>
-            <div class="track-info">
-                <div class="track-title" id="track-title">Sonoria Experience v3.0</div>
-                <div class="track-artist" id="track-artist">AI-Enhanced Chaos - Drag & Drop Audio</div>
-                <div class="emotion-indicator" id="emotion-indicator"></div>
-            </div>
+            <div class="track-title" id="track-title">Sonoria Rainbow Chaos</div>
+            <div class="track-artist" id="track-artist">拖入或点击上传音乐</div>
 
             <div class="progress-container">
                 <span id="current-time">0:00</span>
-                <div class="progress-bar-bg" id="progress-container">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
+                <div class="progress-bar-bg" id="progress-bg"><div class="progress-fill" id="progress-fill"></div></div>
                 <span id="total-time">--:--</span>
             </div>
 
-            <div class="sensitivity-container">
-                <label style="font-size:0.75rem; color:var(--text-secondary);">Sensitivity</label>
-                <input type="range" class="sensitivity-slider" id="sensitivity-slider" min="1" max="10" value="5">
-                <span class="sensitivity-value" id="sensitivity-value">5</span>
-            </div>
-
             <div class="controls-row">
-                <button class="btn-icon btn-secondary" id="mic-toggle" title="Microphone Mode">
-                    <i class="material-icons-round">mic_none</i>
-                </button>
-                
-                <div class="main-controls">
-                    <button class="btn-icon" id="prev-btn"><i class="material-icons-round">skip_previous</i></button>
-                    <button class="btn-icon btn-play" id="play-btn"><i class="material-icons-round">play_arrow</i></button>
-                    <button class="btn-icon" id="next-btn"><i class="material-icons-round">skip_next</i></button>
-                </div>
-
-                <button class="btn-icon btn-secondary" id="gesture-toggle" title="Gesture Control" class="gesture-toggle">
-                    <i class="material-icons-round">gesture</i>
-                </button>
-                <button class="btn-icon btn-secondary" id="upload-btn" title="Upload Music">
-                    <i class="material-icons-round">add</i>
-                </button>
+                <button class="btn-icon" id="prev-btn"><i class="material-icons-round">skip_previous</i></button>
+                <button class="btn-icon btn-play" id="play-btn"><i class="material-icons-round">play_arrow</i></button>
+                <button class="btn-icon" id="next-btn"><i class="material-icons-round">skip_next</i></button>
+                <button class="btn-icon" id="upload-btn"><i class="material-icons-round">add</i></button>
             </div>
         </div>
-    </div>
-
-    <div class="playlist-drawer" id="playlist-drawer">
-        <div style="display:flex; justify-content:space-between; margin-bottom:15px; color:var(--text-secondary); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; flex-shrink: 0;">
-            <span>Queue</span>
-            <span id="clear-playlist" style="cursor:pointer; transition:color 0.2s;">Clear</span>
-        </div>
-        <div id="playlist-content" style="overflow-y:auto; flex:1;"></div>
-    </div>
-
-    <!-- New: Video Recorder -->
-    <div class="recorder-overlay">
-        <button class="rec-btn" id="rec-btn" title="Record Visualization"><i class="material-icons-round">videocam</i></button>
     </div>
 
     <div class="drag-overlay" id="drag-overlay">
-        <i class="material-icons-round drag-icon">file_upload</i>
-        <p>Release to Immerse</p>
+        <div class="drag-txt">↑ Release to Immerse ↑</div>
     </div>
 
-    <div class="toast" id="toast">v3.0: AI Emotions + Gestures + WebGPU!</div>
-    <input type="file" id="file-input" multiple 
-        accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma" 
-        style="display:none">
+    <div class="toast" id="toast">v3.1 已就绪 – 彩虹混沌启动！</div>
+    <input type="file" id="file-input" multiple accept="audio/*" style="display:none">
 
-    <script type="module">
-        // --- 工具函数 ---
-        const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+<script>
+const clamp = (v,min,max)=>Math.min(Math.max(v,min),max);
 
-        // --- 沉浸式交互 (Unchanged) ---
-        const uiLayer = document.getElementById('ui-layer');
-        let idleTimer;
-        function resetIdleTimer() {
-            uiLayer.classList.remove('idle');
-            document.body.style.cursor = 'default';
-            clearTimeout(idleTimer);
-            if (!document.getElementById('playlist-drawer').classList.contains('open')) {
-                idleTimer = setTimeout(() => {
-                    uiLayer.classList.add('idle');
-                    document.body.style.cursor = 'none';
-                }, 4000);
-            }
+let idleTimer;
+function resetIdle(){ 
+    document.getElementById('ui-layer').classList.remove('idle');
+    clearTimeout(idleTimer);
+    idleTimer=setTimeout(()=>document.getElementById('ui-layer').classList.add('idle'),4000);
+}
+['mousemove','touchstart','click'].forEach(e=>document.addEventListener(e,resetIdle,{passive:true}));
+
+class SonoriaVisualizer{
+    constructor(container){
+        this.container = container;
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
+        this.camera.position.z = 80;
+
+        this.renderer = new THREE.WebGLRenderer({antialias:true,alpha:false});
+        this.renderer.setSize(innerWidth,innerHeight);
+        this.renderer.setPixelRatio(devicePixelRatio);
+        container.appendChild(this.renderer.domElement);
+
+        // 音频
+        this.audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+        this.analyser = this.audioCtx.createAnalyser();
+        this.analyser.fftSize = 2048;
+        this.analyser.smoothingTimeConstant = 0.82;
+        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+        // 参数
+        this.sigma=10; this.rho=28; this.beta=8/3; this.dt=0.006;
+        this.x=0.1; this.y=0; this.z=0;
+        this.points = [];
+        this.maxPoints = 8000;
+
+        // 彩色线条（关键！）
+        this.lineGeometry = new THREE.BufferGeometry();
+        this.lineMaterial = new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.9});
+        this.line = new THREE.Line(this.lineGeometry,this.lineMaterial);
+        this.scene.add(this.line);
+
+        // 粒子（Shader 彩虹）
+        this.particleCount = 3000;
+        this.pgeo = new THREE.BufferGeometry();
+        this.ppos = new Float32Array(this.particleCount*3);
+        this.pcol = new Float32Array(this.particleCount*3);
+        for(let i=0;i<this.particleCount;i++){
+            this.ppos[i*3]   = (Math.random()-0.5)*120;
+            this.ppos[i*3+1] = (Math.random()-0.5)*120;
+            this.ppos[i*3+2] = (Math.random()-0.5)*120;
         }
-        ['mousemove', 'click', 'touchstart'].forEach(evt => 
-            document.addEventListener(evt, resetIdleTimer, {passive: true})
-        );
+        this.pgeo.setAttribute('position',new THREE.BufferAttribute(this.ppos,3));
+        this.pgeo.setAttribute('color',new THREE.BufferAttribute(this.pcol,3));
+        this.pmat = new THREE.PointsMaterial({size:1.8,vertexColors:true,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending});
+        this.particles = new THREE.Points(this.pgeo,this.pmat);
+        this.scene.add(this.particles);
 
-        // --- AI Emotion Detector (New: Simple TF.js Model) ---
-        class EmotionDetector {
-            constructor() {
-                this.model = null;
-                this.emotions = ['calm', 'energetic', 'melancholic', 'euphoric'];
-                this.loadModel();
-            }
+        this.colorMode = 'rainbow'; // classic | rainbow | emotion
 
-            async loadModel() {
-                // Simple pre-trained model simulation (in prod, load actual TF model)
-                this.model = tf.sequential({
-                    layers: [
-                        tf.layers.dense({inputShape: [3], units: 16, activation: 'relu'}),
-                        tf.layers.dense({units: 4, activation: 'softmax'})
-                    ]
-                });
-                // Mock training or load weights
-                this.model.compile({optimizer: 'adam', loss: 'categoricalCrossentropy'});
-                console.log('AI Model Loaded');
-            }
+        window.addEventListener('resize',()=>this.onResize());
+        this.animate();
+    }
 
-            predict(bass, mid, high) {
-                if (!this.model) return 'neutral';
-                const input = tf.tensor2d([[bass, mid, high]]);
-                const prediction = this.model.predict(input);
-                const scores = prediction.dataSync();
-                const maxIndex = scores.indexOf(Math.max(...scores));
-                input.dispose();
-                prediction.dispose();
-                return this.emotions[maxIndex] || 'neutral';
-            }
-        }
+    onResize(){
+        this.camera.aspect = innerWidth/innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(innerWidth,innerHeight);
+    }
 
-        // --- Gesture Controller (New: MediaPipe Hands) ---
-        class GestureController {
-            constructor() {
-                this.hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-                this.hands.setOptions({
-                    maxNumHands: 1,
-                    modelComplexity: 1,
-                    minDetectionConfidence: 0.5,
-                    minTrackingConfidence: 0.5
-                });
-                this.hands.onResults(this.onResults.bind(this));
-                this.isEnabled = false;
-                this.camera = null;
-            }
+    connect(source){
+        source.connect(this.analyser);
+        this.analyser.connect(this.audioCtx.destination);
+    }
 
-            async start() {
-                this.camera = new Camera(document.getElementById('gesture-video'), {
-                    onFrame: async () => {
-                        await this.hands.send({image: document.getElementById('gesture-video')});
-                    },
-                    width: 640,
-                    height: 480
-                });
-                await this.camera.start();
-                this.isEnabled = true;
-                document.getElementById('gesture-video').style.display = 'block';
-                document.getElementById('gesture-canvas').style.display = 'block';
-            }
+    getEnergy(a,b){
+        let sum=0, len=this.dataArray.length;
+        a=Math.max(0,a); b=Math.min(b,len);
+        for(let i=a;i<b;i++) sum+=this.dataArray[i];
+        return sum/(b-a);
+    }
 
-            stop() {
-                if (this.camera) this.camera.stop();
-                this.isEnabled = false;
-                document.getElementById('gesture-video').style.display = 'none';
-                document.getElementById('gesture-canvas').style.display = 'none';
-            }
+    setColorMode(mode){
+        this.colorMode = mode;
+        document.querySelectorAll('.color-btn').forEach(b=>b.classList.toggle('active',b.dataset.color===mode));
+    }
 
-            onResults(results) {
-                const canvasCtx = document.getElementById('gesture-canvas').getContext('2d');
-                canvasCtx.save();
-                canvasCtx.clearRect(0, 0, canvasCtx.canvas.width, canvasCtx.canvas.height);
-                canvasCtx.drawImage(results.image, 0, 0, canvasCtx.canvas.width, canvasCtx.canvas.height);
+    animate(){
+        requestAnimationFrame(()=>this.animate());
+        this.analyser.getByteFrequencyData(this.dataArray);
 
-                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                    for (const landmarks of results.multiHandLandmarks) {
-                        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 5});
-                        drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 2});
-                    }
-                    // Gesture Logic: e.g., Pinch for Play/Pause
-                    const landmarks = results.multiHandLandmarks[0];
-                    const thumbTip = landmarks[4];
-                    const indexTip = landmarks[8];
-                    const distance = Math.sqrt(Math.pow(thumbTip.x - indexTip.x, 2) + Math.pow(thumbTip.y - indexTip.y, 2));
-                    if (distance < 0.05) {
-                        // Trigger play/pause
-                        app.togglePlay();
-                    }
-                }
+        const bass = this.getEnergy(0,12)/255;
+        const mid  = this.getEnergy(80,300)/255;
+        const high = this.getEnergy(600,1200)/255;
 
-                canvasCtx.restore();
-            }
+        // 参数响应
+        this.rho = 28 + mid*20;
+        this.dt  = 0.005 + bass*0.008;
+
+        // Lorenz 步进
+        for(let i=0;i<8;i++){
+            const dx = this.sigma*(this.y-this.x)*this.dt;
+            const dy = this.x*(this.rho-this.z)-this.y*this.dt;
+            const dz = this.x*this.y - this.beta*this.z*this.dt;
+            this.x+=dx; this.y+=dy; this.z+=dz;
+
+            this.points.push(this.x*0.5, this.y*0.5, this.z*0.5);
+            if(this.points.length> this.maxPoints*3) this.points.splice(0,3);
         }
 
-        // --- 核心视觉：WebGPU-Enabled Three.js (v3.0) ---
-        class LorenzVisualizer {
-            constructor(container) {
-                this.container = container;
-                import('three').then(({ WebGLRenderer, Scene, PerspectiveCamera, BufferGeometry, BufferAttribute, LineBasicMaterial, PointsMaterial, Points, Line }) => {
-                    this.WebGLRenderer = WebGLRenderer;
-                    this.Scene = Scene;
-                    this.PerspectiveCamera = PerspectiveCamera;
-                    this.BufferGeometry = BufferGeometry;
-                    this.BufferAttribute = BufferAttribute;
-                    this.LineBasicMaterial = LineBasicMaterial;
-                    this.PointsMaterial = PointsMaterial;
-                    this.Points = Points;
-                    this.Line = Line;
-                    this.initThree();
-                });
+        // 更新线条 + 颜色
+        this.lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(this.points,3));
 
-                this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                this.analyser = this.audioCtx.createAnalyser();
-                this.analyser.fftSize = 2048;
-                this.analyser.smoothingTimeConstant = 0.75; // Smoother for AI
-                this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-                
-                this.panner = this.audioCtx.createPanner();
-                this.panner.panningModel = 'HRTF';
-                this.panner.distanceModel = 'inverse';
-                this.panner.refDistance = 1;
-                this.panner.maxDistance = 10000;
-                this.panner.rolloffFactor = 1;
-                this.panner.coneInnerAngle = 360;
-                this.panner.coneOuterAngle = 0;
-                this.panner.coneOuterGain = 0;
-                this.panner.connect(this.audioCtx.destination);
-                
-                this.resize();
-                this.isPlaying = false;
-                this.currentMode = 'lorenz';
-                
-                // Rossler Parameters (New)
-                this.rosslerA = 0.2;
-                this.rosslerB = 0.2;
-                this.rosslerC = 5.7;
-                this.rx = 0; this.ry = 0; this.rz = 0;
-                
-                this.maxPoints = 6000;
-                this.points = new Float32Array(this.maxPoints * 3);
-                this.pointIndex = 0;
-                
-                this.scale = 1;
-                this.angleX = 0;
-                this.angleY = 0;
-                
-                this.emotionDetector = new EmotionDetector();
-                this.gestures = new GestureController();
-                
-                // Video Recording (New)
-                this.mediaRecorder = null;
-                this.recordedChunks = [];
-                
-                window.addEventListener('resize', () => this.resize());
+        const colors = [];
+        for(let i=0;i<this.points.length;i+=3){
+            let hue;
+            if(this.colorMode==='classic'){
+                hue = 180 + this.points[i+2]*2; // 青紫经典
+            }else if(this.colorMode==='rainbow'){
+                hue = (Date.now()/20 + i*0.3 + this.points[i+2]*3) % 360;
+            }else{ // emotion
+                hue = bass>0.7? 0 : mid>0.6? 280 : high>0.6? 180 : 60;
             }
-
-            initThree() {
-                this.scene = new this.Scene();
-                this.camera = new this.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                this.camera.position.z = 50;
-                
-                // WebGPU Renderer (If supported, fallback to WebGL)
-                try {
-                    this.renderer = new this.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-                } catch (e) {
-                    this.renderer = new this.WebGLRenderer({ antialias: true });
-                }
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.container.appendChild(this.renderer.domElement);
-                
-                // Geometries (Enhanced)
-                this.lorenzGeometry = new this.BufferGeometry();
-                this.lorenzMaterial = new this.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6 });
-                this.lorenzLine = new this.Line(this.lorenzGeometry, this.lorenzMaterial);
-                this.scene.add(this.lorenzLine);
-                
-                this.rosslerGeometry = new this.BufferGeometry();
-                this.rosslerMaterial = new this.LineBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.6 });
-                this.rosslerLine = new this.Line(this.rosslerGeometry, this.rosslerMaterial);
-                this.scene.add(this.rosslerLine);
-                
-                this.particlesGeometry = new this.BufferGeometry();
-                this.particlesMaterial = new this.PointsMaterial({ color: 0xffffff, size: 0.5, transparent: true, opacity: 0.8 });
-                this.particles = new this.Points(this.particlesGeometry, this.particlesMaterial);
-                this.scene.add(this.particles);
-                this.particleCount = 2000; // Increased
-                this.particlePositions = new Float32Array(this.particleCount * 3);
-                for (let i = 0; i < this.particleCount * 3; i += 3) {
-                    this.particlePositions[i] = (Math.random() - 0.5) * 100;
-                    this.particlePositions[i + 1] = (Math.random() - 0.5) * 100;
-                    this.particlePositions[i + 2] = (Math.random() - 0.5) * 100;
-                }
-                this.particlesGeometry.setAttribute('position', new this.BufferAttribute(this.particlePositions, 3));
-                
-                this.lorenzLine.visible = true;
-                this.rosslerLine.visible = false;
-                this.particles.visible = false;
-                
-                this.lorenzGeometry.setAttribute('position', new this.BufferAttribute(this.points, 3));
-                this.rosslerGeometry.setAttribute('position', new this.BufferAttribute(new Float32Array(this.maxPoints * 3), 3));
-            }
-
-            resize() {
-                if (this.camera) {
-                    this.camera.aspect = window.innerWidth / window.innerHeight;
-                    this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(window.innerWidth, window.innerHeight);
-                }
-            }
-
-            connectSource(sourceNode) {
-                try { sourceNode.disconnect(); } catch(e) {}
-                sourceNode.connect(this.analyser);
-                this.analyser.connect(this.panner);
-                this.panner.connect(this.audioCtx.destination);
-            }
-
-            getEnergy(startBin, endBin) {
-                let sum = 0;
-                const len = this.dataArray.length;
-                const end = Math.min(endBin, len);
-                const start = Math.max(0, startBin);
-                for(let i = start; i < end; i++) sum += this.dataArray[i];
-                return end > start ? sum / (end - start) : 0;
-            }
-
-            lorenzStep() {
-                const dx = this.sigma * (this.y - this.x) * this.dt;
-                const dy = (this.x * (this.rho - this.z) - this.y) * this.dt;
-                const dz = (this.x * this.y - this.beta * this.z) * this.dt;
-
-                this.x += dx;
-                this.y += dy;
-                this.z += dz;
-
-                const idx = this.pointIndex * 3;
-                this.points[idx] = this.x * 0.5;
-                this.points[idx + 1] = this.y * 0.5;
-                this.points[idx + 2] = this.z * 0.5;
-
-                this.pointIndex = (this.pointIndex + 1) % this.maxPoints;
-            }
-
-            rosslerStep() {
-                const dx = -this.ry - this.rz;
-                const dy = this.rx + this.rosslerA * this.ry;
-                const dz = this.rz + this.rosslerB - this.rx * this.ry;
-
-                this.rx += dx * this.dt * 2;
-                this.ry += dy * this.dt * 2;
-                this.rz += dz * this.dt * 2;
-
-                const idx = this.pointIndex * 3;
-                this.points[idx] = this.rx;
-                this.points[idx + 1] = this.ry;
-                this.points[idx + 2] = this.rz;
-
-                this.pointIndex = (this.pointIndex + 1) % this.maxPoints;
-            }
-
-            updateParticles(audioLevel) {
-                const positions = this.particlesGeometry.attributes.position.array;
-                for (let i = 0; i < this.particleCount * 3; i += 3) {
-                    positions[i] += (0 - positions[i]) * 0.01 + (Math.random() - 0.5) * audioLevel * 3;
-                    positions[i + 1] += (0 - positions[i + 1]) * 0.01 + (Math.random() - 0.5) * audioLevel * 3;
-                    positions[i + 2] += (0 - positions[i + 2]) * 0.01 + (Math.random() - 0.5) * audioLevel * 3;
-                }
-                this.particlesGeometry.attributes.position.needsUpdate = true;
-                this.particlesMaterial.size = 0.5 + audioLevel * 3;
-            }
-
-            async render() {
-                if(!this.isPlaying || !this.renderer) return;
-
-                requestAnimationFrame(this.render.bind(this));
-                
-                this.analyser.getByteFrequencyData(this.dataArray);
-                
-                const bass = this.getEnergy(0, 10) / 255;
-                const mid = this.getEnergy(100, 300) / 255;
-                const high = this.getEnergy(500, 1024) / 255;
-                const overallLevel = (bass + mid + high) / 3;
-                
-                // AI Emotion Prediction
-                const emotion = this.emotionDetector.predict(bass * 255, mid * 255, high * 255);
-                app.updateEmotion(emotion);
-                
-                // Sensitivity Multiplier
-                const sens = app.sensitivity / 5;
-                
-                // Mode-Specific Steps
-                if (this.currentMode === 'lorenz') {
-                    const targetRho = 28 + (mid * 15) * sens;
-                    this.rho += (targetRho - this.rho) * 0.1;
-                    const targetDt = 0.005 + (bass * 0.006) * sens;
-                    this.dt += (targetDt - this.dt) * 0.1;
-                    this.dt = clamp(this.dt, 0.001, 0.015);
-                    for(let i=0; i<6; i++) this.lorenzStep();
-                    this.lorenzLine.visible = true;
-                    this.rosslerLine.visible = false;
-                    this.lorenzGeometry.attributes.position.needsUpdate = true;
-                    this.lorenzLine.scale.set(this.scale * sens, this.scale * sens, this.scale * sens);
-                } else if (this.currentMode === 'rossler') {
-                    const targetC = 5.7 + (high * 2) * sens;
-                    this.rosslerC += (targetC - this.rosslerC) * 0.05;
-                    for(let i=0; i<6; i++) this.rosslerStep();
-                    this.rosslerLine.visible = true;
-                    this.lorenzLine.visible = false;
-                    this.rosslerGeometry.attributes.position.needsUpdate = true;
-                    this.rosslerLine.scale.set(this.scale * sens, this.scale * sens, this.scale * sens);
-                } else {
-                    this.lorenzLine.visible = false;
-                    this.rosslerLine.visible = false;
-                    this.particles.visible = true;
-                    this.updateParticles(overallLevel * sens);
-                }
-                
-                this.scale = 1 + (bass * 2) * sens;
-                this.angleY += 0.003 + (high * 0.005) * sens;
-                this.angleX = Math.sin(Date.now() / 8000) * 0.4;
-                
-                if (this.currentMode !== 'particles') {
-                    this[this.currentMode === 'lorenz' ? 'lorenzLine' : 'rosslerLine'].rotation.y = this.angleY;
-                    this[this.currentMode === 'lorenz' ? 'lorenzLine' : 'rosslerLine'].rotation.x = this.angleX;
-                } else {
-                    this.particles.rotation.y += 0.01 * (1 + high * sens);
-                }
-                
-                // Dynamic Panner
-                if (this.currentMode === 'lorenz') {
-                    this.panner.positionX.value = this.x * 0.1;
-                    this.panner.positionY.value = this.y * 0.1;
-                    this.panner.positionZ.value = this.z * 0.1;
-                } else if (this.currentMode === 'rossler') {
-                    this.panner.positionX.value = this.rx * 0.1;
-                    this.panner.positionY.value = this.ry * 0.1;
-                    this.panner.positionZ.value = this.rz * 0.1;
-                }
-                
-                // GSAP Camera
-                gsap.to(this.camera.position, {
-                    duration: 1,
-                    x: Math.sin(this.angleY) * 50 * (1 + overallLevel),
-                    y: Math.sin(this.angleX) * 20 * (1 + overallLevel),
-                    ease: "power2.out"
-                });
-
-                this.renderer.render(this.scene, this.camera);
-            }
-
-            setMode(mode) {
-                this.currentMode = mode;
-                gsap.to(this.lorenzLine.material, { duration: 0.5, opacity: mode === 'lorenz' ? 1 : 0 });
-                gsap.to(this.rosslerLine.material, { duration: 0.5, opacity: mode === 'rossler' ? 1 : 0 });
-                gsap.to(this.particlesMaterial, { duration: 0.5, opacity: mode === 'particles' ? 1 : 0 });
-                if (mode === 'rossler') {
-                    this.pointIndex = 0; // Reset for new attractor
-                }
-            }
-
-            start() { 
-                if(this.isPlaying) return;
-                this.isPlaying = true; 
-                this.render(); 
-            }
-            stop() { 
-                this.isPlaying = false; 
-            }
-
-            // Video Recording
-            startRecording() {
-                this.recordedChunks = [];
-                const stream = this.renderer.domElement.captureStream(30); // 30 FPS
-                this.mediaRecorder = new MediaRecorder(stream);
-                this.mediaRecorder.ondataavailable = (e) => this.recordedChunks.push(e.data);
-                this.mediaRecorder.onstop = () => {
-                    const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'sonoria-chaos.webm';
-                    a.click();
-                    URL.revokeObjectURL(url);
-                };
-                this.mediaRecorder.start();
-            }
-
-            stopRecording() {
-                if (this.mediaRecorder) this.mediaRecorder.stop();
-            }
+            const col = new THREE.Color(`hsl(${hue},100%,65%)`);
+            colors.push(col.r,col.g,col.b);
         }
+        this.lineGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors,3));
 
-        // --- 应用控制器 (v3.0 Enhanced) ---
-        const app = {
-            audio: new Audio(),
-            playlist: [],
-            currentIndex: 0,
-            visualizer: null,
-            isMicMode: false,
-            micStream: null,
-            sourceNode: null,
-            currentObjectUrl: null,
-            sensitivity: 5,
-            currentEmotion: 'neutral',
+        // 粒子彩虹
+        for(let i=0;i<this.particleCount;i++){
+            const idx = i*3;
+            const hue = (Date.now()/30 + i*2 + bass*200 + high*100) % 360;
+            const c = new THREE.Color(`hsl(${hue},100%,70%)`);
+            this.pcol[idx]=c.r; this.pcol[idx+1]=c.g; this.pcol[idx+2]=c.b;
 
-            init() {
-                const container = document.getElementById('visualizer');
-                this.visualizer = new LorenzVisualizer(container); 
-                
-                this.bindEvents();
-                this.setupDragDrop();
-                
-                this.audio.crossOrigin = "anonymous";
-                this.audio.addEventListener('timeupdate', () => this.updateProgress());
-                this.audio.addEventListener('ended', () => this.next());
-                this.audio.addEventListener('error', (e) => {
-                    console.error("Audio Error", e);
-                    this.showToast("Error playing track, skipping...");
-                    this.next();
-                });
-                
-                document.getElementById('sensitivity-slider').oninput = (e) => {
-                    this.sensitivity = parseInt(e.target.value);
-                    document.getElementById('sensitivity-value').textContent = this.sensitivity;
-                };
-            },
+            // 粒子受音乐震动
+            const force = bass*3 + high;
+            this.ppos[idx]   += (Math.random()-0.5)*force;
+            this.ppos[idx+1] += (Math.random()-0.5)*force;
+            this.ppos[idx+2] += (Math.random()-0.5)*force;
+        }
+        this.pgeo.attributes.position.needsUpdate = true;
+        this.pgeo.attributes.color.needsUpdate = true;
 
-            bindEvents() {
-                const $ = (id) => document.getElementById(id);
-                
-                $('play-btn').onclick = () => this.togglePlay();
-                $('prev-btn').onclick = () => this.prev();
-                $('next-btn').onclick = () => this.next();
-                $('upload-btn').onclick = () => $('file-input').click();
-                $('file-input').onchange = (e) => this.handleFiles(e.target.files);
-                $('mic-toggle').onclick = () => this.toggleMic();
+        // 旋转
+        this.line.rotation.y += 0.003 + high*0.01;
+        this.line.rotation.x = Math.sin(Date.now()/8000)*0.3;
+        this.particles.rotation.y += 0.005 + bass*0.02;
 
-                // Viz Mode Toggle (Enhanced)
-                document.querySelectorAll('.viz-btn').forEach(btn => {
-                    btn.onclick = () => {
-                        document.querySelectorAll('.viz-btn').forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                        this.visualizer.setMode(btn.dataset.mode);
-                        this.showToast(`Switched to ${btn.dataset.mode} mode`);
-                    };
-                });
+        this.renderer.render(this.scene,this.camera);
+    }
+}
 
-                // New: Gesture Toggle
-                $('gesture-toggle').onclick = () => {
-                    if (this.visualizer.gestures.isEnabled) {
-                        this.visualizer.gestures.stop();
-                        $('gesture-toggle').classList.remove('active');
-                        this.showToast('Gestures Disabled');
-                    } else {
-                        this.visualizer.gestures.start();
-                        $('gesture-toggle').classList.add('active');
-                        this.showToast('Gestures Enabled - Pinch to Play/Pause');
-                    }
-                };
+// App
+const app = {
+    audio:new Audio(),
+    playlist:[],
+    idx:0,
+    viz:null,
+    source:null,
 
-                // New: Recording
-                $('rec-btn').onclick = () => {
-                    const btn = $('rec-btn');
-                    if (btn.classList.contains('recording')) {
-                        this.visualizer.stopRecording();
-                        btn.classList.remove('recording');
-                        btn.innerHTML = '<i class="material-icons-round">videocam</i>';
-                        this.showToast('Recording Saved');
-                    } else {
-                        this.visualizer.startRecording();
-                        btn.classList.add('recording');
-                        btn.innerHTML = '<i class="material-icons-round">fiber_manual_record</i>';
-                        this.showToast('Recording Started');
-                    }
-                };
+    init(){
+        this.viz = new SonoriaVisualizer(document.getElementById('visualizer'));
+        this.bind();
+        this.dragDrop();
+        setTimeout(()=>document.getElementById('toast').classList.add('show'),500);
+    },
 
-                const pContainer = $('progress-container');
-                pContainer.onclick = (e) => {
-                    if(this.isMicMode || this.playlist.length === 0) return;
-                    const rect = pContainer.getBoundingClientRect();
-                    const percent = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
-                    if(Number.isFinite(this.audio.duration)) {
-                        this.audio.currentTime = percent * this.audio.duration;
-                    }
-                };
+    bind(){
+        document.getElementById('play-btn').onclick = ()=>this.toggle();
+        document.getElementById('prev-btn').onclick = ()=>this.prev();
+        document.getElementById('next-btn').onclick = ()=>this.next();
+        document.getElementById('upload-btn').onclick = ()=>document.getElementById('file-input').click();
+        document.getElementById('file-input').onchange = e=>this.addFiles(e.target.files);
 
-                const drawer = $('playlist-drawer');
-                $('playlist-toggle').onclick = (e) => {
-                    e.stopPropagation();
-                    drawer.classList.toggle('open');
-                };
-                
-                document.addEventListener('click', (e) => {
-                    if(drawer.classList.contains('open') && 
-                       !drawer.contains(e.target) && 
-                       e.target.id !== 'playlist-toggle' &&
-                       !e.target.closest('#playlist-toggle')) {
-                        drawer.classList.remove('open');
-                    }
-                });
+        // 配色切换
+        document.querySelectorAll('.color-btn').forEach(btn=>{
+            btn.onclick=()=>{ app.viz.setColorMode(btn.dataset.color); };
+        });
 
-                $('clear-playlist').onclick = () => {
-                    this.playlist = [];
-                    this.currentIndex = 0;
-                    this.audio.pause();
-                    this.audio.src = "";
-                    this.visualizer.stop();
-                    this.updatePlayIcon(false);
-                    this.updatePlaylistUI();
-                    this.resetInfo();
-                    this.showToast('Playlist Cleared');
-                }
-            },
-
-            updateEmotion(emotion) {
-                if (emotion !== this.currentEmotion) {
-                    this.currentEmotion = emotion;
-                    document.getElementById('emotion-indicator').textContent = emotion.toUpperCase();
-                    document.getElementById('ai-badge').classList.add('active');
-                    setTimeout(() => document.getElementById('ai-badge').classList.remove('active'), 2000);
-                }
-            },
-
-            resetInfo() {
-                document.getElementById('track-title').textContent = "Sonoria Experience v3.0";
-                document.getElementById('track-artist').textContent = "AI + Gestures + WebGPU Chaos";
-                document.getElementById('current-time').textContent = "0:00";
-                document.getElementById('total-time').textContent = "--:--";
-                document.getElementById('progress-fill').style.width = "0%";
-                document.getElementById('emotion-indicator').textContent = "";
-            },
-
-            // ... (Rest of methods unchanged: checkAudioContext, togglePlay, updatePlayIcon, handleFiles, loadTrack, prev, next, updateProgress, formatTime, updatePlaylistUI, toggleMic, setupDragDrop, showToast)
-            async checkAudioContext() {
-                if (this.visualizer.audioCtx.state === 'suspended') {
-                    await this.visualizer.audioCtx.resume();
-                }
-            },
-
-            async togglePlay() {
-                if(this.isMicMode) return;
-                await this.checkAudioContext();
-
-                if(this.audio.paused && this.playlist.length > 0) {
-                    if(!this.audio.src || this.audio.src === window.location.href) {
-                        this.loadTrack(this.currentIndex);
-                    } else {
-                        try {
-                            await this.audio.play();
-                            this.visualizer.start();
-                            this.updatePlayIcon(true);
-                        } catch(e) {
-                            this.showToast("Playback blocked by browser");
-                        }
-                    }
-                } else if (!this.audio.paused) {
-                    this.audio.pause();
-                    this.visualizer.stop();
-                    this.updatePlayIcon(false);
-                } else if (this.playlist.length === 0) {
-                    this.showToast("No tracks in playlist, please upload a file.");
-                }
-            },
-
-            updatePlayIcon(isPlaying) {
-                document.querySelector('#play-btn i').textContent = isPlaying ? 'pause' : 'play_arrow';
-            },
-
-            async handleFiles(files) {
-                let added = 0;
-                this.showToast("Processing files...");
-                
-                for(let file of files) {
-                    if(file.type.startsWith('audio/')) {
-                        let meta = { title: file.name.replace(/\.[^/.]+$/, ""), artist: 'Unknown Artist' };
-                        
-                        if (window.musicMetadata) {
-                            try {
-                                const m = await musicMetadata.parseBlob(file);
-                                if(m.common.title) meta.title = m.common.title;
-                                if(m.common.artist) meta.artist = m.common.artist;
-                            } catch(e) {}
-                        }
-                        
-                        this.playlist.push({ file, ...meta });
-                        added++;
-                    }
-                }
-                
-                if(added > 0) {
-                    this.updatePlaylistUI();
-                    if(this.playlist.length === added) {
-                        this.loadTrack(0);
-                    } else {
-                        this.showToast(`Added ${added} tracks`);
-                    }
-                } else {
-                    this.showToast("No valid audio files found");
-                }
-            },
-
-            async loadTrack(index) {
-                if(index < 0 || index >= this.playlist.length) return;
-                
-                if(this.isMicMode) {
-                    this.toggleMic();
-                }
-
-                await this.checkAudioContext();
-
-                this.currentIndex = index;
-                const track = this.playlist[index];
-                
-                if (this.currentObjectUrl) {
-                    URL.revokeObjectURL(this.currentObjectUrl);
-                }
-
-                this.currentObjectUrl = URL.createObjectURL(track.file);
-                this.audio.src = this.currentObjectUrl;
-                this.audio.load();
-                
-                if(!this.sourceNode) {
-                    this.sourceNode = this.visualizer.audioCtx.createMediaElementSource(this.audio);
-                    this.visualizer.connectSource(this.sourceNode);
-                } else {
-                    this.visualizer.connectSource(this.sourceNode);
-                }
-
-                document.getElementById('track-title').textContent = track.title;
-                document.getElementById('track-artist').textContent = track.artist;
-                
-                try {
-                    await this.audio.play();
-                    this.visualizer.start();
-                    this.updatePlayIcon(true);
-                } catch (e) {
-                    console.error("Autoplay failed", e);
-                    this.updatePlayIcon(false);
-                    this.showToast("Autoplay blocked. Tap play button.");
-                }
-                
-                this.updatePlaylistUI();
-            },
-
-            prev() { 
-                if(this.playlist.length > 0) 
-                    this.loadTrack((this.currentIndex - 1 + this.playlist.length) % this.playlist.length); 
-            },
-            next() { 
-                if(this.playlist.length > 0)
-                    this.loadTrack((this.currentIndex + 1) % this.playlist.length); 
-            },
-
-            updateProgress() {
-                const cur = this.audio.currentTime;
-                const dur = this.audio.duration;
-                
-                if(Number.isFinite(dur) && dur > 0) {
-                    const percent = (cur / dur) * 100;
-                    document.getElementById('progress-fill').style.width = `${percent}%`;
-                    document.getElementById('current-time').textContent = this.formatTime(cur);
-                    document.getElementById('total-time').textContent = this.formatTime(dur);
-                }
-            },
-
-            formatTime(s) {
-                if(!Number.isFinite(s)) return "--:--";
-                const m = Math.floor(s/60);
-                const sec = Math.floor(s%60);
-                return `${m}:${sec<10?'0':''}${sec}`;
-            },
-
-            updatePlaylistUI() {
-                const container = document.getElementById('playlist-content');
-                container.innerHTML = '';
-                this.playlist.forEach((track, i) => {
-                    const div = document.createElement('div');
-                    div.className = `playlist-item ${i === this.currentIndex ? 'active' : ''}`;
-                    div.innerHTML = `
-                        <i class="material-icons-round" style="font-size:16px; opacity:0.7">${i === this.currentIndex ? 'equalizer' : 'music_note'}</i>
-                        <div class="item-info">
-                            <div class="item-title">${track.title}</div>
-                            <div class="item-artist">${track.artist}</div>
-                        </div>
-                    `;
-                    div.onclick = () => this.loadTrack(i);
-                    container.appendChild(div);
-                });
-            },
-
-            async toggleMic() {
-                await this.checkAudioContext();
-                const btn = document.getElementById('mic-toggle');
-                
-                if(this.isMicMode) {
-                    this.isMicMode = false;
-                    btn.classList.remove('active');
-                    
-                    if(this.micStream) {
-                        this.micStream.getTracks().forEach(track => track.stop());
-                        this.micStream = null;
-                    }
-
-                    this.resetInfo();
-                    this.visualizer.stop();
-                    this.updatePlayIcon(false);
-                    
-                    if(this.playlist.length > 0 && this.sourceNode) {
-                         this.loadTrack(this.currentIndex);
-                    }
-                    
-                } else {
-                    try {
-                        this.audio.pause();
-                        this.updatePlayIcon(false);
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        this.isMicMode = true;
-                        this.micStream = stream;
-                        
-                        btn.classList.add('active');
-                        
-                        document.getElementById('track-title').textContent = "Microphone Input";
-                        document.getElementById('track-artist').textContent = "Live AI Chaos Visualization";
-                        document.getElementById('current-time').textContent = "LIVE";
-                        document.getElementById('total-time').textContent = "∞";
-                        document.getElementById('progress-fill').style.width = "100%";
-                        
-                        const micSource = this.visualizer.audioCtx.createMediaStreamSource(stream);
-                        micSource.connect(this.visualizer.analyser);
-                        
-                        this.visualizer.start();
-                        this.showToast('Mic Listening with AI...');
-                    } catch(e) {
-                        console.error(e);
-                        this.showToast('Microphone Access Denied');
-                    }
-                }
-            },
-
-            setupDragDrop() {
-                const overlay = document.getElementById('drag-overlay');
-                let dragCounter = 0; 
-
-                document.body.addEventListener('dragenter', (e) => {
-                    e.preventDefault();
-                    dragCounter++;
-                    overlay.classList.add('active');
-                });
-
-                document.body.addEventListener('dragleave', (e) => {
-                    e.preventDefault();
-                    dragCounter--;
-                    if (dragCounter === 0) {
-                        overlay.classList.remove('active');
-                    }
-                });
-
-                document.body.addEventListener('dragover', (e) => e.preventDefault());
-
-                document.body.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    dragCounter = 0;
-                    overlay.classList.remove('active');
-                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                        this.handleFiles(e.dataTransfer.files);
-                    }
-                });
-            },
-
-            showToast(msg) {
-                const t = document.getElementById('toast');
-                t.textContent = msg;
-                t.classList.add('show');
-                if(this.toastTimer) clearTimeout(this.toastTimer);
-                this.toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
-            }
+        // 进度条点击
+        document.getElementById('progress-bg').onclick = e=>{
+            if(!this.audio.duration) return;
+            const rect = e.target.getBoundingClientRect();
+            const per = (e.clientX-rect.left)/rect.width;
+            this.audio.currentTime = per * this.audio.duration;
         };
+    },
 
-        window.onload = () => app.init();
-    </script>
+    async addFiles(files){
+        for(const file of files){
+            if(!file.type.startsWith('audio/')) continue;
+            const url = URL.createObjectURL(file);
+            let title = file.name.replace(/\.[^.]+$/,'');
+            try{
+                const meta = await musicMetadata.parseBlob(file);
+                title = meta.common.title||title;
+            }catch(e){}
+            this.playlist.push({url,title,artist:'Local'});
+        }
+        if(this.playlist.length===files.length) this.play(0);
+        this.showToast(`已添加 ${this.playlist.length} 首`);
+    },
+
+    async play(i){
+        this.idx = i;
+        if(this.source) this.source.disconnect();
+        this.audio.src = this.playlist[i].url;
+        this.source = this.viz.audioCtx.createMediaElementSource(this.audio);
+        this.viz.connect(this.source);
+        document.getElementById('track-title').textContent = this.playlist[i].title;
+        document.getElementById('track-artist').textContent = this.playlist[i].artist||'Unknown';
+        await this.audio.play();
+        document.querySelector('#play-btn i').textContent='pause';
+    },
+
+    toggle(){
+        if(this.audio.paused && this.playlist.length){
+            if(!this.audio.src) this.play(0);
+            else this.audio.play();
+            document.querySelector('#play-btn i').textContent='pause';
+        }else{
+            this.audio.pause();
+            document.querySelector('#play-btn i').textContent='play_arrow';
+        }
+    },
+
+    prev(){ if(this.playlist.length) this.play((this.idx-1+this.playlist.length)%this.playlist.length); }
+    next(){ if(this.playlist.length) this.play((this.idx+1)%this.playlist.length); }
+
+    dragDrop(){
+        const overlay = document.getElementById('drag-overlay');
+        let cnt=0;
+        document.body.addEventListener('dragenter',e=>{e.preventDefault(); cnt++; overlay.classList.add('active');});
+        document.body.addEventListener('dragleave',e=>{e.preventDefault(); if(--cnt===0) overlay.classList.remove('active');});
+        document.body.addEventListener('dragover',e=>e.preventDefault());
+        document.body.addEventListener('drop',e=>{
+            e.preventDefault(); cnt=0; overlay.classList.remove('active');
+            if(e.dataTransfer.files.length) this.addFiles(e.dataTransfer.files);
+        });
+    },
+
+    showToast(msg){
+        const t=document.getElementById('toast');
+        t.textContent=msg;
+        t.classList.add('show');
+        setTimeout(()=>t.classList.remove('show'),3000);
+    }
+};
+
+window.onload = ()=>app.init();
+</script>
 </body>
 </html>
