@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#000000">
-    <title>Sonoria | Lorenz Chaos</title>
+    <title>Sonoria | Lorenz Chaos Optimized</title>
     
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/music-metadata-browser@2.5.10/dist/index.min.js"></script>
     
     <style>
-        /* 样式保持原极简优雅设计不变 */
+        /* --- 极简主义设计系统 --- */
         :root {
-            --glass-bg: rgba(0, 0, 0, 0.25);
+            --glass-bg: rgba(0, 0, 0, 0.4);
             --glass-border: rgba(255, 255, 255, 0.08);
             --text-primary: rgba(255, 255, 255, 0.95);
             --text-secondary: rgba(255, 255, 255, 0.5);
@@ -22,7 +22,7 @@
             --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
 
         body {
             font-family: 'Inter', sans-serif;
@@ -32,52 +32,69 @@
             height: 100vh;
             width: 100vw;
             cursor: default;
+            user-select: none;
         }
 
         #visualizer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
-            /* 强调中心聚焦的暗角效果 */
-            mask-image: radial-gradient(circle at center, black 60%, rgba(0,0,0,0.8) 100%);
-            -webkit-mask-image: radial-gradient(circle at center, black 60%, rgba(0,0,0,0.8) 100%);
         }
 
-        /* 极简UI容器及底部控制岛等样式 */
+        /* 晕影遮罩：增加沉浸感 */
+        .vignette {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
+            pointer-events: none;
+            background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.8) 100%);
+        }
+
+        /* UI 层 */
         .ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             pointer-events: none; display: flex; flex-direction: column;
-            justify-content: space-between; padding: 40px; transition: opacity 0.8s var(--ease-out);
+            justify-content: space-between; padding: 40px; 
+            transition: opacity 0.8s var(--ease-out);
         }
+        
+        /* 闲置模式：隐藏 UI */
         .ui-layer.idle { opacity: 0; }
+        
         .top-bar { pointer-events: auto; display: flex; justify-content: space-between; align-items: center; }
         .brand { font-size: 1.2rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; opacity: 0.8; mix-blend-mode: overlay; }
+        
         .control-island {
-            pointer-events: auto; width: 100%; max-width: 680px; margin: 0 auto; background: var(--glass-bg);
+            pointer-events: auto; width: 100%; max-width: 680px; margin: 0 auto; 
+            background: var(--glass-bg);
             backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%);
             border: 1px solid var(--glass-border); border-radius: 24px; padding: 24px 32px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3); transform: translateY(0); transition: transform 0.6s var(--ease-out);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4); 
+            transform: translateY(0); transition: transform 0.6s var(--ease-out);
         }
         .ui-layer.idle .control-island { transform: translateY(40px); }
+
         .track-info { text-align: center; margin-bottom: 24px; }
-        .track-title { font-size: 1.5rem; font-weight: 500; letter-spacing: -0.5px; margin-bottom: 4px; text-shadow: 0 2px 10px rgba(0,0,0,0.3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .track-title { font-size: 1.5rem; font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .track-artist { font-size: 0.9rem; font-weight: 300; color: var(--text-secondary); letter-spacing: 0.5px; }
-        .progress-container { display: flex; align-items: center; gap: 15px; margin-bottom: 24px; font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
-        .progress-bar-bg { flex: 1; height: 2px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; cursor: pointer; transition: height 0.2s; }
-        .progress-bar-bg:hover { height: 4px; }
-        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: var(--accent); border-radius: 2px; box-shadow: var(--accent-glow); }
+
+        .progress-container { display: flex; align-items: center; gap: 15px; margin-bottom: 24px; font-size: 0.75rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+        .progress-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; cursor: pointer; transition: height 0.2s; overflow: hidden; }
+        .progress-bar-bg:hover { height: 6px; }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: var(--accent); box-shadow: var(--accent-glow); transition: width 0.1s linear; }
+
         .controls-row { display: flex; justify-content: space-between; align-items: center; }
         .main-controls { display: flex; align-items: center; gap: 24px; }
-        .btn-icon { background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.7; transition: all 0.3s ease; position: relative; }
+        
+        .btn-icon { background: none; border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.7; transition: all 0.3s ease; }
         .btn-icon:hover { opacity: 1; transform: scale(1.1); }
         .btn-icon i { font-size: 24px; }
+        
         .btn-play { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); opacity: 1; }
-        .btn-play:hover { background: rgba(255,255,255,0.2); box-shadow: 0 0 30px rgba(255,255,255,0.1); }
+        .btn-play:hover { background: rgba(255,255,255,0.2); box-shadow: 0 0 30px rgba(255,255,255,0.15); }
         .btn-play i { font-size: 28px; }
+
         .btn-secondary { color: var(--text-secondary); }
         .btn-secondary:hover { color: var(--text-primary); }
-        .btn-secondary.active { color: var(--accent); text-shadow: 0 0 10px rgba(255,255,255,0.5); opacity: 1; }
-        
-        .theme-switcher { display: none; }
-        .playlist-drawer { position: fixed; bottom: 20px; right: 20px; width: 320px; max-height: 50vh; background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(30px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; transform: translateX(120%); transition: transform 0.5s var(--ease-out); z-index: 20; overflow-y: auto; pointer-events: auto; }
+        .btn-secondary.active { color: var(--accent); text-shadow: 0 0 10px rgba(255,255,255,0.5); opacity: 1; transform: scale(1.1); }
+
+        .playlist-drawer { position: fixed; bottom: 20px; right: 20px; width: 320px; max-height: 50vh; background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(30px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; transform: translateX(120%); transition: transform 0.5s var(--ease-out); z-index: 20; overflow-y: auto; pointer-events: auto; display: flex; flex-direction: column; }
         .playlist-drawer.open { transform: translateX(0); }
         .playlist-item { display: flex; align-items: center; padding: 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; margin-bottom: 4px; }
         .playlist-item:hover { background: rgba(255,255,255,0.05); }
@@ -86,28 +103,30 @@
         .item-info { flex: 1; overflow: hidden; margin-left: 10px; }
         .item-title { font-size: 0.9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .item-artist { font-size: 0.75rem; color: var(--text-secondary); }
-        .toast { position: fixed; top: 40px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.05); opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 30; }
+
+        .toast { position: fixed; top: 40px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.1); opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 30; }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        .drag-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; flex-direction: column; gap: 20px; }
+
+        .drag-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; flex-direction: column; gap: 20px; }
         .drag-overlay.active { opacity: 1; pointer-events: auto; }
         .drag-icon { font-size: 64px; color: var(--text-secondary); }
 
         @media (max-width: 768px) {
             .ui-layer { padding: 20px; }
-            .control-island { padding: 20px; border-radius: 20px; }
-            .playlist-drawer { bottom: 0; right: 0; width: 100%; border-radius: 20px 20px 0 0; transform: translateY(110%); }
+            .control-island { padding: 20px; border-radius: 20px; margin-bottom: 20px;}
+            .playlist-drawer { bottom: 0; right: 0; width: 100%; border-radius: 20px 20px 0 0; transform: translateY(110%); max-height: 60vh; }
             .playlist-drawer.open { transform: translateY(0); }
-            .track-title { font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
     <canvas id="visualizer"></canvas>
+    <div class="vignette"></div>
     
     <div class="ui-layer" id="ui-layer">
         <div class="top-bar">
             <div class="brand">LORENZ CHAOS</div>
-            <button class="btn-icon btn-secondary" id="playlist-toggle">
+            <button class="btn-icon btn-secondary" id="playlist-toggle" title="Playlist">
                 <i class="material-icons-round">queue_music</i>
             </button>
         </div>
@@ -115,7 +134,7 @@
         <div class="control-island">
             <div class="track-info">
                 <div class="track-title" id="track-title">Sonoria Experience</div>
-                <div class="track-artist" id="track-artist">Drag & Drop Audio File</div>
+                <div class="track-artist" id="track-artist">Drag & Drop or Upload Audio</div>
             </div>
 
             <div class="progress-container">
@@ -145,11 +164,11 @@
     </div>
 
     <div class="playlist-drawer" id="playlist-drawer">
-        <div style="display:flex; justify-content:space-between; margin-bottom:15px; color:var(--text-secondary); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; color:var(--text-secondary); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; flex-shrink: 0;">
             <span>Queue</span>
-            <span id="clear-playlist" style="cursor:pointer; hover:text-white;">Clear</span>
+            <span id="clear-playlist" style="cursor:pointer; transition:color 0.2s;">Clear</span>
         </div>
-        <div id="playlist-content"></div>
+        <div id="playlist-content" style="overflow-y:auto; flex:1;"></div>
     </div>
 
     <div class="drag-overlay" id="drag-overlay">
@@ -161,6 +180,9 @@
     <input type="file" id="file-input" multiple accept="audio/*" style="display:none">
 
     <script>
+        // --- 工具函数：数值钳制 ---
+        const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+
         // --- 沉浸式交互逻辑 ---
         const uiLayer = document.getElementById('ui-layer');
         let idleTimer;
@@ -169,6 +191,7 @@
             uiLayer.classList.remove('idle');
             document.body.style.cursor = 'default';
             clearTimeout(idleTimer);
+            // 只有当播放列表关闭时才进入闲置模式
             if (!document.getElementById('playlist-drawer').classList.contains('open')) {
                 idleTimer = setTimeout(() => {
                     uiLayer.classList.add('idle');
@@ -177,187 +200,216 @@
             }
         }
 
-        document.addEventListener('mousemove', resetIdleTimer);
-        document.addEventListener('click', resetIdleTimer);
-        document.addEventListener('touchstart', resetIdleTimer);
+        ['mousemove', 'click', 'touchstart'].forEach(evt => 
+            document.addEventListener(evt, resetIdleTimer, {passive: true})
+        );
 
-        // --- 核心视觉：洛伦兹吸引子 ---
+        // --- 核心视觉：优化版洛伦兹吸引子 ---
         class LorenzVisualizer {
             constructor(canvas) {
                 this.canvas = canvas;
-                this.ctx = canvas.getContext('2d');
+                this.ctx = canvas.getContext('2d', { alpha: false }); // 优化：关闭alpha通道
                 this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 this.analyser = this.audioCtx.createAnalyser();
-                this.analyser.fftSize = 4096; // 更高的频率分辨率
-                this.analyser.smoothingTimeConstant = 0.85; // 保持平滑
+                this.analyser.fftSize = 2048; // 平衡性能与精度
+                this.analyser.smoothingTimeConstant = 0.85;
                 this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
                 
-                this.width = canvas.width = window.innerWidth;
-                this.height = canvas.height = window.innerHeight;
+                this.resize();
                 
                 this.isPlaying = false;
                 
                 // 吸引子参数 (Lorenz Attractor)
                 this.sigma = 10;
-                this.rho = 28; // 关键参数，将受音乐影响
+                this.rho = 28; 
                 this.beta = 8/3;
-                this.dt = 0.005; // 迭代步长，将受音乐影响
+                this.dt = 0.006; 
 
-                // 吸引子状态
-                this.x = 0.1;
-                this.y = 0;
-                this.z = 0;
-                this.points = []; // 存储轨迹点
+                // 优化：使用类型化数组作为环形缓冲区 (Ring Buffer)
+                // 避免 push/shift 造成的垃圾回收 (GC)
+                this.maxPoints = 4000;
+                this.pointsX = new Float32Array(this.maxPoints);
+                this.pointsY = new Float32Array(this.maxPoints);
+                this.pointsZ = new Float32Array(this.maxPoints);
+                this.pointHead = 0; // 环形缓冲区指针
+                this.pointCount = 0;
+
+                this.x = 0.1; this.y = 0; this.z = 0;
 
                 // 3D 投影参数
-                this.focalLength = 300; // 焦距
-                this.scale = 8; // 整体缩放
+                this.focalLength = 400;
+                this.baseScale = 10;
+                this.scale = this.baseScale;
 
-                // 镜头/旋转参数
+                // 镜头参数
                 this.angleX = 0;
                 this.angleY = 0;
-                this.autoRotateSpeed = 0.0005; // 基础自动旋转速度
 
-                window.addEventListener('resize', () => {
-                    this.width = this.canvas.width = window.innerWidth;
-                    this.height = this.canvas.height = window.innerHeight;
-                });
+                window.addEventListener('resize', () => this.resize());
+            }
+
+            resize() {
+                this.width = this.canvas.width = window.innerWidth;
+                this.height = this.canvas.height = window.innerHeight;
+                this.centerX = this.width / 2;
+                this.centerY = this.height / 2;
             }
 
             connectSource(sourceNode) {
+                // 断开旧连接（如果有）
+                try { this.analyser.disconnect(); } catch(e) {}
                 sourceNode.connect(this.analyser);
                 this.analyser.connect(this.audioCtx.destination);
             }
-            
-            connectStream(stream) {
-                 const source = this.audioCtx.createMediaStreamSource(stream);
-                 source.connect(this.analyser);
-            }
 
-            // 音乐能量获取
-            getEnergy(start, end) {
+            // 获取特定频段平均能量 (0-255)
+            getEnergy(startBin, endBin) {
                 let sum = 0;
-                for(let i=start; i<end; i++) sum += this.dataArray[i];
+                // 边界检查
+                const end = Math.min(endBin, this.dataArray.length);
+                const start = Math.min(startBin, end);
+                if (start === end) return 0;
+                
+                for(let i = start; i < end; i++) sum += this.dataArray[i];
                 return sum / (end - start);
             }
 
-            // 洛伦兹迭代函数 (Runge-Kutta 逼近)
-            lorenzStep(x, y, z) {
-                // 标准洛伦兹微分方程:
-                const dx = this.sigma * (y - x) * this.dt;
-                const dy = (x * (this.rho - z) - y) * this.dt;
-                const dz = (x * y - this.beta * z) * this.dt;
+            lorenzStep() {
+                // Lorenz 微分方程
+                const dx = this.sigma * (this.y - this.x) * this.dt;
+                const dy = (this.x * (this.rho - this.z) - this.y) * this.dt;
+                const dz = (this.x * this.y - this.beta * this.z) * this.dt;
 
                 this.x += dx;
                 this.y += dy;
                 this.z += dz;
-                this.points.push({x: this.x, y: this.y, z: this.z});
-                
-                if (this.points.length > 5000) {
-                    this.points.shift();
-                }
+
+                // 写入环形缓冲区
+                this.pointsX[this.pointHead] = this.x;
+                this.pointsY[this.pointHead] = this.y;
+                this.pointsZ[this.pointHead] = this.z;
+
+                this.pointHead = (this.pointHead + 1) % this.maxPoints;
+                if(this.pointCount < this.maxPoints) this.pointCount++;
             }
 
-            // 3D 旋转和投影 (Rotation and Projection)
-            project(point, angleX, angleY) {
-                const sinX = Math.sin(angleX);
-                const cosX = Math.cos(angleX);
-                const sinY = Math.sin(angleY);
-                const cosY = Math.cos(angleY);
+            project(x, y, z, angleX, angleY) {
+                // 预计算三角函数
+                const sinX = Math.sin(angleX), cosX = Math.cos(angleX);
+                const sinY = Math.sin(angleY), cosY = Math.cos(angleY);
 
-                // 绕 X 轴旋转 (俯仰)
-                let y1 = point.y * cosX - point.z * sinX;
-                let z1 = point.y * sinX + point.z * cosX;
+                // 绕 X 轴旋转
+                const y1 = y * cosX - z * sinX;
+                const z1 = y * sinX + z * cosX;
 
-                // 绕 Y 轴旋转 (偏航)
-                let x2 = point.x * cosY + z1 * sinY;
-                let z2 = z1 * cosY - point.x * sinY;
+                // 绕 Y 轴旋转
+                const x2 = x * cosY + z1 * sinY;
+                const z2 = z1 * cosY - x * sinY;
 
                 // 透视投影
-                const perspective = this.focalLength / (this.focalLength + z2 + 100); 
-                const px = x2 * perspective * this.scale * 3;
-                const py = y1 * perspective * this.scale * 3;
+                // 防止 z2 导致除以零或负数
+                const depth = this.focalLength + z2 + 100;
+                const scale = (depth > 0.1) ? (this.focalLength / depth) : 0;
 
-                return { px, py, perspective: perspective, z: z2 };
+                return {
+                    x: x2 * scale * this.scale,
+                    y: y1 * scale * this.scale,
+                    scale: scale,
+                    z: z2 // 用于深度排序或颜色亮度
+                };
             }
 
             render() {
                 if(!this.isPlaying) return;
+
+                requestAnimationFrame(this.render.bind(this));
                 
                 this.analyser.getByteFrequencyData(this.dataArray);
                 
-                // --- 音乐数据映射 ---
-                const bass = this.getEnergy(0, 50); // 低频 (Kick, Sub)
-                const mid = this.getEnergy(100, 500); // 中频 (Vocals, Pads)
-                const high = this.getEnergy(1000, 3000); // 高频 (Hats, Treble)
-                const overallAvg = (bass + mid + high) / 3;
+                // --- 音频响应逻辑 ---
+                const bass = this.getEnergy(0, 10);      // Sub-bass
+                const mid = this.getEnergy(100, 300);    // Mids
+                const high = this.getEnergy(500, 1024);  // Highs
 
-                // 1. 结构驱动 (中频 -> 结构参数 $\rho$)
-                this.rho = 28 + (mid / 255) * 4 * Math.sin(Date.now() / 5000); 
-                
-                // 2. 冲击力驱动 (低频 -> 迭代步长 $dt$ 和缩放)
-                this.dt = 0.005 + (bass / 255) * 0.003; 
-                this.scale = 8 + (bass / 255) * 1.5;
+                // 1. 结构驱动 (使用 Clamp 防止参数爆炸)
+                // rho 控制混沌程度，范围控制在 20-50 之间
+                const targetRho = 28 + (mid / 255) * 15;
+                this.rho += (targetRho - this.rho) * 0.1; // 平滑过渡
 
-                // 3. 视觉驱动 (高频 -> 光晕/颜色)
-                const particleSize = 1.5 + (high / 255) * 3; 
+                // 2. 速度与缩放 (Bass 驱动)
+                // 限制 dt 防止积分错误
+                const targetDt = 0.005 + (bass / 255) * 0.006;
+                this.dt += (targetDt - this.dt) * 0.1; 
+                this.dt = clamp(this.dt, 0.001, 0.015);
                 
-                // 4. 视角驱动 (整体平均 -> 旋转)
-                this.angleY += this.autoRotateSpeed + (overallAvg / 255) * 0.0005;
-                this.angleX = Math.sin(Date.now() / 15000) * 0.5;
+                this.scale = this.baseScale + (bass / 255) * 4;
 
-                // --- 渲染 ---
-                
-                // 清除画布 (微弱拖尾)
-                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; 
+                // 3. 旋转视角
+                this.angleY += 0.003 + (high / 255) * 0.005;
+                this.angleX = Math.sin(Date.now() / 8000) * 0.4;
+
+                // --- 绘制 ---
+                // 使用半透明黑色清空画布，形成拖尾
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; 
                 this.ctx.fillRect(0, 0, this.width, this.height);
 
-                // 洛伦兹迭代 (每帧计算 10 步)
-                for(let i=0; i<10; i++) this.lorenzStep(this.x, this.y, this.z);
+                // 每次渲染迭代多次，加快轨迹生成
+                for(let i=0; i<8; i++) this.lorenzStep();
 
-                this.ctx.globalCompositeOperation = 'lighter'; // 发光混合模式
+                this.ctx.globalCompositeOperation = 'screen'; // 使用 Screen 混合模式，色彩更柔和
 
-                const centerX = this.width / 2;
-                const centerY = this.height / 2;
+                // 渲染点
+                for (let i = 0; i < this.pointCount; i++) {
+                    // 修正环形缓冲区的读取顺序（从最旧到最新，或者直接遍历所有）
+                    // 为了简单和性能，我们直接遍历 buffer，视觉上差别不大
+                    const px = this.pointsX[i];
+                    const py = this.pointsY[i];
+                    const pz = this.pointsZ[i];
 
-                // 绘制轨迹点
-                this.points.forEach((point, index) => {
-                    const { px, py, perspective, z } = this.project(point, this.angleX, this.angleY);
+                    const p = this.project(px, py, pz, this.angleX, this.angleY);
                     
-                    // 轨迹颜色映射 (z 坐标深度 + 轨迹时间)
-                    const timeHue = index / this.points.length * 30; // 轨迹越新，颜色越亮
-                    const depthLightness = 50 + z * 0.5; // z 越远，越暗
-                    const alpha = perspective * 0.8; // 越远越透明
-                    
-                    this.ctx.fillStyle = `hsla(${180 + timeHue}, 90%, ${depthLightness}%, ${alpha})`;
+                    if (p.scale <= 0) continue;
 
-                    // 绘制粒子 (尺寸受高频和深度影响)
-                    const size = particleSize * perspective;
+                    // 颜色计算
+                    // Hue: 基础青色(180) + 根据 z 轴深度变化 + 高频带来的偏移
+                    const hue = 180 + (pz * 1.5) + (high / 255 * 40);
+                    const lightness = 50 + p.z * 0.8;
+                    const alpha = p.scale * 0.9;
+
+                    this.ctx.fillStyle = `hsla(${hue}, 80%, ${lightness}%, ${alpha})`;
+                    
+                    const size = Math.max(0.5, (1.5 + (high/255)*2) * p.scale);
                     
                     this.ctx.beginPath();
-                    this.ctx.arc(centerX + px, centerY + py, size, 0, Math.PI * 2);
+                    this.ctx.arc(this.centerX + p.x, this.centerY + p.y, size, 0, Math.PI * 2);
                     this.ctx.fill();
-                });
+                }
                 
                 this.ctx.globalCompositeOperation = 'source-over';
-                requestAnimationFrame(this.render.bind(this));
             }
 
             start() { 
+                if(this.isPlaying) return;
                 this.isPlaying = true; 
-                this.x = 0.1; this.y = 0; this.z = 0; this.points = [];
                 this.render(); 
             }
-            stop() { this.isPlaying = false; }
+            stop() { 
+                this.isPlaying = false; 
+                // 停止时清空画布一次
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+            }
         }
 
-        // --- 应用逻辑 ---
+        // --- 应用控制器 ---
         const app = {
             audio: new Audio(),
             playlist: [],
             currentIndex: 0,
             visualizer: null,
             isMicMode: false,
+            micStream: null,
+            sourceNode: null,
 
             init() {
                 const canvas = document.getElementById('visualizer');
@@ -366,58 +418,99 @@
                 this.bindEvents();
                 this.setupDragDrop();
                 
+                this.audio.crossOrigin = "anonymous"; // 允许跨域音频（如果需要）
                 this.audio.addEventListener('timeupdate', () => this.updateProgress());
                 this.audio.addEventListener('ended', () => this.next());
+                this.audio.addEventListener('error', (e) => {
+                    console.error("Audio Error", e);
+                    this.showToast("Error playing track");
+                    this.next();
+                });
             },
 
             bindEvents() {
-                // 播放控制
                 document.getElementById('play-btn').onclick = () => this.togglePlay();
                 document.getElementById('prev-btn').onclick = () => this.prev();
                 document.getElementById('next-btn').onclick = () => this.next();
                 document.getElementById('upload-btn').onclick = () => document.getElementById('file-input').click();
-                
-                // 文件选择
                 document.getElementById('file-input').onchange = (e) => this.handleFiles(e.target.files);
 
-                // 进度条点击
                 const pContainer = document.getElementById('progress-container');
                 pContainer.onclick = (e) => {
+                    if(this.isMicMode || this.playlist.length === 0) return;
                     const rect = pContainer.getBoundingClientRect();
-                    const percent = (e.clientX - rect.left) / rect.width;
-                    if(this.audio.duration) this.audio.currentTime = percent * this.audio.duration;
+                    const percent = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+                    if(Number.isFinite(this.audio.duration)) {
+                        this.audio.currentTime = percent * this.audio.duration;
+                    }
                 };
 
-                // 麦克风
                 document.getElementById('mic-toggle').onclick = () => this.toggleMic();
 
-                // 播放列表UI
                 const drawer = document.getElementById('playlist-drawer');
-                document.getElementById('playlist-toggle').onclick = () => {
+                document.getElementById('playlist-toggle').onclick = (e) => {
+                    e.stopPropagation(); // 防止立即触发关闭逻辑
                     drawer.classList.toggle('open');
                 };
+                
+                // 点击抽屉外部关闭
+                document.addEventListener('click', (e) => {
+                    if(drawer.classList.contains('open') && 
+                       !drawer.contains(e.target) && 
+                       e.target.id !== 'playlist-toggle' &&
+                       !e.target.closest('#playlist-toggle')) {
+                        drawer.classList.remove('open');
+                    }
+                });
+
                 document.getElementById('clear-playlist').onclick = () => {
                     this.playlist = [];
                     this.currentIndex = 0;
                     this.audio.pause();
+                    this.audio.src = "";
                     this.visualizer.stop();
                     this.updatePlayIcon(false);
                     this.updatePlaylistUI();
+                    this.resetInfo();
                     this.showToast('Playlist Cleared');
                 }
             },
 
-            togglePlay() {
+            resetInfo() {
+                document.getElementById('track-title').textContent = "Sonoria Experience";
+                document.getElementById('track-artist').textContent = "Drag & Drop Audio File";
+                document.getElementById('current-time').textContent = "0:00";
+                document.getElementById('total-time').textContent = "--:--";
+                document.getElementById('progress-fill').style.width = "0%";
+            },
+
+            async checkAudioContext() {
+                if (this.visualizer.audioCtx.state === 'suspended') {
+                    await this.visualizer.audioCtx.resume();
+                }
+            },
+
+            async togglePlay() {
                 if(this.isMicMode) return;
+                await this.checkAudioContext();
+
                 if(this.audio.paused && this.playlist.length > 0) {
-                    this.audio.play();
-                    this.visualizer.audioCtx.resume();
-                    this.visualizer.start();
-                    this.updatePlayIcon(true);
-                } else {
+                    // 如果音频还没源，重新加载当前
+                    if(!this.audio.src || this.audio.src === window.location.href) {
+                        this.loadTrack(this.currentIndex);
+                    } else {
+                        this.audio.play();
+                        this.visualizer.start();
+                        this.updatePlayIcon(true);
+                    }
+                } else if (!this.audio.paused) {
                     this.audio.pause();
-                    this.visualizer.stop(); // 暂停时停止渲染
+                    // 暂停时不完全停止 visualizer，可以选择保留静态画面，或者调用 stop()
+                    // 这里为了省电调用 stop
+                    this.visualizer.stop();
                     this.updatePlayIcon(false);
+                } else if (this.playlist.length === 0) {
+                    this.showToast("No tracks in playlist");
                 }
             },
 
@@ -428,69 +521,108 @@
 
             async handleFiles(files) {
                 let added = 0;
+                this.showToast("Processing files...");
+                
                 for(let file of files) {
                     if(file.type.startsWith('audio/')) {
-                        let meta = { title: file.name, artist: 'Unknown' };
-                        try {
-                            const m = await musicMetadata.parseBlob(file);
-                            meta.title = m.common.title || file.name;
-                            meta.artist = m.common.artist || 'Unknown Artist';
-                        } catch(e) {}
+                        let meta = { title: file.name.replace(/\.[^/.]+$/, ""), artist: 'Unknown Artist' };
+                        
+                        // 安全地解析元数据
+                        if (window.musicMetadata) {
+                            try {
+                                const m = await musicMetadata.parseBlob(file);
+                                if(m.common.title) meta.title = m.common.title;
+                                if(m.common.artist) meta.artist = m.common.artist;
+                            } catch(e) {
+                                console.warn("Metadata parse failed", e);
+                            }
+                        }
                         
                         this.playlist.push({ file, ...meta });
                         added++;
                     }
                 }
                 
-                this.updatePlaylistUI();
-                if(this.playlist.length === added && added > 0) {
-                    this.loadTrack(0);
-                } else if (added > 0 && this.audio.paused) {
+                if(added > 0) {
                     this.updatePlaylistUI();
-                }
-                
-                if (added > 0) {
-                    this.showToast(`Added ${added} tracks`);
+                    if(this.playlist.length === added) {
+                         // 如果是第一批添加的歌曲，自动播放
+                        this.loadTrack(0);
+                    } else {
+                        this.showToast(`Added ${added} tracks`);
+                    }
+                } else {
+                    this.showToast("No valid audio files found");
                 }
             },
 
-            loadTrack(index) {
+            async loadTrack(index) {
                 if(index < 0 || index >= this.playlist.length) return;
+                
+                await this.checkAudioContext();
+
                 this.currentIndex = index;
                 const track = this.playlist[index];
                 
-                const url = URL.createObjectURL(track.file);
-                this.audio.src = url;
+                // 释放旧的 URL 对象以节省内存
+                if (this.currentObjectUrl) {
+                    URL.revokeObjectURL(this.currentObjectUrl);
+                }
+
+                this.currentObjectUrl = URL.createObjectURL(track.file);
+                this.audio.src = this.currentObjectUrl;
                 this.audio.load();
                 
+                // 确保 MediaElementSource 只创建一次
                 if(!this.sourceNode) {
                     this.sourceNode = this.visualizer.audioCtx.createMediaElementSource(this.audio);
                     this.visualizer.connectSource(this.sourceNode);
+                } else {
+                    // 如果已经存在，只需要重新连接（通常不需要操作，因为 source 绑定的是 audio 元素）
+                    // 但如果在 Mic 模式下断开了，需要重连
+                    if(!this.isMicMode) {
+                        this.visualizer.connectSource(this.sourceNode);
+                    }
                 }
 
                 document.getElementById('track-title').textContent = track.title;
                 document.getElementById('track-artist').textContent = track.artist;
                 
-                this.audio.play();
-                this.visualizer.start();
-                this.updatePlayIcon(true);
+                try {
+                    await this.audio.play();
+                    this.visualizer.start();
+                    this.updatePlayIcon(true);
+                } catch (e) {
+                    console.error("Autoplay failed", e);
+                    this.updatePlayIcon(false);
+                }
+                
                 this.updatePlaylistUI();
             },
 
-            prev() { this.loadTrack((this.currentIndex - 1 + this.playlist.length) % this.playlist.length); },
-            next() { this.loadTrack((this.currentIndex + 1) % this.playlist.length); },
+            prev() { 
+                if(this.playlist.length > 0) 
+                    this.loadTrack((this.currentIndex - 1 + this.playlist.length) % this.playlist.length); 
+            },
+            next() { 
+                if(this.playlist.length > 0)
+                    this.loadTrack((this.currentIndex + 1) % this.playlist.length); 
+            },
 
             updateProgress() {
                 const cur = this.audio.currentTime;
-                const dur = this.audio.duration || 1;
-                const percent = (cur / dur) * 100;
+                const dur = this.audio.duration;
                 
-                document.getElementById('progress-fill').style.width = `${percent}%`;
-                document.getElementById('current-time').textContent = this.formatTime(cur);
-                document.getElementById('total-time').textContent = this.formatTime(dur);
+                if(Number.isFinite(dur) && dur > 0) {
+                    const percent = (cur / dur) * 100;
+                    document.getElementById('progress-fill').style.width = `${percent}%`;
+                    document.getElementById('current-time').textContent = this.formatTime(cur);
+                    document.getElementById('total-time').textContent = this.formatTime(dur);
+                }
             },
 
             formatTime(s) {
+                if(!Number.isFinite(s)) return "--:--";
                 const m = Math.floor(s/60);
                 const sec = Math.floor(s%60);
                 return `${m}:${sec<10?'0':''}${sec}`;
@@ -503,12 +635,11 @@
                     const div = document.createElement('div');
                     div.className = `playlist-item ${i === this.currentIndex ? 'active' : ''}`;
                     div.innerHTML = `
-                        <i class="material-icons-round" style="font-size:16px; opacity:0.7">${i === this.currentIndex ? 'volume_up' : 'music_note'}</i>
+                        <i class="material-icons-round" style="font-size:16px; opacity:0.7">${i === this.currentIndex ? 'equalizer' : 'music_note'}</i>
                         <div class="item-info">
                             <div class="item-title">${track.title}</div>
                             <div class="item-artist">${track.artist}</div>
                         </div>
-                        ${i === this.currentIndex ? '<i class="material-icons-round" style="font-size:16px;">equalizer</i>' : ''}
                     `;
                     div.onclick = () => this.loadTrack(i);
                     container.appendChild(div);
@@ -516,38 +647,59 @@
             },
 
             async toggleMic() {
+                await this.checkAudioContext();
                 const btn = document.getElementById('mic-toggle');
+                
                 if(this.isMicMode) {
+                    // 关闭麦克风，切回文件模式
                     this.isMicMode = false;
                     btn.classList.remove('active');
-                    this.audio.pause();
-                    document.getElementById('track-title').textContent = "Sonoria";
-                    document.getElementById('track-artist').textContent = "Visualizer Paused";
-                    document.getElementById('total-time').textContent = "--:--";
-                    this.visualizer.stop();
                     
-                    if(this.playlist[this.currentIndex]) {
-                        this.loadTrack(this.currentIndex);
-                    } else {
-                        this.updatePlayIcon(false);
+                    // 停止麦克风流
+                    if(this.micStream) {
+                        this.micStream.getTracks().forEach(track => track.stop());
+                        this.micStream = null;
                     }
+
+                    // 恢复界面
+                    this.resetInfo();
+                    this.visualizer.stop();
+                    this.updatePlayIcon(false);
+                    
+                    // 如果有之前的歌曲，恢复连接
+                    if(this.playlist.length > 0 && this.sourceNode) {
+                         this.visualizer.connectSource(this.sourceNode);
+                         this.loadTrack(this.currentIndex); // 重新加载并播放
+                    }
+                    
                 } else {
+                    // 开启麦克风
                     try {
+                        this.audio.pause(); // 暂停当前音乐
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         this.isMicMode = true;
+                        this.micStream = stream;
+                        
                         btn.classList.add('active');
-                        this.audio.pause();
                         
                         document.getElementById('track-title').textContent = "Microphone Input";
                         document.getElementById('track-artist').textContent = "Live Chaos Visualization";
                         document.getElementById('current-time').textContent = "LIVE";
-                        document.getElementById('total-time').textContent = "LIVE";
+                        document.getElementById('total-time').textContent = "∞";
+                        document.getElementById('progress-fill').style.width = "100%";
                         
-                        this.visualizer.connectStream(stream);
+                        const micSource = this.visualizer.audioCtx.createMediaStreamSource(stream);
+                        // 连接到分析器，但不连接到 destination (防止回音/啸叫)
+                        // 注意：visualizer.connectSource 默认会连 destination，这里我们需要手动处理
+                        try { this.visualizer.analyser.disconnect(); } catch(e) {}
+                        micSource.connect(this.visualizer.analyser);
+                        // 麦克风不需要连到 speakers，否则会有啸叫
+                        
                         this.visualizer.start();
                         this.updatePlayIcon(false);
-                        this.showToast('Mic Mode Active');
+                        this.showToast('Mic Listening...');
                     } catch(e) {
+                        console.error(e);
                         this.showToast('Microphone Access Denied');
                     }
                 }
@@ -555,22 +707,41 @@
 
             setupDragDrop() {
                 const overlay = document.getElementById('drag-overlay');
-                document.body.ondragover = (e) => { e.preventDefault(); overlay.classList.add('active'); };
-                document.body.ondragleave = (e) => { 
-                    if(e.target === overlay) overlay.classList.remove('active'); 
-                };
-                document.body.ondrop = (e) => {
+                let dragCounter = 0; // 用于处理子元素的闪烁问题
+
+                document.body.addEventListener('dragenter', (e) => {
                     e.preventDefault();
+                    dragCounter++;
+                    overlay.classList.add('active');
+                });
+
+                document.body.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    dragCounter--;
+                    if (dragCounter === 0) {
+                        overlay.classList.remove('active');
+                    }
+                });
+
+                document.body.addEventListener('dragover', (e) => e.preventDefault());
+
+                document.body.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dragCounter = 0;
                     overlay.classList.remove('active');
-                    this.handleFiles(e.dataTransfer.files);
-                };
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        this.handleFiles(e.dataTransfer.files);
+                    }
+                });
             },
 
             showToast(msg) {
                 const t = document.getElementById('toast');
                 t.textContent = msg;
                 t.classList.add('show');
-                setTimeout(() => t.classList.remove('show'), 3000);
+                // 清除之前的定时器，防止快速提示时的冲突
+                if(this.toastTimer) clearTimeout(this.toastTimer);
+                this.toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
             }
         };
 
