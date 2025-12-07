@@ -43,7 +43,7 @@
         .vignette {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
             pointer-events: none;
-            background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.8) 100%);
+            background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.8) 100%);
         }
 
         /* UI 层 */
@@ -373,8 +373,8 @@
                     if (p.scale <= 0) continue;
 
                     // 颜色计算
-                    // Hue: 基础青色(180) + 根据 z 轴深度变化 + 高频带来的偏移
-                    const hue = 180 + (pz * 1.5) + (high / 255 * 40);
+                    // Hue: 基础青色(200) + 根据 z 轴深度变化 + 高频带来的偏移
+                    const hue = 300 + (pz * 1.5) + (high / 255 * 40);
                     const lightness = 50 + p.z * 0.8;
                     const alpha = p.scale * 0.9;
 
