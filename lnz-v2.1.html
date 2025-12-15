@@ -9,12 +9,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200..700&display=swap" rel="stylesheet">
     
-    <!-- Three.js v168 -->
-    <script src="https://unpkg.com/three@0.168.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.168.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://unpkg.com/three@0.168.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://unpkg.com/three@0.168.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-    <script src="https://unpkg.com/three@0.168.0/examples/js/postprocessing/RenderPass.js"></script>
+    <!-- Three.js v168 using Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.168.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.168.0/examples/jsm/"
+            }
+        }
+    </script>
     
     <style>
         /* ==================== 设计系统：CSS暴政 ==================== */
@@ -698,7 +701,13 @@
     <div class="toast" id="toast"></div>
     
     <!-- 核心JavaScript -->
-    <script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+
         // ==================== 工具库：诗歌的脚手架 ====================
         
         const Utils = {
@@ -921,13 +930,16 @@
                     rendering: false,
                     points: 0,
                     fps: 60,
-                    params: { sigma: 10, rho: 28, beta: 8/3, dt: 0.01 }
+                    params: { sigma: 10, rho: 28, beta: 8/3, dt: 0.01 },
+                    initialized: false
                 };
                 
                 this.audioData = { bass: 0, mid: 0, high: 0, energy: 0 };
                 this.mood = 'cyan';
                 this.colorblind = false;
                 
+                this.workerPending = false; // Add flag to avoid flooding worker
+
                 this.init();
             }
             
@@ -939,9 +951,9 @@
                 this.camera.position.set(20, 10, 50);
                 
                 // 后期处理
-                const composer = new POSTPROCESSING.EffectComposer(this.renderer);
-                const renderPass = new POSTPROCESSING.RenderPass(this.scene, this.camera);
-                const bloomPass = new POSTPROCESSING.UnrealBloomPass(
+                const composer = new EffectComposer(this.renderer);
+                const renderPass = new RenderPass(this.scene, this.camera);
+                const bloomPass = new UnrealBloomPass(
                     new THREE.Vector2(window.innerWidth, window.innerHeight),
                     1.2, 0.4, 0.85
                 );
@@ -968,7 +980,7 @@
                 this.scene.add(this.particles);
                 
                 // 控制器
-                this.controls = new THREE.OrbitControls(this.camera, this.canvas);
+                this.controls = new OrbitControls(this.camera, this.canvas);
                 this.controls.enableDamping = true;
                 this.controls.dampingFactor = 0.05;
                 
@@ -976,6 +988,7 @@
                 this.startWorker();
                 
                 console.log('可视化器：混沌就绪');
+                this.state.initialized = true;
             }
             
             startWorker() {
@@ -1013,6 +1026,7 @@
                 
                 this.worker.onmessage = (e) => {
                     this.updateGeometry(e.data.points, e.data.hue);
+                    this.workerPending = false;
                 };
             }
             
@@ -1050,6 +1064,19 @@
                 
                 this.controls.update();
                 this.composer.render();
+
+                // Trigger worker if not pending
+                if (this.worker && !this.workerPending) {
+                     this.workerPending = true;
+                     this.worker.postMessage({
+                        sigma: this.state.params.sigma,
+                        rho: this.state.params.rho,
+                        beta: this.state.params.beta,
+                        dt: this.state.params.dt,
+                        steps: 100, // Generate 100 points per frame
+                        audio: this.audioData
+                     });
+                }
                 
                 requestAnimationFrame(() => this.render());
             }
