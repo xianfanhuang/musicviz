@@ -526,11 +526,22 @@
         /* ==================== 响应式：物理断点 ==================== */
         @media (max-width: 768px) {
             #ui-layer {
-                padding: calc(var(--space-unit) * 4);
+                padding: var(--space-unit);
             }
             
             .control-island {
-                padding: calc(var(--space-unit) * 4);
+                padding: calc(var(--space-unit) * 2);
+                width: 100%;
+            }
+
+            .btn {
+                min-width: 36px;
+                min-height: 36px;
+            }
+
+            .btn-play {
+                width: 44px;
+                height: 44px;
             }
             
             .chaos-lab {
@@ -789,12 +800,14 @@
                 this.element = new Audio();
                 this.analyser = null;
                 this.source = null;
+                this.micSource = null; // New microphone source
                 this.gain = null;
                 this.dataArray = null;
                 
                 this.state = {
                     initialized: false,
                     playing: false,
+                    isMic: false, // Mic mode flag
                     currentTime: 0,
                     duration: 0,
                     volume: 0.85
@@ -824,6 +837,10 @@
                 this.analyser.connect(this.gain);
                 this.gain.connect(this.context.destination);
                 
+                // Create source once
+                this.source = this.context.createMediaElementSource(this.element);
+                this.source.connect(this.analyser);
+
                 this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
                 this.state.initialized = true;
                 
@@ -831,6 +848,8 @@
             }
             
             async load(file) {
+                if (this.state.isMic) this.toggleMic(false);
+
                 await Utils.validateFile(file);
                 
                 if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
@@ -852,15 +871,45 @@
                     setTimeout(() => reject(new Error('加载超时')), 10000);
                 });
                 
-                if (this.source) {
-                    this.source.disconnect();
-                    this.source = null;
-                }
-                
-                this.source = this.context.createMediaElementSource(this.element);
-                this.source.connect(this.analyser);
+                // Source is already connected in init
                 
                 return file.name;
+            }
+
+            async toggleMic(active) {
+                if (!this.state.initialized) return;
+
+                if (this.context.state === 'suspended') {
+                    await this.context.resume();
+                }
+
+                if (active) {
+                    try {
+                        // Pause audio element if playing
+                        if (this.state.playing && !this.state.isMic) {
+                            this.pause();
+                        }
+
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        this.micSource = this.context.createMediaStreamSource(stream);
+                        this.micSource.connect(this.analyser);
+                        this.state.isMic = true;
+                        this.state.playing = true; // Treat mic as playing for visualizer
+                        return true;
+                    } catch (e) {
+                        console.error('麦克风访问失败:', e);
+                        return false;
+                    }
+                } else {
+                    if (this.micSource) {
+                        this.micSource.disconnect();
+                        this.micSource.mediaStream.getTracks().forEach(track => track.stop());
+                        this.micSource = null;
+                    }
+                    this.state.isMic = false;
+                    this.state.playing = false;
+                    return true;
+                }
             }
             
             getData() {
@@ -1132,6 +1181,9 @@
                 this.elements['prev-btn'].addEventListener('click', () => this.prev());
                 this.elements['next-btn'].addEventListener('click', () => this.next());
                 
+                // 麦克风
+                this.elements['mic-toggle'].addEventListener('click', () => this.toggleMic());
+
                 // 进度条
                 this.elements['progress-container'].addEventListener('click', (e) => {
                     if (this.playlist.length === 0) return;
@@ -1253,6 +1305,11 @@
             }
             
             togglePlay() {
+                if (this.audio.state.isMic) {
+                    this.toggleMic(); // Turn off mic if strictly toggling play
+                    return;
+                }
+
                 if (this.playlist.length === 0) {
                     this.elements['file-input'].click();
                     return;
@@ -1271,6 +1328,34 @@
                 }
             }
             
+            async toggleMic() {
+                const isActive = !this.audio.state.isMic;
+                const success = await this.audio.toggleMic(isActive);
+
+                if (success) {
+                    if (isActive) {
+                        this.visualizer.start();
+                        this.updateTrackInfo('麦克风输入', '环境音');
+                        this.elements['play-btn'].style.display = 'none'; // Hide play button in mic mode or just disable?
+                        // Actually just updating icon might be enough, but logic differs
+                        this.updatePlayIcon(true);
+                        this.showToast('麦克风已激活');
+                        this.elements['mic-toggle'].style.color = 'var(--color-accent)';
+                        this.elements['mic-toggle'].style.boxShadow = '0 0 12px var(--color-accent)';
+                    } else {
+                        this.visualizer.stop();
+                        this.updateTrackInfo('混沌等待中', '拖放或点击上传音频');
+                        this.updatePlayIcon(false);
+                        this.showToast('麦克风已关闭');
+                        this.elements['mic-toggle'].style.color = '';
+                        this.elements['mic-toggle'].style.boxShadow = '';
+                        this.elements['play-btn'].style.display = '';
+                    }
+                } else {
+                    this.showToast('麦克风访问被拒绝');
+                }
+            }
+
             prev() {
                 if (this.playlist.length === 0) return;
                 const prev = this.currentIndex > 0 ? this.currentIndex - 1 : this.playlist.length - 1;
