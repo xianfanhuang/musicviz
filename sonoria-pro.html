@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sonoria | 听见灵魂</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎐</text></svg>">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 保持 v5.0 的视觉样式不变 --- */
+        :root {
+            --primary: #8E2DE2;
+            --accent: #00d2ff;
+            --bg-deep: #000000;
+            --glass: rgba(255, 255, 255, 0.02);
+            --border: rgba(255, 255, 255, 0.06);
+            --highlight: rgba(255, 255, 255, 0.12);
+            --text-main: rgba(255, 255, 255, 0.95);
+            --text-sub: rgba(255, 255, 255, 0.55);
+            --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-smooth: cubic-bezier(0.23, 1, 0.32, 1);
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-deep); color: var(--text-main); font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; width: 100vw; user-select: none; position: fixed; }
+        #visualizer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; filter: contrast(1.2) brightness(1.1); transition: opacity 1s ease; }
+        .vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.6) 100%); z-index: 2; pointer-events: none; }
+        
+        .app-shell { position: relative; z-index: 10; height: 100vh; width: 100vw; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: var(--safe-top) 20px var(--safe-bottom); transition: all 0.8s var(--ease-smooth); perspective: 1000px; }
+
+        .lens-card { width: 100%; max-width: 380px; background: var(--glass); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--border); border-top: 1px solid var(--highlight); border-radius: 40px; padding: 32px 28px; display: flex; flex-direction: column; gap: 24px; box-shadow: 0 30px 80px -20px rgba(0,0,0,0.5); transform-style: preserve-3d; transition: all 0.8s var(--ease-smooth); will-change: transform, opacity; }
+        .header { display: flex; justify-content: space-between; align-items: center; opacity: 0.9; }
+        .brand { font-size: 0.75rem; letter-spacing: 3px; font-weight: 700; color: var(--text-sub); display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+        .icon-btn { background: transparent; border: none; color: var(--text-main); width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; transition: 0.3s; cursor: pointer; }
+        .icon-btn:active { background: rgba(255,255,255,0.1); transform: scale(0.95); }
+
+        .hero-text { text-align: center; margin-top: 10px; }
+        .title { font-family: 'Inter', sans-serif; font-size: 1.5rem; font-weight: 700; line-height: 1.3; color: var(--text-main); margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; letter-spacing: -0.5px; }
+        .artist { font-size: 0.9rem; color: var(--text-sub); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .artist::before { content: ''; width: 4px; height: 4px; background: var(--text-sub); border-radius: 50%; opacity: 0.5; }
+
+        .progress-container { padding: 16px 0; cursor: pointer; }
+        .progress-rail { height: 3px; background: rgba(255,255,255,0.1); width: 100%; border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--text-main); width: 0%; border-radius: 2px; transition: width 0.1s linear; }
+        .time-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-sub); margin-top: 8px; font-variant-numeric: tabular-nums; }
+
+        .controls { display: flex; justify-content: center; align-items: center; gap: 36px; padding: 10px 0; }
+        .play-btn { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 32px; display: grid; place-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); cursor: pointer; transition: 0.3s var(--ease-elastic); backdrop-filter: blur(10px); }
+        .play-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.2); }
+        .sub-btn { font-size: 30px; color: var(--text-sub); background: none; border: none; cursor: pointer; transition: 0.3s; }
+        .sub-btn:active { color: #fff; transform: scale(0.9); }
+
+        .toolbar { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 24px; margin-top: 8px; }
+        .pill { height: 40px; padding: 0 18px; border-radius: 100px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.3s; }
+        .pill:active { background: rgba(255,255,255,0.15); transform: scale(0.98); }
+        #mic-btn.active { color: #00d2ff; text-shadow: 0 0 15px rgba(0, 210, 255, 0.6); }
+
+        .drawer { height: 0; overflow: hidden; transition: 0.5s var(--ease-smooth); opacity: 0; background: rgba(0,0,0,0.2); border-radius: 20px; }
+        .drawer.open { height: auto; opacity: 1; margin-top: 16px; padding: 16px; border: 1px solid var(--border); }
+        
+        /* 修复：输入框样式优化，增加视觉反馈 */
+        .glass-input { 
+            width: 100%; background: rgba(255,255,255,0.08); border: 1px solid transparent; 
+            padding: 14px; border-radius: 12px; color: #fff; margin-bottom: 10px; 
+            outline: none; font-size: 0.9rem; transition: 0.3s;
+        }
+        .glass-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.12); }
+        
+        .full-btn { width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 12px; color: #fff; font-weight: 600; cursor: pointer; }
+        .playlist-view { max-height: 200px; overflow-y: auto; }
+        .pl-item { padding: 12px; border-radius: 10px; font-size: 0.9rem; color: var(--text-sub); cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .pl-item.active { background: rgba(255,255,255,0.08); color: #fff; }
+
+        .phantom-capsule { position: fixed; bottom: calc(30px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(150px); background: rgba(10, 10, 15, 0.7); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid rgba(255,255,255,0.1); border-radius: 100px; padding: 6px 8px 6px 10px; display: flex; align-items: center; gap: 14px; z-index: 999; opacity: 0; pointer-events: none; transition: all 0.8s var(--ease-elastic); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .app-shell.zen .lens-card { opacity: 0; transform: scale(0.92) translateY(-40px); filter: blur(30px); pointer-events: none; }
+        .app-shell.zen ~ .phantom-capsule { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+
+        .capsule-core { width: 42px; height: 42px; position: relative; display: grid; place-items: center; border-radius: 50%; flex-shrink: 0; transition: transform 0.05s linear, box-shadow 0.1s linear; }
+        .ring-svg { position: absolute; transform: rotate(-90deg); width: 100%; height: 100%; overflow: visible; }
+        .ring-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3; }
+        .ring-progress { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.1s linear, stroke 0.5s; }
+        .ring-logo { font-size: 20px; z-index: 1; color: #fff; transition: color 0.5s; }
+        .capsule-info { width: 120px; font-size: 0.9rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+        .capsule-btn { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.1); color: #fff; border: none; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+        .capsule-btn:active { background: rgba(255,255,255,0.2); }
+
+        .toast { position: fixed; top: calc(20px + var(--safe-top)); left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(20,20,20,0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 30px; font-size: 0.85rem; color: #fff; opacity: 0; transition: 0.4s var(--ease-elastic); z-index: 1000; pointer-events: none; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+    <canvas id="visualizer"></canvas>
+    <div class="vignette"></div>
+
+    <div class="app-shell" id="app-shell">
+        <div class="lens-card" id="card">
+            <div class="header">
+                <button class="icon-btn" onclick="enterZenMode()" title="最小化/沉浸">
+                    <i class="material-icons-round">keyboard_arrow_down</i>
+                </button>
+                <div class="brand">SONORIA</div>
+                <button class="icon-btn" onclick="toggleDrawer('playlist-drawer')" title="列表">
+                    <i class="material-icons-round">queue_music</i>
+                </button>
+            </div>
+
+            <div class="hero-text">
+                <div class="title" id="track-title">Soul Frequency</div>
+                <div class="artist" id="track-artist">Touch to start</div>
+            </div>
+
+            <div class="drawer" id="input-drawer">
+                <input type="text" class="glass-input" id="url-input" placeholder="粘贴音频链接 (mp3/wav) 并回车...">
+                <div class="action-row">
+                    <button class="full-btn" onclick="document.getElementById('file-input').click()">
+                        <i class="material-icons-round" style="vertical-align:middle; font-size:18px;">folder_open</i> 本地文件
+                    </button>
+                </div>
+            </div>
+
+            <div class="drawer" id="playlist-drawer">
+                <div class="playlist-view" id="playlist-view">
+                    <div style="text-align:center; color:var(--text-sub); padding:10px;">列表为空</div>
+                </div>
+            </div>
+
+            <div class="progress-container" id="progress-container">
+                <div class="progress-rail"><div class="progress-fill" id="progress-fill"></div></div>
+                <div class="time-meta"><span id="curr-time">0:00</span><span id="total-time">0:00</span></div>
+            </div>
+
+            <div class="controls">
+                <button class="sub-btn" onclick="engine.playPrev()"><i class="material-icons-round">skip_previous</i></button>
+                <button class="play-btn" id="main-play"><i class="material-icons-round">play_arrow</i></button>
+                <button class="sub-btn" onclick="engine.playNext()"><i class="material-icons-round">skip_next</i></button>
+            </div>
+
+            <div class="toolbar">
+                <button class="pill" onclick="toggleDrawer('input-drawer')"><i class="material-icons-round">add</i> 添加</button>
+                <button class="icon-btn" id="magic-btn" onclick="randomTheme()" title="切换主题"><i class="material-icons-round">auto_awesome</i></button>
+                <button class="icon-btn" id="mic-btn" title="空气共鸣"><i class="material-icons-round">blur_on</i></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="phantom-capsule" id="capsule">
+        <div class="capsule-core" id="capsule-core">
+            <svg class="ring-svg" viewBox="0 0 36 36">
+                <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="ring-progress" id="ring-progress" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <i class="material-icons-round ring-logo" id="ring-logo">graphic_eq</i>
+        </div>
+        <div class="capsule-info" id="capsule-text">Soul Frequency</div>
+        <button class="capsule-btn" id="capsule-play"><i class="material-icons-round">play_arrow</i></button>
+    </div>
+
+    <div class="toast" id="toast"><span id="toast-msg">Ready</span></div>
+    <input type="file" id="file-input" accept="audio/wav,audio/mp3,audio/m4a,audio/*" multiple>
+
+    <script>
+        // === SONORIA V5.1 LINK WALKER ===
+        const state = {
+            playing: false, mic: false, mode: 'aurora', zenTimer: null,
+            ctx: null, analyser: null, src: null, audioEl: null,
+            playlist: [], trackIdx: 0, touchStartX: 0
+        };
+
+        const themes = [
+            { id: 'aurora', name: 'Aurora', color: 'hsl(160, 100%, 50%)' },
+            { id: 'cosmic', name: 'Cosmic', color: 'hsl(270, 100%, 65%)' },
+            { id: 'neural', name: 'Neural', color: 'hsl(340, 100%, 60%)' },
+            { id: 'liquid', name: 'Liquid', color: 'hsl(200, 100%, 50%)' },
+            { id: 'quantum', name: 'Quantum', color: 'hsl(0, 0%, 100%)' }
+        ];
+
+        const ui = {
+            shell: document.getElementById('app-shell'),
+            card: document.getElementById('card'),
+            canvas: document.getElementById('visualizer'),
+            playBtns: [document.getElementById('main-play'), document.getElementById('capsule-play')],
+            title: document.getElementById('track-title'),
+            artist: document.getElementById('track-artist'),
+            cText: document.getElementById('capsule-text'),
+            pFill: document.getElementById('progress-fill'),
+            cTime: document.getElementById('curr-time'),
+            tTime: document.getElementById('total-time'),
+            mic: document.getElementById('mic-btn'),
+            ringProgress: document.getElementById('ring-progress'),
+            ringLogo: document.getElementById('ring-logo'),
+            capsuleCore: document.getElementById('capsule-core'),
+            plView: document.getElementById('playlist-view')
+        };
+
+        class AudioEngine {
+            constructor() {
+                this.viz = new Visualizer(ui.canvas);
+            }
+
+            initContext() {
+                if(!state.ctx) {
+                    state.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    state.analyser = state.ctx.createAnalyser();
+                    state.analyser.fftSize = 2048;
+                    state.analyser.smoothingTimeConstant = 0.8;
+                }
+                if(state.ctx.state === 'suspended') state.ctx.resume();
+            }
+
+            // 处理 URL 播放
+            async playUrl(url) {
+                if(!url) return;
+                this.stop(false);
+                this.initContext();
+                
+                showToast("正在请求音频流...");
+                
+                // 添加到播放列表
+                const fileName = url.split('/').pop().split('?')[0] || "Network Stream";
+                state.playlist.push({ name: fileName, src: url, isUrl: true });
+                state.trackIdx = state.playlist.length - 1;
+                this.renderPlaylist();
+
+                state.audioEl = new Audio();
+                state.audioEl.crossOrigin = "anonymous"; // 尝试跨域
+                state.audioEl.src = url;
+                
+                this.setupAudioListeners(state.audioEl, fileName);
+                
+                state.audioEl.play()
+                    .then(() => {
+                        this.startUI();
+                        // 尝试连接可视化
+                        try {
+                            state.src = state.ctx.createMediaElementSource(state.audioEl);
+                            state.src.connect(state.analyser);
+                            state.analyser.connect(state.ctx.destination);
+                        } catch(e) {
+                            console.warn("CORS limitation", e);
+                            showToast("受源站限制，仅播放音频");
+                        }
+                    })
+                    .catch(e => {
+                        console.error(e);
+                        showToast("无法加载链接 (CORS/404)");
+                        // 如果失败，从列表移除
+                        state.playlist.pop();
+                        this.renderPlaylist();
+                        this.stopUI();
+                    });
+                
+                // 收起输入框
+                document.getElementById('input-drawer').classList.remove('open');
+                document.getElementById('url-input').value = '';
+            }
+
+            setupAudioListeners(el, title) {
+                el.onended = () => this.playNext();
+                this.bindEvents(el);
+                this.updateMeta(title, "Network Audio");
+                
+                el.onerror = () => {
+                    showToast("链接无效或拒绝访问");
+                    this.stopUI();
+                };
+            }
+
+            handleFiles(files) {
+                const newTracks = Array.from(files).map(f => ({ name: f.name.replace(/\.[^/.]+$/, ""), src: URL.createObjectURL(f) }));
+                if(state.playlist.length === 0) {
+                    state.playlist = newTracks;
+                    this.playTrack(0);
+                } else {
+                    state.playlist.push(...newTracks);
+                    showToast(`已添加 ${newTracks.length} 首歌曲`);
+                }
+                this.renderPlaylist();
+                if(document.getElementById('input-drawer').classList.contains('open')) toggleDrawer('input-drawer');
+            }
+
+            playTrack(idx) {
+                if(idx < 0 || idx >= state.playlist.length) return;
+                state.trackIdx = idx;
+                const track = state.playlist[idx];
+                
+                this.stop(false);
+                this.initContext();
+
+                state.audioEl = new Audio(track.src);
+                state.audioEl.crossOrigin = "anonymous";
+                state.audioEl.onended = () => this.playNext();
+                
+                // 本地文件或支持CORS的链接可以连接分析器
+                try {
+                    state.src = state.ctx.createMediaElementSource(state.audioEl);
+                    state.src.connect(state.analyser);
+                    state.analyser.connect(state.ctx.destination);
+                } catch (e) {
+                    console.warn("Viz connect fail");
+                }
+
+                state.audioEl.play()
+                    .then(() => {
+                        this.bindEvents(state.audioEl);
+                        this.updateMeta(track.name, `Track ${idx + 1} / ${state.playlist.length}`);
+                        this.startUI();
+                        this.renderPlaylist();
+                    })
+                    .catch(() => showToast("播放失败"));
+            }
+
+            playNext() {
+                if(state.playlist.length === 0) return;
+                let next = state.trackIdx + 1;
+                if(next >= state.playlist.length) next = 0;
+                this.playTrack(next);
+            }
+
+            playPrev() {
+                if(state.playlist.length === 0) return;
+                let prev = state.trackIdx - 1;
+                if(prev < 0) prev = state.playlist.length - 1;
+                this.playTrack(prev);
+            }
+
+            async toggleMic() {
+                if(state.mic) { this.stop(); return; }
+                this.stop();
+                this.initContext();
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    state.src = state.ctx.createMediaStreamSource(stream);
+                    state.src.connect(state.analyser);
+                    state.mic = true;
+                    this.updateMeta("Air Resonance", "Listening...");
+                    ui.mic.classList.add('active');
+                    this.startUI();
+                } catch(e) { showToast("需要麦克风权限"); }
+            }
+
+            togglePlay() {
+                this.initContext();
+                if(state.mic) { this.toggleMic(); return; }
+                if(!state.audioEl) { 
+                    if(state.playlist.length > 0) this.playTrack(state.trackIdx);
+                    else { toggleDrawer('input-drawer'); showToast("请添加音乐"); }
+                    return; 
+                }
+                state.playing ? (state.audioEl.pause(), this.stopUI()) : (state.audioEl.play(), this.startUI());
+            }
+
+            stop(clear = true) {
+                if(state.audioEl) { state.audioEl.pause(); state.audioEl = null; }
+                if(state.src) { try{state.src.disconnect();}catch(e){} state.src = null; }
+                if(state.mic) { state.mic = false; ui.mic.classList.remove('active'); }
+                if(clear) this.stopUI();
+            }
+
+            bindEvents(el) {
+                el.ontimeupdate = () => {
+                    if(!state.playing) return;
+                    const pct = el.currentTime / el.duration || 0;
+                    ui.pFill.style.width = `${pct * 100}%`;
+                    ui.cTime.innerText = this.fmt(el.currentTime);
+                    ui.ringProgress.style.strokeDashoffset = 100 - (pct * 100);
+                };
+                el.onloadedmetadata = () => ui.tTime.innerText = this.fmt(el.duration);
+            }
+
+            renderPlaylist() {
+                if(state.playlist.length === 0) return;
+                ui.plView.innerHTML = state.playlist.map((t, i) => `
+                    <div class="pl-item ${i === state.trackIdx ? 'active' : ''}" onclick="engine.playTrack(${i})">
+                        <i class="material-icons-round" style="font-size:16px;">${i === state.trackIdx ? 'equalizer' : 'music_note'}</i>
+                        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.name}</span>
+                    </div>
+                `).join('');
+            }
+
+            updateMeta(t, a) {
+                ui.title.innerText = t; ui.cText.innerText = t; ui.artist.innerText = a;
+            }
+
+            startUI() {
+                state.playing = true;
+                ui.playBtns.forEach(b => b.innerHTML = '<i class="material-icons-round">pause</i>');
+                ui.card.classList.add('breathing');
+                this.viz.start();
+                resetZen();
+            }
+
+            stopUI() {
+                state.playing = false;
+                ui.playBtns.forEach(b => b.innerHTML = '<i class="material-icons-round">play_arrow</i>');
+                ui.card.classList.remove('breathing');
+                ui.shell.classList.remove('zen');
+            }
+
+            fmt(s) { if(!s || isNaN(s)) return '0:00'; const m=Math.floor(s/60), sec=Math.floor(s%60); return `${m}:${sec<10?'0':''}${sec}`; }
+        }
+
+        // --- VISUALIZER ---
+        class Visualizer {
+            constructor(c) {
+                this.canvas = c; this.ctx = c.getContext('2d');
+                this.resize();
+                this.particles = Array.from({length:80}, ()=>this.resetParticle({})); 
+                this.nodes = Array.from({length:40}, ()=>({x:0,y:0,vx:0,vy:0}));
+                this.waves = Array.from({length:5}, (_,i)=>({y:0, speed:0.01+i*0.005, offset:i*20}));
+                this.hue = 0;
+            }
+            resize() { this.w = this.canvas.width = window.innerWidth; this.h = this.canvas.height = window.innerHeight; }
+            resetParticle(p) {
+                p.x=Math.random()*this.w; p.y=Math.random()*this.h;
+                p.vx=(Math.random()-.5)*2; p.vy=(Math.random()-.5)*2;
+                p.size=Math.random()*3; return p;
+            }
+            start() { if(!this.frame) this.loop(); }
+            
+            getEnergy() {
+                if(!state.analyser) return 0;
+                const buf = new Uint8Array(state.analyser.frequencyBinCount);
+                state.analyser.getByteFrequencyData(buf);
+                return buf.slice(0,20).reduce((a,b)=>a+b,0) / 20 / 255;
+            }
+
+            loop() {
+                if(!state.playing) { cancelAnimationFrame(this.frame); this.frame=null; return; }
+                this.frame = requestAnimationFrame(()=>this.loop());
+                
+                const e = this.getEnergy();
+                this.hue += 0.2 + e;
+                
+                this.ctx.fillStyle = state.mode==='liquid'?'rgba(0,0,0,0.15)':'rgba(0,0,0,0.08)';
+                this.ctx.fillRect(0,0,this.w,this.h);
+
+                const scale = 1 + e * 0.35; 
+                const themeColor = this.getCurrentThemeColor();
+                
+                ui.capsuleCore.style.transform = `scale(${scale})`;
+                ui.ringLogo.style.color = themeColor;
+                ui.ringProgress.style.stroke = themeColor;
+                ui.capsuleCore.style.boxShadow = `0 0 ${15 + e*40}px ${themeColor}66`;
+
+                this.ctx.save();
+                this.renderMode(e, themeColor);
+                this.ctx.restore();
+            }
+
+            getCurrentThemeColor() {
+                const t = themes.find(x => x.id === state.mode);
+                if(state.mode === 'aurora') return `hsl(${this.hue}, 80%, 60%)`;
+                return t ? t.color : '#fff';
+            }
+
+            renderMode(e, color) {
+                const cx=this.w/2, cy=this.h/2;
+                if(state.mode === 'aurora') {
+                    const buf = new Uint8Array(state.analyser.frequencyBinCount);
+                    state.analyser.getByteFrequencyData(buf);
+                    for(let i=0; i<buf.length; i+=8) {
+                        const v = buf[i]/255, r = Math.min(this.w,this.h)*0.25 + v*150;
+                        const a = (i/buf.length)*Math.PI*2 + this.hue*0.002;
+                        this.ctx.beginPath(); this.ctx.arc(cx+Math.cos(a)*r, cy+Math.sin(a)*r, 2+v*4, 0, Math.PI*2);
+                        this.ctx.fillStyle = `hsla(${this.hue+i/5},80%,60%,${v})`; this.ctx.fill();
+                    }
+                } 
+                else if(state.mode === 'liquid') {
+                    this.waves.forEach((w, i) => {
+                        this.ctx.beginPath(); this.ctx.moveTo(0, cy + w.offset);
+                        for(let x=0; x<this.w; x+=10) { const y = cy + w.offset + Math.sin(x*0.005 + this.hue*w.speed)*50 * (1+e); this.ctx.lineTo(x, y); }
+                        this.ctx.strokeStyle = `hsla(${200+i*20}, 70%, 60%, 0.5)`; this.ctx.lineWidth = 2; this.ctx.stroke();
+                    });
+                }
+                else if(state.mode === 'quantum') {
+                    const buf = new Uint8Array(state.analyser.frequencyBinCount);
+                    state.analyser.getByteFrequencyData(buf);
+                    const barW = this.w / 64;
+                    for(let i=0; i<64; i++) {
+                        const v = buf[i*2]/255, h = v * this.h * 0.6;
+                        this.ctx.fillStyle = `rgba(255,255,255,${v})`; this.ctx.fillRect(i*barW, cy-h/2, barW-2, h);
+                    }
+                }
+                else if(state.mode === 'neural') {
+                    this.nodes.forEach((n,i) => {
+                        if(n.x===0) { n.x=Math.random()*this.w; n.y=Math.random()*this.h; n.vx=(Math.random()-.5); n.vy=(Math.random()-.5); }
+                        n.x+=n.vx*(1+e); n.y+=n.vy*(1+e);
+                        if(n.x<0||n.x>this.w)n.vx*=-1; if(n.y<0||n.y>this.h)n.vy*=-1;
+                        this.ctx.beginPath(); this.ctx.arc(n.x,n.y,3+e*5,0,Math.PI*2);
+                        this.ctx.fillStyle=`rgba(255,50,100,${0.3+e})`; this.ctx.fill();
+                        for(let j=i+1; j<this.nodes.length; j++) {
+                            const n2=this.nodes[j], dx=n.x-n2.x, dy=n.y-n2.y;
+                            if(dx*dx+dy*dy < 15000) {
+                                this.ctx.beginPath(); this.ctx.moveTo(n.x,n.y); this.ctx.lineTo(n2.x,n2.y);
+                                this.ctx.strokeStyle=`rgba(255,50,100,0.2)`; this.ctx.stroke();
+                            }
+                        }
+                    });
+                }
+                else { 
+                    this.particles.forEach(p=>{
+                        p.x+=p.vx*(1+e*3); p.y+=p.vy*(1+e*3);
+                        if(p.x<0||p.x>this.w||p.y<0||p.y>this.h) this.resetParticle(p);
+                        this.ctx.beginPath(); this.ctx.arc(p.x,p.y,p.size*(1+e*2),0,Math.PI*2);
+                        this.ctx.fillStyle=`hsla(${260+e*100},80%,70%,${0.5+e})`; this.ctx.fill();
+                    });
+                }
+            }
+        }
+
+        const engine = new AudioEngine();
+        
+        function resetZen() {
+            clearTimeout(state.zenTimer);
+            if(ui.shell.classList.contains('zen')) return;
+            if(state.playing) state.zenTimer = setTimeout(enterZenMode, 4000);
+        }
+        
+        function enterZenMode() { ui.shell.classList.add('zen'); }
+        
+        document.addEventListener('touchstart', e => state.touchStartX = e.touches[0].clientX);
+        document.addEventListener('touchend', e => {
+            if(!ui.shell.classList.contains('zen')) return;
+            const diff = e.changedTouches[0].clientX - state.touchStartX;
+            if(Math.abs(diff) > 50) randomTheme();
+        });
+
+        ui.shell.addEventListener('click', () => { ui.shell.classList.remove('zen'); resetZen(); });
+        ui.card.addEventListener('click', (e) => e.stopPropagation());
+        
+        document.getElementById('capsule').addEventListener('click', (e) => e.stopPropagation());
+        document.getElementById('capsule-play').addEventListener('click', (e) => { e.stopPropagation(); engine.togglePlay(); });
+
+        function randomTheme() {
+            const others = themes.filter(t => t.id !== state.mode);
+            const next = others[Math.floor(Math.random() * others.length)];
+            state.mode = next.id;
+            const btn = document.getElementById('magic-btn');
+            btn.style.transform = 'rotate(180deg) scale(0.8)';
+            setTimeout(() => btn.style.transform = 'none', 400);
+            showToast(`Theme: ${next.name}`);
+        }
+
+        function toggleDrawer(id) {
+            const el = document.getElementById(id);
+            const isOpen = el.classList.contains('open');
+            document.querySelectorAll('.drawer').forEach(d => d.classList.remove('open'));
+            if(!isOpen) el.classList.add('open');
+        }
+
+        function showToast(m) {
+            document.getElementById('toast-msg').innerText = m;
+            const t = document.getElementById('toast'); t.classList.add('show');
+            setTimeout(()=>t.classList.remove('show'), 2000);
+        }
+
+        window.addEventListener('resize', ()=>engine.viz.resize());
+        ui.playBtns[0].onclick = (e) => { e.stopPropagation(); engine.togglePlay(); };
+        ui.mic.onclick = () => engine.toggleMic();
+        document.getElementById('file-input').onchange = (e) => engine.handleFiles(e.target.files);
+        
+        // 核心修复：监听回车键进行URL加载
+        document.getElementById('url-input').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') engine.playUrl(e.target.value.trim());
+        });
+    </script>
+</body>
+</html>
