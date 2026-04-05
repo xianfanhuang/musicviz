@@ -3,131 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonoria Pro — Immersive Music Visualizer</title>
+    <title>Sonoria · Quantum Field</title>
     <style>
-        /* ============================================
-           DESIGN SYSTEM — Variant/Linear Level
-           ============================================ */
-
-        /* --- CSS Custom Properties --- */
         :root {
-            /* Color System */
-            --color-bg-primary: #000000;
-            --color-bg-secondary: #0a0a0a;
-            --color-bg-elevated: #111111;
-            --color-bg-glass: rgba(255, 255, 255, 0.03);
-            --color-bg-glass-hover: rgba(255, 255, 255, 0.06);
-            --color-bg-glass-active: rgba(255, 255, 255, 0.08);
-
-            --color-border: rgba(255, 255, 255, 0.06);
-            --color-border-hover: rgba(255, 255, 255, 0.12);
-            --color-border-focus: rgba(255, 255, 255, 0.20);
-
-            --color-text-primary: #f5f5f5;
-            --color-text-secondary: rgba(255, 255, 255, 0.50);
-            --color-text-tertiary: rgba(255, 255, 255, 0.30);
-            --color-text-accent: #a78bfa;
-
-            --color-accent: #8b5cf6;
-            --color-accent-glow: rgba(139, 92, 246, 0.15);
-            --color-accent-soft: rgba(139, 92, 246, 0.10);
-
-            --color-success: #34d399;
-            --color-warning: #fbbf24;
-            --color-error: #f87171;
-
-            /* Typography */
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
-
-            --text-xs: 0.6875rem;
-            --text-sm: 0.8125rem;
-            --text-base: 0.875rem;
-            --text-lg: 1rem;
-            --text-xl: 1.25rem;
-            --text-2xl: 1.5rem;
-            --text-3xl: 2rem;
-            --text-4xl: 2.5rem;
-            --text-5xl: 3.5rem;
-
-            --font-weight-normal: 400;
-            --font-weight-medium: 500;
-            --font-weight-semibold: 600;
-            --font-weight-bold: 700;
-
-            --leading-tight: 1.1;
-            --leading-snug: 1.25;
-            --leading-normal: 1.5;
-
-            --tracking-tight: -0.02em;
-            --tracking-normal: 0;
-            --tracking-wide: 0.05em;
-            --tracking-wider: 0.1em;
-
-            /* Spacing */
-            --space-1: 4px;
-            --space-2: 8px;
-            --space-3: 12px;
-            --space-4: 16px;
-            --space-5: 20px;
-            --space-6: 24px;
-            --space-8: 32px;
-            --space-10: 40px;
-            --space-12: 48px;
-            --space-16: 64px;
-
-            /* Radius */
-            --radius-sm: 6px;
-            --radius-md: 10px;
-            --radius-lg: 14px;
-            --radius-xl: 20px;
-            --radius-2xl: 24px;
-            --radius-full: 9999px;
-
-            /* Shadows */
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-            --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.6);
-            --shadow-glow: 0 0 40px var(--color-accent-glow);
-            --shadow-glow-sm: 0 0 20px var(--color-accent-glow);
-
-            /* Transitions */
-            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-            --duration-fast: 150ms;
-            --duration-normal: 250ms;
-            --duration-slow: 400ms;
-            --duration-slower: 600ms;
-
-            /* Z-index */
-            --z-canvas: 0;
-            --z-overlay: 10;
-            --z-controls: 20;
-            --z-header: 30;
-            --z-modal: 50;
-            --z-command: 60;
-            --z-toast: 70;
+            --bg: #000000;
+            --text-1: #f5f5f5;
+            --text-2: rgba(255,255,255,0.5);
+            --text-3: rgba(255,255,255,0.25);
+            --accent: #8b5cf6;
+            --glass: rgba(255,255,255,0.03);
+            --glass-border: rgba(255,255,255,0.06);
+            --glass-hover: rgba(255,255,255,0.08);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --mono: 'JetBrains Mono', 'SF Mono', monospace;
+            --ease: cubic-bezier(0.16, 1, 0.3, 1);
+            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* --- Reset & Base --- */
-        *, *::before, *::after {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
         html {
-            font-size: 16px;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
         }
 
         body {
-            font-family: var(--font-sans);
-            background: var(--color-bg-primary);
-            color: var(--color-text-primary);
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text-1);
             overflow: hidden;
             width: 100vw;
             height: 100vh;
@@ -135,2571 +38,1848 @@
             user-select: none;
         }
 
-        /* --- Scrollbar --- */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: var(--radius-full);
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* ============================================
-           LAYOUT
-           ============================================ */
-
-        .app {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* --- Canvas Layer --- */
-        #visualizer-canvas {
+        /* ─── Canvas ─── */
+        canvas {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: var(--z-canvas);
+            top: 0; left: 0;
+            width: 100%; height: 100%;
         }
 
-        /* --- Ambient Background --- */
-        .ambient-bg {
+        /* ─── Noise Grain ─── */
+        .noise {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: var(--z-canvas);
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             pointer-events: none;
-            opacity: 0.4;
-            transition: opacity var(--duration-slower) var(--ease-out);
+            opacity: 0.025;
+            z-index: 2;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 200px;
         }
 
-        .ambient-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(120px);
-            transition: all 1s var(--ease-out);
-        }
-
-        .ambient-orb--1 {
-            width: 600px;
-            height: 600px;
-            top: -200px;
-            right: -200px;
-            background: radial-gradient(circle, var(--color-accent) 0%, transparent 70%);
-            opacity: 0.3;
-        }
-
-        .ambient-orb--2 {
-            width: 500px;
-            height: 500px;
-            bottom: -150px;
-            left: -150px;
-            background: radial-gradient(circle, #06b6d4 0%, transparent 70%);
-            opacity: 0.2;
-        }
-
-        .ambient-orb--3 {
-            width: 400px;
-            height: 400px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(circle, #ec4899 0%, transparent 70%);
-            opacity: 0.1;
-        }
-
-        /* --- Noise Overlay --- */
-        .noise-overlay {
+        /* ─── Header ─── */
+        .header {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: var(--z-overlay);
-            pointer-events: none;
-            opacity: 0.03;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-            background-size: 256px 256px;
-        }
-
-        /* --- Top Bar (Header) --- */
-        .top-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: var(--z-header);
+            top: 0; left: 0; right: 0;
+            z-index: 30;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: var(--space-4) var(--space-6);
+            padding: 14px 24px;
+            background: rgba(0,0,0,0.5);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
-            background: rgba(0, 0, 0, 0.5);
-            border-bottom: 1px solid var(--color-border);
-            transition: all var(--duration-normal) var(--ease-out);
+            border-bottom: 1px solid var(--glass-border);
+            transition: transform 0.5s var(--ease), opacity 0.5s var(--ease);
         }
+        .header.hidden { transform: translateY(-100%); opacity: 0; }
 
-        .top-bar.hidden {
-            transform: translateY(-100%);
-            opacity: 0;
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-icon {
+            width: 32px; height: 32px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(139,92,246,0.15);
         }
-
-        .top-bar__left {
-            display: flex;
-            align-items: center;
-            gap: var(--space-4);
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-        }
-
-        .brand__icon {
-            width: 32px;
-            height: 32px;
-            border-radius: var(--radius-md);
-            background: linear-gradient(135deg, var(--color-accent), #ec4899);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: var(--shadow-glow-sm);
-        }
-
-        .brand__icon svg {
-            width: 16px;
-            height: 16px;
-            fill: white;
-        }
-
-        .brand__text {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-        }
-
-        .brand__name {
-            font-size: var(--text-sm);
-            font-weight: var(--font-weight-semibold);
-            letter-spacing: var(--tracking-tight);
-            color: var(--color-text-primary);
-        }
-
-        .brand__tag {
-            font-size: var(--text-xs);
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text-accent);
-            letter-spacing: var(--tracking-wider);
+        .brand-icon svg { width: 16px; height: 16px; fill: white; }
+        .brand-name { font-size: 13px; font-weight: 600; letter-spacing: -0.02em; }
+        .brand-tag {
+            font-size: 10px; font-weight: 600;
+            color: #a78bfa;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
         }
 
-        .top-bar__center {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
+        .header-right { display: flex; gap: 6px; }
 
-        .top-bar__right {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        /* --- Icon Buttons --- */
-        .icon-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: var(--radius-md);
+        /* ─── Icon Btn ─── */
+        .ib {
+            width: 36px; height: 36px;
+            border-radius: 10px;
             border: 1px solid transparent;
             background: transparent;
-            color: var(--color-text-secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: var(--text-2);
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
-            transition: all var(--duration-fast) var(--ease-out);
-            position: relative;
+            transition: all 0.15s var(--ease);
         }
-
-        .icon-btn:hover {
-            background: var(--color-bg-glass-hover);
-            border-color: var(--color-border);
-            color: var(--color-text-primary);
+        .ib:hover {
+            background: var(--glass-hover);
+            border-color: var(--glass-border);
+            color: var(--text-1);
         }
-
-        .icon-btn:active {
-            transform: scale(0.95);
-            background: var(--color-bg-glass-active);
-        }
-
-        .icon-btn.active {
-            background: var(--color-accent-soft);
-            border-color: rgba(139, 92, 246, 0.2);
-            color: var(--color-accent);
-        }
-
-        .icon-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        /* --- Pill Buttons --- */
-        .pill-btn {
-            height: 32px;
-            padding: 0 var(--space-4);
-            border-radius: var(--radius-full);
-            border: 1px solid var(--color-border);
-            background: var(--color-bg-glass);
-            color: var(--color-text-secondary);
-            font-family: var(--font-sans);
-            font-size: var(--text-xs);
-            font-weight: var(--font-weight-medium);
-            letter-spacing: var(--tracking-wide);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            transition: all var(--duration-fast) var(--ease-out);
-            white-space: nowrap;
-        }
-
-        .pill-btn:hover {
-            background: var(--color-bg-glass-hover);
-            border-color: var(--color-border-hover);
-            color: var(--color-text-primary);
-        }
-
-        .pill-btn:active {
-            transform: scale(0.97);
-        }
-
-        .pill-btn.active {
-            background: rgba(139, 92, 246, 0.12);
-            border-color: rgba(139, 92, 246, 0.25);
+        .ib:active { transform: scale(0.93); }
+        .ib.active {
+            background: rgba(139,92,246,0.1);
+            border-color: rgba(139,92,246,0.2);
             color: #a78bfa;
         }
+        .ib svg { width: 18px; height: 18px; }
 
-        .pill-btn svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        /* --- Kbd Tag --- */
-        .kbd {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 20px;
-            height: 20px;
-            padding: 0 var(--space-1);
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            font-family: var(--font-mono);
-            font-size: 10px;
-            color: var(--color-text-tertiary);
-            line-height: 1;
-        }
-
-        /* ============================================
-           WELCOME / UPLOAD ZONE
-           ============================================ */
-
-        .welcome-zone {
+        /* ─── Upload Zone ─── */
+        .upload-zone {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: var(--z-controls);
+            inset: 0;
+            z-index: 20;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            gap: var(--space-8);
-            transition: all var(--duration-slower) var(--ease-out);
+            gap: 24px;
+            transition: all 0.6s var(--ease);
         }
+        .upload-zone.gone { opacity: 0; pointer-events: none; transform: scale(0.97); }
 
-        .welcome-zone.hidden {
-            opacity: 0;
-            pointer-events: none;
-            transform: scale(0.98);
-        }
-
-        .upload-area {
-            position: relative;
-            width: 420px;
+        .upload-card {
+            width: 440px;
             max-width: 90vw;
-            padding: var(--space-12) var(--space-8);
-            border-radius: var(--radius-2xl);
-            border: 1px dashed rgba(255, 255, 255, 0.08);
-            background: var(--color-bg-glass);
+            padding: 56px 40px;
+            border-radius: 24px;
+            border: 1px dashed rgba(255,255,255,0.07);
+            background: var(--glass);
             backdrop-filter: blur(40px) saturate(150%);
             -webkit-backdrop-filter: blur(40px) saturate(150%);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: var(--space-6);
-            cursor: pointer;
-            transition: all var(--duration-normal) var(--ease-out);
+            gap: 24px;
             text-align: center;
+            cursor: pointer;
+            transition: all 0.3s var(--ease);
         }
-
-        .upload-area:hover {
-            border-color: rgba(139, 92, 246, 0.3);
-            background: rgba(139, 92, 246, 0.04);
-            box-shadow: var(--shadow-glow);
+        .upload-card:hover {
+            border-color: rgba(139,92,246,0.3);
+            background: rgba(139,92,246,0.04);
+            box-shadow: 0 0 60px rgba(139,92,246,0.12);
             transform: translateY(-2px);
         }
-
-        .upload-area.drag-over {
-            border-color: var(--color-accent);
-            background: rgba(139, 92, 246, 0.08);
-            box-shadow: var(--shadow-glow), inset 0 0 60px rgba(139, 92, 246, 0.05);
+        .upload-card.drag {
+            border-color: #8b5cf6;
+            background: rgba(139,92,246,0.08);
             transform: scale(1.02);
         }
 
-        .upload-icon-wrapper {
-            width: 72px;
-            height: 72px;
-            border-radius: var(--radius-xl);
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(236, 72, 153, 0.1));
-            border: 1px solid rgba(139, 92, 246, 0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all var(--duration-normal) var(--ease-out);
+        .upload-orbit {
+            width: 80px; height: 80px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(236,72,153,0.1));
+            border: 1px solid rgba(139,92,246,0.12);
+            display: flex; align-items: center; justify-content: center;
+            animation: float 6s ease-in-out infinite;
+        }
+        .upload-orbit svg { width: 30px; height: 30px; color: #a78bfa; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
         }
 
-        .upload-area:hover .upload-icon-wrapper {
-            transform: scale(1.05);
-            box-shadow: var(--shadow-glow-sm);
-        }
+        .upload-h { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+        .upload-p { font-size: 13px; color: var(--text-2); line-height: 1.5; max-width: 280px; }
+        .upload-p em { color: #a78bfa; font-style: normal; font-weight: 500; }
 
-        .upload-icon-wrapper svg {
-            width: 28px;
-            height: 28px;
-            color: var(--color-accent);
-        }
-
-        .upload-title {
-            font-size: var(--text-xl);
-            font-weight: var(--font-weight-semibold);
-            letter-spacing: var(--tracking-tight);
-            color: var(--color-text-primary);
-        }
-
-        .upload-subtitle {
-            font-size: var(--text-sm);
-            color: var(--color-text-secondary);
-            line-height: var(--leading-normal);
-            max-width: 280px;
-        }
-
-        .upload-subtitle span {
-            color: var(--color-text-accent);
-            font-weight: var(--font-weight-medium);
-        }
-
-        .upload-formats {
-            display: flex;
-            gap: var(--space-2);
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .format-tag {
-            padding: var(--space-1) var(--space-3);
-            border-radius: var(--radius-full);
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--color-border);
+        .upload-tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+        .tag {
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
             font-size: 10px;
-            font-family: var(--font-mono);
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text-tertiary);
-            letter-spacing: var(--tracking-wide);
+            font-family: var(--mono);
+            font-weight: 500;
+            color: var(--text-3);
+            letter-spacing: 0.05em;
             text-transform: uppercase;
         }
 
-        .upload-btn-primary {
-            height: 44px;
-            padding: 0 var(--space-8);
-            border-radius: var(--radius-full);
-            border: none;
-            background: linear-gradient(135deg, var(--color-accent), #a855f7);
+        .upload-btn {
+            height: 44px; padding: 0 28px;
+            border-radius: 999px; border: none;
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
             color: white;
-            font-family: var(--font-sans);
-            font-size: var(--text-sm);
-            font-weight: var(--font-weight-semibold);
+            font-family: var(--font);
+            font-size: 13px; font-weight: 600;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            transition: all var(--duration-normal) var(--ease-out);
-            box-shadow: var(--shadow-glow-sm);
+            display: flex; align-items: center; gap: 8px;
+            transition: all 0.25s var(--ease);
+            box-shadow: 0 0 20px rgba(139,92,246,0.15);
         }
-
-        .upload-btn-primary:hover {
+        .upload-btn:hover {
             transform: translateY(-1px);
-            box-shadow: var(--shadow-glow), 0 8px 24px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 0 40px rgba(139,92,246,0.25), 0 8px 24px rgba(139,92,246,0.2);
         }
+        .upload-btn:active { transform: scale(0.97); }
+        .upload-btn svg { width: 16px; height: 16px; }
 
-        .upload-btn-primary:active {
-            transform: scale(0.97);
-        }
-
-        .upload-btn-primary svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        /* --- Demo Link --- */
-        .demo-link {
-            font-size: var(--text-xs);
-            color: var(--color-text-tertiary);
-            cursor: pointer;
-            transition: color var(--duration-fast) var(--ease-out);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        .demo-link:hover {
-            color: var(--color-text-secondary);
-        }
-
-        /* ============================================
-           BOTTOM PLAYER CONTROLS
-           ============================================ */
-
-        .player-bar {
+        /* ─── Quantum Field Theory HUD ─── */
+        .qft-hud {
             position: fixed;
-            bottom: var(--space-5);
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: var(--z-controls);
-            width: min(680px, calc(100vw - 40px));
-            border-radius: var(--radius-2xl);
-            border: 1px solid var(--color-border);
-            background: rgba(10, 10, 10, 0.75);
-            backdrop-filter: blur(40px) saturate(180%);
-            -webkit-backdrop-filter: blur(40px) saturate(180%);
-            box-shadow: var(--shadow-xl), inset 0 1px 0 rgba(255,255,255,0.03);
-            padding: var(--space-4) var(--space-5);
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3);
-            opacity: 0;
-            pointer-events: none;
-            transition: all var(--duration-slow) var(--ease-out);
+            left: 24px; bottom: 130px;
+            z-index: 15;
+            display: flex; flex-direction: column; gap: 10px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.6s var(--ease);
         }
+        .qft-hud.on { opacity: 1; }
 
-        .player-bar.visible {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateX(-50%) translateY(0);
+        .field-readout {
+            display: flex; flex-direction: column; gap: 2px;
         }
-
-        .player-bar.minimized {
-            width: min(400px, calc(100vw - 40px));
-            padding: var(--space-3) var(--space-4);
+        .field-label {
+            font-size: 9px;
+            font-family: var(--mono);
+            font-weight: 600;
+            color: var(--text-3);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
         }
-
-        /* --- Track Info Row --- */
-        .player-track {
-            display: flex;
-            align-items: center;
-            gap: var(--space-4);
+        .field-value {
+            font-size: 11px;
+            font-family: var(--mono);
+            font-weight: 500;
+            color: var(--text-2);
+            display: flex; align-items: center; gap: 6px;
         }
-
-        .track-artwork {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-md);
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.15));
-            border: 1px solid var(--color-border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+        .field-bar {
+            width: 60px; height: 3px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.06);
             overflow: hidden;
+        }
+        .field-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 80ms linear;
+        }
+
+        /* ─── Now Playing ─── */
+        .np {
+            position: fixed;
+            top: 80px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            text-align: center;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.6s var(--ease);
+        }
+        .np.on { opacity: 1; }
+        .np-title {
+            font-size: 28px; font-weight: 700;
+            letter-spacing: -0.03em;
+            text-shadow: 0 2px 30px rgba(0,0,0,0.5);
+        }
+        .np-sub {
+            font-size: 12px; color: var(--text-2);
+            font-family: var(--mono);
+        }
+
+        /* ─── Viz Mode Dock (Right) ─── */
+        .dock {
+            position: fixed;
+            right: 20px; top: 50%;
+            transform: translateY(-50%);
+            z-index: 15;
+            display: flex; flex-direction: column; gap: 6px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s var(--ease);
+        }
+        .dock.on { opacity: 1; pointer-events: auto; }
+
+        .dock-btn {
+            width: 44px; height: 44px;
+            border-radius: 14px;
+            border: 1px solid var(--glass-border);
+            background: rgba(10,10,10,0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: var(--text-2);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s var(--ease);
             position: relative;
         }
-
-        .track-artwork__visualizer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            gap: 2px;
-            height: 100%;
-            padding: 8px 6px 4px;
+        .dock-btn:hover {
+            background: var(--glass-hover);
+            border-color: rgba(255,255,255,0.12);
+            color: var(--text-1);
+            transform: scale(1.05);
         }
+        .dock-btn:active { transform: scale(0.95); }
+        .dock-btn.active {
+            background: rgba(139,92,246,0.12);
+            border-color: rgba(139,92,246,0.3);
+            color: #a78bfa;
+            box-shadow: 0 0 20px rgba(139,92,246,0.12);
+        }
+        .dock-btn svg { width: 18px; height: 18px; }
+        .dock-tip {
+            position: absolute;
+            right: calc(100% + 10px);
+            top: 50%; transform: translateY(-50%) translateX(5px);
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(17,17,17,0.95);
+            border: 1px solid var(--glass-border);
+            font-size: 11px; color: var(--text-2);
+            white-space: nowrap;
+            opacity: 0; pointer-events: none;
+            transition: all 0.15s var(--ease);
+        }
+        .dock-btn:hover .dock-tip { opacity: 1; transform: translateY(-50%) translateX(0); }
 
-        .mini-bar {
-            width: 3px;
-            border-radius: 2px;
-            background: var(--color-accent);
-            transition: height 100ms var(--ease-out);
+        /* ─── Player Bar ─── */
+        .player {
+            position: fixed;
+            bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            width: min(680px, calc(100vw - 40px));
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            background: rgba(10,10,10,0.75);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            box-shadow: 0 16px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+            padding: 16px 20px;
+            display: flex; flex-direction: column; gap: 10px;
+            opacity: 0; pointer-events: none;
+            transition: all 0.5s var(--ease);
+        }
+        .player.on { opacity: 1; pointer-events: auto; }
+
+        .player-top { display: flex; align-items: center; gap: 14px; }
+
+        .art {
+            width: 44px; height: 44px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.15));
+            border: 1px solid var(--glass-border);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; overflow: hidden; position: relative;
+        }
+        .art-bars {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            display: flex; align-items: flex-end; justify-content: center;
+            gap: 2px; height: 100%; padding: 8px 6px 4px;
+        }
+        .ab {
+            width: 3px; border-radius: 2px;
+            background: #8b5cf6;
+            transition: height 80ms var(--ease);
             opacity: 0.8;
         }
 
-        .track-info {
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
+        .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .meta-name {
+            font-size: 13px; font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-
-        .track-info__name {
-            font-size: var(--text-sm);
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .meta-detail {
+            font-size: 11px; color: var(--text-3);
+            font-family: var(--mono);
+            display: flex; align-items: center; gap: 6px;
         }
+        .meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-3); }
 
-        .track-info__detail {
-            font-size: var(--text-xs);
-            color: var(--color-text-tertiary);
-            font-family: var(--font-mono);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
+        /* Progress */
+        .prog-row { display: flex; align-items: center; gap: 10px; }
+        .prog-t {
+            font-size: 10px; font-family: var(--mono);
+            font-weight: 500; color: var(--text-3); min-width: 36px; text-align: center;
         }
-
-        .track-info__dot {
-            width: 3px;
-            height: 3px;
-            border-radius: 50%;
-            background: var(--color-text-tertiary);
+        .prog {
+            flex: 1; height: 4px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            cursor: pointer; position: relative;
+            transition: height 0.15s var(--ease);
         }
-
-        .track-actions {
-            display: flex;
-            align-items: center;
-            gap: var(--space-1);
+        .prog:hover { height: 6px; }
+        .prog-fill {
+            position: absolute; top: 0; left: 0;
+            height: 100%; border-radius: 999px;
+            background: linear-gradient(90deg, #8b5cf6, #a855f7);
+            pointer-events: none;
         }
-
-        /* --- Main Controls Row --- */
-        .player-controls {
-            display: flex;
-            align-items: center;
-            gap: var(--space-4);
-        }
-
-        .controls-group {
-            display: flex;
-            align-items: center;
-            gap: var(--space-1);
-        }
-
-        .controls-group--center {
-            flex: 0 0 auto;
-        }
-
-        .controls-group--left,
-        .controls-group--right {
-            flex: 1;
-        }
-
-        .controls-group--right {
-            justify-content: flex-end;
-        }
-
-        /* Play Button */
-        .play-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: none;
+        .prog-thumb {
+            position: absolute; top: 50%;
+            transform: translate(-50%,-50%) scale(0);
+            width: 14px; height: 14px; border-radius: 50%;
             background: white;
-            color: black;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all var(--duration-fast) var(--ease-out);
-            box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
-        }
-
-        .play-btn:hover {
-            transform: scale(1.08);
-            box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
-        }
-
-        .play-btn:active {
-            transform: scale(0.95);
-        }
-
-        .play-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        .play-btn .icon-pause { display: none; }
-        .play-btn.playing .icon-play { display: none; }
-        .play-btn.playing .icon-pause { display: block; }
-
-        /* --- Progress Bar --- */
-        .progress-row {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-        }
-
-        .progress-time {
-            font-size: 10px;
-            font-family: var(--font-mono);
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text-tertiary);
-            min-width: 36px;
-            text-align: center;
-        }
-
-        .progress-bar {
-            flex: 1;
-            height: 4px;
-            border-radius: var(--radius-full);
-            background: rgba(255, 255, 255, 0.08);
-            cursor: pointer;
-            position: relative;
-            transition: height var(--duration-fast) var(--ease-out);
-        }
-
-        .progress-bar:hover {
-            height: 6px;
-        }
-
-        .progress-bar__fill {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            border-radius: var(--radius-full);
-            background: linear-gradient(90deg, var(--color-accent), #a855f7);
-            transition: width 100ms linear;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             pointer-events: none;
+            transition: transform 0.15s var(--spring);
         }
+        .prog:hover .prog-thumb { transform: translate(-50%,-50%) scale(1); }
 
-        .progress-bar__thumb {
-            position: absolute;
-            top: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            transition: transform var(--duration-fast) var(--ease-spring);
-            pointer-events: none;
-        }
+        /* Controls */
+        .ctrl { display: flex; align-items: center; justify-content: center; gap: 4px; }
 
-        .progress-bar:hover .progress-bar__thumb {
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        /* --- Volume Slider --- */
-        .volume-control {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        .volume-slider {
-            width: 80px;
-            height: 4px;
-            border-radius: var(--radius-full);
-            background: rgba(255, 255, 255, 0.08);
+        .play {
+            width: 44px; height: 44px;
+            border-radius: 50%; border: none;
+            background: white; color: black;
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
-            position: relative;
-            overflow: hidden;
+            transition: all 0.15s var(--ease);
+            box-shadow: 0 2px 8px rgba(255,255,255,0.1);
+        }
+        .play:hover { transform: scale(1.08); box-shadow: 0 4px 16px rgba(255,255,255,0.15); }
+        .play:active { transform: scale(0.95); }
+        .play svg { width: 18px; height: 18px; }
+        .play .ic-pause { display: none; }
+        .play.on .ic-play { display: none; }
+        .play.on .ic-pause { display: block; }
+
+        /* Volume */
+        .vol { display: flex; align-items: center; gap: 6px; position: absolute; right: 20px; }
+        .vol-bar {
+            width: 70px; height: 4px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            cursor: pointer; position: relative; overflow: hidden;
+        }
+        .vol-fill {
+            position: absolute; top: 0; left: 0;
+            height: 100%; border-radius: 999px;
+            background: rgba(255,255,255,0.4);
         }
 
-        .volume-slider__fill {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            border-radius: var(--radius-full);
-            background: rgba(255, 255, 255, 0.5);
-            transition: width 100ms linear;
+        /* ─── Settings Drawer ─── */
+        .drawer-bg {
+            position: fixed; inset: 0; z-index: 49;
+            background: rgba(0,0,0,0.5);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.4s var(--ease);
         }
+        .drawer-bg.on { opacity: 1; pointer-events: auto; }
 
-        /* ============================================
-           SIDE PANELS
-           ============================================ */
-
-        /* --- Visualization Mode Selector (Right Side) --- */
-        .viz-panel {
+        .drawer {
             position: fixed;
-            right: var(--space-5);
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: var(--z-controls);
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-2);
-            opacity: 0;
-            pointer-events: none;
-            transition: all var(--duration-slow) var(--ease-out);
-        }
-
-        .viz-panel.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .viz-mode-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--color-border);
-            background: rgba(10, 10, 10, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            color: var(--color-text-secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all var(--duration-fast) var(--ease-out);
-            position: relative;
-        }
-
-        .viz-mode-btn:hover {
-            background: var(--color-bg-glass-hover);
-            border-color: var(--color-border-hover);
-            color: var(--color-text-primary);
-            transform: scale(1.05);
-        }
-
-        .viz-mode-btn:active {
-            transform: scale(0.95);
-        }
-
-        .viz-mode-btn.active {
-            background: rgba(139, 92, 246, 0.12);
-            border-color: rgba(139, 92, 246, 0.3);
-            color: var(--color-accent);
-            box-shadow: var(--shadow-glow-sm);
-        }
-
-        .viz-mode-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        .viz-mode-btn__tooltip {
-            position: absolute;
-            right: calc(100% + 10px);
-            top: 50%;
-            transform: translateY(-50%) translateX(5px);
-            padding: var(--space-1) var(--space-3);
-            border-radius: var(--radius-sm);
-            background: var(--color-bg-elevated);
-            border: 1px solid var(--color-border);
-            font-size: var(--text-xs);
-            color: var(--color-text-secondary);
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: all var(--duration-fast) var(--ease-out);
-        }
-
-        .viz-mode-btn:hover .viz-mode-btn__tooltip {
-            opacity: 1;
-            transform: translateY(-50%) translateX(0);
-        }
-
-        /* --- Settings Panel (Slide-in from right) --- */
-        .settings-drawer {
-            position: fixed;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: 320px;
-            max-width: 90vw;
-            z-index: var(--z-modal);
-            background: rgba(10, 10, 10, 0.9);
+            top: 0; right: 0; bottom: 0;
+            width: 320px; max-width: 90vw;
+            z-index: 50;
+            background: rgba(10,10,10,0.92);
             backdrop-filter: blur(40px) saturate(150%);
             -webkit-backdrop-filter: blur(40px) saturate(150%);
-            border-left: 1px solid var(--color-border);
-            padding: var(--space-6);
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-6);
+            border-left: 1px solid var(--glass-border);
+            padding: 24px;
+            display: flex; flex-direction: column; gap: 24px;
             transform: translateX(100%);
-            transition: transform var(--duration-slow) var(--ease-out);
+            transition: transform 0.4s var(--ease);
             overflow-y: auto;
         }
+        .drawer.on { transform: translateX(0); }
 
-        .settings-drawer.open {
-            transform: translateX(0);
-        }
+        .dh { display: flex; align-items: center; justify-content: space-between; }
+        .dh-title { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
 
-        .settings-drawer__backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: calc(var(--z-modal) - 1);
-            background: rgba(0, 0, 0, 0.5);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity var(--duration-slow) var(--ease-out);
-        }
-
-        .settings-drawer__backdrop.open {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .drawer-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .drawer-title {
-            font-size: var(--text-lg);
-            font-weight: var(--font-weight-semibold);
-            letter-spacing: var(--tracking-tight);
-        }
-
-        /* --- Settings Section --- */
-        .settings-section {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3);
-        }
-
-        .settings-section__label {
-            font-size: var(--text-xs);
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text-tertiary);
-            letter-spacing: var(--tracking-wider);
+        .ds { display: flex; flex-direction: column; gap: 10px; }
+        .ds-label {
+            font-size: 10px; font-weight: 600;
+            color: var(--text-3);
+            letter-spacing: 0.12em;
             text-transform: uppercase;
         }
 
-        .settings-option {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: var(--space-3) var(--space-4);
-            border-radius: var(--radius-md);
-            border: 1px solid var(--color-border);
-            background: var(--color-bg-glass);
+        .swatches { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; }
+        .sw {
+            aspect-ratio: 1; border-radius: 10px;
+            cursor: pointer; border: 2px solid transparent;
+            transition: all 0.15s var(--ease); position: relative;
+        }
+        .sw:hover { transform: scale(1.12); }
+        .sw.on { border-color: white; box-shadow: 0 0 16px rgba(255,255,255,0.15); }
+        .sw.on::after {
+            content: '✓'; position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%,-50%);
+            font-size: 11px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        .opt {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass);
             cursor: pointer;
-            transition: all var(--duration-fast) var(--ease-out);
+            transition: all 0.15s var(--ease);
         }
+        .opt:hover { background: var(--glass-hover); }
+        .opt-text { font-size: 13px; font-weight: 500; }
 
-        .settings-option:hover {
-            background: var(--color-bg-glass-hover);
-            border-color: var(--color-border-hover);
-        }
-
-        .settings-option.active {
-            background: rgba(139, 92, 246, 0.08);
-            border-color: rgba(139, 92, 246, 0.2);
-        }
-
-        .settings-option__text {
-            font-size: var(--text-sm);
-            font-weight: var(--font-weight-medium);
-        }
-
-        /* --- Color Presets --- */
-        .color-presets {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: var(--space-2);
-        }
-
-        .color-swatch {
-            aspect-ratio: 1;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all var(--duration-fast) var(--ease-out);
-            position: relative;
-        }
-
-        .color-swatch:hover {
-            transform: scale(1.1);
-        }
-
-        .color-swatch.active {
-            border-color: white;
-            box-shadow: 0 0 16px rgba(255, 255, 255, 0.15);
-        }
-
-        .color-swatch.active::after {
-            content: '✓';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 12px;
-            color: white;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-        }
-
-        /* --- Toggle Switch --- */
-        .toggle {
-            width: 40px;
-            height: 22px;
-            border-radius: var(--radius-full);
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid var(--color-border);
-            cursor: pointer;
-            position: relative;
-            transition: all var(--duration-fast) var(--ease-out);
+        .tog {
+            width: 40px; height: 22px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--glass-border);
+            cursor: pointer; position: relative;
+            transition: all 0.15s var(--ease);
             flex-shrink: 0;
         }
+        .tog::after {
+            content: ''; position: absolute;
+            top: 2px; left: 2px;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--text-2);
+            transition: all 0.15s var(--spring);
+        }
+        .tog.on { background: #8b5cf6; border-color: #8b5cf6; }
+        .tog.on::after { transform: translateX(18px); background: white; }
 
-        .toggle::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: var(--color-text-secondary);
-            transition: all var(--duration-fast) var(--ease-spring);
+        .rc { display: flex; flex-direction: column; gap: 6px; }
+        .rc-h { display: flex; justify-content: space-between; }
+        .rc-l { font-size: 13px; color: var(--text-2); }
+        .rc-v { font-size: 11px; font-family: var(--mono); color: #a78bfa; }
+        .rng {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 4px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            outline: none; cursor: pointer;
+        }
+        .rng::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #8b5cf6; border: 2px solid white;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
-        .toggle.active {
-            background: var(--color-accent);
-            border-color: var(--color-accent);
-        }
-
-        .toggle.active::after {
-            transform: translateX(18px);
-            background: white;
-        }
-
-        /* --- Slider (Range) --- */
-        .range-control {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-2);
-        }
-
-        .range-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .range-label {
-            font-size: var(--text-sm);
-            color: var(--color-text-secondary);
-        }
-
-        .range-value {
-            font-size: var(--text-xs);
-            font-family: var(--font-mono);
-            color: var(--color-text-accent);
-        }
-
-        .range-slider {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 4px;
-            border-radius: var(--radius-full);
-            background: rgba(255, 255, 255, 0.08);
-            outline: none;
-            cursor: pointer;
-        }
-
-        .range-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: var(--color-accent);
-            border: 2px solid white;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        /* ============================================
-           COMMAND PALETTE (⌘K)
-           ============================================ */
-
-        .command-palette {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: var(--z-command);
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
+        /* ─── Command Palette ─── */
+        .cmd {
+            position: fixed; inset: 0;
+            z-index: 60;
+            display: flex; align-items: flex-start; justify-content: center;
             padding-top: 20vh;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity var(--duration-normal) var(--ease-out);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.2s var(--ease);
         }
+        .cmd.on { opacity: 1; pointer-events: auto; }
 
-        .command-palette.open {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .command-palette__backdrop {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
+        .cmd-bg {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.6);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
         }
-
-        .command-palette__modal {
+        .cmd-modal {
             position: relative;
             width: min(520px, 90vw);
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--color-border);
-            background: rgba(17, 17, 17, 0.95);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            background: rgba(17,17,17,0.95);
             backdrop-filter: blur(40px);
             -webkit-backdrop-filter: blur(40px);
-            box-shadow: var(--shadow-xl), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            box-shadow: 0 16px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
             overflow: hidden;
             transform: scale(0.96) translateY(-10px);
-            transition: transform var(--duration-normal) var(--ease-spring);
+            transition: transform 0.2s var(--spring);
         }
+        .cmd.on .cmd-modal { transform: scale(1) translateY(0); }
 
-        .command-palette.open .command-palette__modal {
-            transform: scale(1) translateY(0);
+        .cmd-iw {
+            display: flex; align-items: center; gap: 10px;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--glass-border);
         }
-
-        .command-input-wrapper {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-            padding: var(--space-4) var(--space-5);
-            border-bottom: 1px solid var(--color-border);
+        .cmd-iw svg { width: 18px; height: 18px; color: var(--text-3); flex-shrink: 0; }
+        .cmd-in {
+            flex: 1; border: none; background: none; outline: none;
+            font-family: var(--font); font-size: 14px; color: var(--text-1);
         }
+        .cmd-in::placeholder { color: var(--text-3); }
 
-        .command-input-wrapper svg {
-            width: 18px;
-            height: 18px;
-            color: var(--color-text-tertiary);
-            flex-shrink: 0;
-        }
-
-        .command-input {
-            flex: 1;
-            border: none;
-            background: none;
-            outline: none;
-            font-family: var(--font-sans);
-            font-size: var(--text-base);
-            color: var(--color-text-primary);
-        }
-
-        .command-input::placeholder {
-            color: var(--color-text-tertiary);
-        }
-
-        .command-list {
-            padding: var(--space-2);
-            max-height: 320px;
-            overflow-y: auto;
-        }
-
-        .command-group-label {
-            padding: var(--space-2) var(--space-3);
-            font-size: var(--text-xs);
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text-tertiary);
-            letter-spacing: var(--tracking-wider);
+        .cmd-list { padding: 6px; max-height: 320px; overflow-y: auto; }
+        .cmd-gl {
+            padding: 6px 10px;
+            font-size: 10px; font-weight: 600;
+            color: var(--text-3);
+            letter-spacing: 0.12em;
             text-transform: uppercase;
         }
-
-        .command-item {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-            padding: var(--space-2) var(--space-3);
-            border-radius: var(--radius-md);
+        .cmd-it {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 10px; border-radius: 10px;
             cursor: pointer;
-            transition: all var(--duration-fast) var(--ease-out);
+            transition: background 0.1s;
+        }
+        .cmd-it:hover { background: var(--glass-hover); }
+        .cmd-it svg { width: 16px; height: 16px; color: var(--text-3); flex-shrink: 0; }
+        .cmd-it-t { flex: 1; font-size: 13px; color: var(--text-2); }
+        .cmd-it:hover .cmd-it-t { color: var(--text-1); }
+        .kbd {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 20px; height: 20px; padding: 0 4px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            font-family: var(--mono); font-size: 10px;
+            color: var(--text-3); line-height: 1;
         }
 
-        .command-item:hover,
-        .command-item.selected {
-            background: var(--color-bg-glass-hover);
-        }
-
-        .command-item svg {
-            width: 16px;
-            height: 16px;
-            color: var(--color-text-tertiary);
-            flex-shrink: 0;
-        }
-
-        .command-item__text {
-            flex: 1;
-            font-size: var(--text-sm);
-            color: var(--color-text-secondary);
-        }
-
-        .command-item:hover .command-item__text {
-            color: var(--color-text-primary);
-        }
-
-        .command-item__shortcut {
-            display: flex;
-            gap: var(--space-1);
-        }
-
-        /* ============================================
-           NOW PLAYING DISPLAY (Floating center info)
-           ============================================ */
-
-        .now-playing {
-            position: fixed;
-            top: 80px;
-            left: 50%;
+        /* ─── Toast ─── */
+        .toast-box {
+            position: fixed; bottom: 100px; left: 50%;
             transform: translateX(-50%);
-            z-index: var(--z-controls);
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: var(--space-2);
-            opacity: 0;
-            pointer-events: none;
-            transition: all var(--duration-slow) var(--ease-out);
-        }
-
-        .now-playing.visible {
-            opacity: 1;
-        }
-
-        .now-playing__title {
-            font-size: var(--text-3xl);
-            font-weight: var(--font-weight-bold);
-            letter-spacing: var(--tracking-tight);
-            color: var(--color-text-primary);
-            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
-        }
-
-        .now-playing__subtitle {
-            font-size: var(--text-sm);
-            color: var(--color-text-secondary);
-            font-family: var(--font-mono);
-        }
-
-        /* --- Visualizer Stats (Top Left) --- */
-        .viz-stats {
-            position: fixed;
-            bottom: 120px;
-            left: var(--space-6);
-            z-index: var(--z-controls);
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-1);
-            opacity: 0;
-            pointer-events: none;
-            transition: all var(--duration-slow) var(--ease-out);
-        }
-
-        .viz-stats.visible {
-            opacity: 1;
-        }
-
-        .viz-stat {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        .viz-stat__label {
-            font-size: 10px;
-            font-family: var(--font-mono);
-            color: var(--color-text-tertiary);
-            letter-spacing: var(--tracking-wider);
-            text-transform: uppercase;
-        }
-
-        .viz-stat__value {
-            font-size: var(--text-xs);
-            font-family: var(--font-mono);
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text-secondary);
-        }
-
-        /* ============================================
-           TOAST / NOTIFICATION
-           ============================================ */
-
-        .toast-container {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: var(--z-toast);
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-2);
+            z-index: 70;
+            display: flex; flex-direction: column; gap: 6px;
             pointer-events: none;
         }
-
         .toast {
-            padding: var(--space-3) var(--space-5);
-            border-radius: var(--radius-full);
-            background: var(--color-bg-elevated);
-            border: 1px solid var(--color-border);
+            padding: 10px 18px;
+            border-radius: 999px;
+            background: rgba(17,17,17,0.92);
+            border: 1px solid var(--glass-border);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            font-size: var(--text-sm);
-            color: var(--color-text-primary);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            box-shadow: var(--shadow-lg);
-            opacity: 0;
-            transform: translateY(10px) scale(0.95);
-            transition: all var(--duration-normal) var(--ease-spring);
+            font-size: 13px; color: var(--text-1);
+            display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            opacity: 0; transform: translateY(10px) scale(0.95);
+            transition: all 0.25s var(--spring);
             pointer-events: auto;
         }
+        .toast.on { opacity: 1; transform: translateY(0) scale(1); }
+        .toast svg { width: 14px; height: 14px; color: #34d399; }
 
-        .toast.visible {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-
-        .toast svg {
-            width: 14px;
-            height: 14px;
-            color: var(--color-success);
-        }
-
-        /* ============================================
-           FULLSCREEN HINT
-           ============================================ */
-        .fs-hint {
-            position: fixed;
-            bottom: var(--space-5);
-            right: var(--space-5);
-            z-index: var(--z-controls);
-            font-size: var(--text-xs);
-            color: var(--color-text-tertiary);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            opacity: 0;
-            transition: opacity var(--duration-slow) var(--ease-out);
-        }
-
-        .fs-hint.visible {
-            opacity: 1;
-        }
-
-        /* ============================================
-           RESPONSIVE
-           ============================================ */
+        /* ─── Responsive ─── */
         @media (max-width: 640px) {
-            .top-bar__center {
-                display: none;
-            }
-
-            .player-bar {
-                bottom: var(--space-3);
-                width: calc(100vw - 24px);
-                border-radius: var(--radius-xl);
-            }
-
-            .viz-panel {
-                right: var(--space-3);
-            }
-
-            .viz-mode-btn {
-                width: 38px;
-                height: 38px;
-            }
-
-            .volume-control {
-                display: none;
-            }
-
-            .now-playing__title {
-                font-size: var(--text-2xl);
-            }
-
-            .viz-stats {
-                display: none;
-            }
-
-            .upload-area {
-                padding: var(--space-8) var(--space-6);
-            }
-        }
-
-        /* ============================================
-           ANIMATIONS
-           ============================================ */
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.1); }
-            50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.25); }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        @keyframes spin-slow {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .animate-pulse-glow {
-            animation: pulse-glow 3s ease-in-out infinite;
-        }
-
-        .animate-float {
-            animation: float 6s ease-in-out infinite;
-        }
-
-        /* --- Loading State --- */
-        .loading-shimmer {
-            background: linear-gradient(
-                90deg,
-                rgba(255, 255, 255, 0.03) 0%,
-                rgba(255, 255, 255, 0.08) 50%,
-                rgba(255, 255, 255, 0.03) 100%
-            );
-            background-size: 200% 100%;
-            animation: shimmer 1.5s ease-in-out infinite;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+            .vol { display: none; }
+            .qft-hud { display: none; }
+            .np-title { font-size: 22px; }
+            .player { width: calc(100vw - 24px); }
+            .dock { right: 10px; }
+            .dock-btn { width: 38px; height: 38px; border-radius: 12px; }
         }
     </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<div class="app" id="app">
+<canvas id="c"></canvas>
+<div class="noise"></div>
 
-    <!-- ====== Ambient Background ====== -->
-    <div class="ambient-bg" id="ambientBg">
-        <div class="ambient-orb ambient-orb--1"></div>
-        <div class="ambient-orb ambient-orb--2"></div>
-        <div class="ambient-orb ambient-orb--3"></div>
+<!-- Header -->
+<header class="header" id="hdr">
+    <div class="brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+        <div>
+            <div class="brand-name">Sonoria</div>
+            <div class="brand-tag">Quantum Field</div>
+        </div>
     </div>
-
-    <!-- ====== Canvas ====== -->
-    <canvas id="visualizer-canvas"></canvas>
-
-    <!-- ====== Noise Texture ====== -->
-    <div class="noise-overlay"></div>
-
-    <!-- ====== Top Bar ====== -->
-    <header class="top-bar" id="topBar">
-        <div class="top-bar__left">
-            <div class="brand">
-                <div class="brand__icon">
-                    <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-                </div>
-                <div class="brand__text">
-                    <span class="brand__name">Sonoria</span>
-                    <span class="brand__tag">Pro</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="top-bar__center">
-            <button class="pill-btn" onclick="openCommandPalette()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                Search commands
-                <kbd class="kbd">⌘K</kbd>
-            </button>
-        </div>
-
-        <div class="top-bar__right">
-            <button class="icon-btn" id="btnFullscreen" onclick="toggleFullscreen()" title="Fullscreen">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-            </button>
-            <button class="icon-btn" id="btnSettings" onclick="toggleSettings()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-            </button>
-        </div>
-    </header>
-
-    <!-- ====== Welcome / Upload Zone ====== -->
-    <div class="welcome-zone" id="welcomeZone">
-        <div class="upload-area" id="uploadArea" onclick="document.getElementById('audioInput').click()">
-            <div class="upload-icon-wrapper animate-float">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M9 18V5l12-2v13"/>
-                    <circle cx="6" cy="18" r="3"/>
-                    <circle cx="18" cy="16" r="3"/>
-                </svg>
-            </div>
-            <h2 class="upload-title">Drop your music here</h2>
-            <p class="upload-subtitle">
-                or click to browse. Experience your sound in <span>stunning visuals</span>.
-            </p>
-            <div class="upload-formats">
-                <span class="format-tag">MP3</span>
-                <span class="format-tag">WAV</span>
-                <span class="format-tag">FLAC</span>
-                <span class="format-tag">OGG</span>
-                <span class="format-tag">AAC</span>
-            </div>
-            <button class="upload-btn-primary" onclick="event.stopPropagation(); document.getElementById('audioInput').click();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Choose File
-            </button>
-        </div>
-        <button class="demo-link" onclick="loadDemoTrack()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Try with a demo track
+    <div style="position:absolute;left:50%;transform:translateX(-50%)">
+        <button class="ib" onclick="openCmd()" style="width:auto;padding:0 14px;gap:8px;font-size:12px;font-family:var(--font)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            Commands <kbd class="kbd" style="margin-left:6px">⌘K</kbd>
         </button>
     </div>
-
-    <input type="file" id="audioInput" accept="audio/*" style="display:none">
-
-    <!-- ====== Now Playing (Center) ====== -->
-    <div class="now-playing" id="nowPlaying">
-        <h1 class="now-playing__title" id="trackTitle">—</h1>
-        <p class="now-playing__subtitle" id="trackSubtitle">Ready to play</p>
+    <div class="header-right">
+        <button class="ib" onclick="toggleFS()" title="Fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+        <button class="ib" onclick="toggleDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></button>
     </div>
+</header>
 
-    <!-- ====== Viz Mode Panel (Right Side) ====== -->
-    <div class="viz-panel" id="vizPanel">
-        <button class="viz-mode-btn active" data-mode="bars" onclick="setVizMode('bars', this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="3" height="9" rx="1"/><rect x="8" y="6" width="3" height="15" rx="1"/><rect x="13" y="9" width="3" height="12" rx="1"/><rect x="18" y="3" width="3" height="18" rx="1"/></svg>
-            <span class="viz-mode-btn__tooltip">Spectrum Bars</span>
-        </button>
-        <button class="viz-mode-btn" data-mode="wave" onclick="setVizMode('wave', this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c1-3 3-5 5-5s4 5 5 5 3-5 5-5 4 2 5 5"/></svg>
-            <span class="viz-mode-btn__tooltip">Waveform</span>
-        </button>
-        <button class="viz-mode-btn" data-mode="circle" onclick="setVizMode('circle', this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
-            <span class="viz-mode-btn__tooltip">Radial</span>
-        </button>
-        <button class="viz-mode-btn" data-mode="particles" onclick="setVizMode('particles', this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
-            <span class="viz-mode-btn__tooltip">Particles</span>
-        </button>
-        <button class="viz-mode-btn" data-mode="terrain" onclick="setVizMode('terrain', this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20L8 8l4 6 4-10 6 16H2z"/></svg>
-            <span class="viz-mode-btn__tooltip">Terrain</span>
+<!-- Upload -->
+<div class="upload-zone" id="uz">
+    <div class="upload-card" id="uc" onclick="$('fi').click()">
+        <div class="upload-orbit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+        <h2 class="upload-h">Drop your music into the field</h2>
+        <p class="upload-p">Sound will excite the quantum vacuum. <em>Particles emerge from silence.</em></p>
+        <div class="upload-tags">
+            <span class="tag">mp3</span><span class="tag">wav</span><span class="tag">flac</span><span class="tag">ogg</span><span class="tag">aac</span>
+        </div>
+        <button class="upload-btn" onclick="event.stopPropagation();$('fi').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Choose File
         </button>
     </div>
+</div>
+<input type="file" id="fi" accept="audio/*" style="display:none">
 
-    <!-- ====== Bottom Player Bar ====== -->
-    <div class="player-bar" id="playerBar">
-        <!-- Track Info -->
-        <div class="player-track">
-            <div class="track-artwork" id="trackArtwork">
-                <div class="track-artwork__visualizer" id="miniViz">
-                    <div class="mini-bar" style="height:30%"></div>
-                    <div class="mini-bar" style="height:60%"></div>
-                    <div class="mini-bar" style="height:45%"></div>
-                    <div class="mini-bar" style="height:80%"></div>
-                    <div class="mini-bar" style="height:50%"></div>
-                    <div class="mini-bar" style="height:35%"></div>
-                </div>
-            </div>
-            <div class="track-info">
-                <div class="track-info__name" id="playerTrackName">No track loaded</div>
-                <div class="track-info__detail">
-                    <span id="playerFormat">—</span>
-                    <span class="track-info__dot"></span>
-                    <span id="playerSampleRate">—</span>
-                </div>
-            </div>
-            <div class="track-actions">
-                <button class="icon-btn" onclick="shuffleVizMode()" title="Random Mode">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- Progress -->
-        <div class="progress-row">
-            <span class="progress-time" id="currentTime">0:00</span>
-            <div class="progress-bar" id="progressBar" onclick="seekAudio(event)">
-                <div class="progress-bar__fill" id="progressFill" style="width:0%"></div>
-                <div class="progress-bar__thumb" id="progressThumb" style="left:0%"></div>
-            </div>
-            <span class="progress-time" id="totalTime">0:00</span>
-        </div>
-
-        <!-- Controls -->
-        <div class="player-controls">
-            <div class="controls-group controls-group--left">
-                <button class="icon-btn" id="btnShuffle" onclick="toggleShuffle()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-                </button>
-            </div>
-
-            <div class="controls-group controls-group--center">
-                <button class="icon-btn" onclick="skipBack()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
-                </button>
-                <button class="play-btn" id="playBtn" onclick="togglePlay()">
-                    <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-                    <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/></svg>
-                </button>
-                <button class="icon-btn" onclick="skipForward()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
-                </button>
-            </div>
-
-            <div class="controls-group controls-group--right">
-                <div class="volume-control">
-                    <button class="icon-btn" id="btnMute" onclick="toggleMute()">
-                        <svg id="volumeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
-                    </button>
-                    <div class="volume-slider" id="volumeSlider" onclick="setVolume(event)">
-                        <div class="volume-slider__fill" id="volumeFill" style="width:80%"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== Viz Stats (Bottom Left) ====== -->
-    <div class="viz-stats" id="vizStats">
-        <div class="viz-stat">
-            <span class="viz-stat__label">Mode</span>
-            <span class="viz-stat__value" id="statMode">Bars</span>
-        </div>
-        <div class="viz-stat">
-            <span class="viz-stat__label">FPS</span>
-            <span class="viz-stat__value" id="statFps">60</span>
-        </div>
-        <div class="viz-stat">
-            <span class="viz-stat__label">FFT</span>
-            <span class="viz-stat__value" id="statFft">2048</span>
-        </div>
-    </div>
-
-    <!-- ====== Settings Drawer ====== -->
-    <div class="settings-drawer__backdrop" id="settingsBackdrop" onclick="toggleSettings()"></div>
-    <aside class="settings-drawer" id="settingsDrawer">
-        <div class="drawer-header">
-            <h2 class="drawer-title">Settings</h2>
-            <button class="icon-btn" onclick="toggleSettings()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-        </div>
-
-        <!-- Color Theme -->
-        <div class="settings-section">
-            <span class="settings-section__label">Color Theme</span>
-            <div class="color-presets" id="colorPresets">
-                <div class="color-swatch active" style="background: linear-gradient(135deg, #8b5cf6, #a855f7)" data-colors='["#8b5cf6","#a855f7","#c084fc"]' onclick="setColorTheme(this)"></div>
-                <div class="color-swatch" style="background: linear-gradient(135deg, #06b6d4, #22d3ee)" data-colors='["#06b6d4","#22d3ee","#67e8f9"]' onclick="setColorTheme(this)"></div>
-                <div class="color-swatch" style="background: linear-gradient(135deg, #ec4899, #f472b6)" data-colors='["#ec4899","#f472b6","#f9a8d4"]' onclick="setColorTheme(this)"></div>
-                <div class="color-swatch" style="background: linear-gradient(135deg, #f59e0b, #fbbf24)" data-colors='["#f59e0b","#fbbf24","#fcd34d"]' onclick="setColorTheme(this)"></div>
-                <div class="color-swatch" style="background: linear-gradient(135deg, #10b981, #34d399)" data-colors='["#10b981","#34d399","#6ee7b7"]' onclick="setColorTheme(this)"></div>
-                <div class="color-swatch" style="background: linear-gradient(135deg, #ef4444, #f87171)" data-colors='["#ef4444","#f87171","#fca5a5"]' onclick="setColorTheme(this)"></div>
-                <div class="color-swatch" style="background: linear-gradient(135deg, #f5f5f5, #a3a3a3)" data-colors='["#f5f5f5","#d4d4d4","#a3a3a3"]' onclick="setColorTheme(this)"></div>
-                <div class="color-swatch" style="background: linear-gradient(135deg, #8b5cf6, #ec4899)" data-colors='["#8b5cf6","#d946ef","#ec4899"]' onclick="setColorTheme(this)"></div>
-                <div class="color-swatch" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6)" data-colors='["#3b82f6","#6366f1","#8b5cf6"]' onclick="setColorTheme(this)"></div>
-                <div class="color-swatch" style="background: conic-gradient(#ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ef4444)" data-colors='["rainbow"]' onclick="setColorTheme(this)"></div>
-            </div>
-        </div>
-
-        <!-- FFT Size -->
-        <div class="settings-section">
-            <span class="settings-section__label">Audio Analysis</span>
-            <div class="range-control">
-                <div class="range-header">
-                    <span class="range-label">FFT Resolution</span>
-                    <span class="range-value" id="fftValue">2048</span>
-                </div>
-                <input type="range" class="range-slider" id="fftSlider" min="9" max="14" value="11" step="1" oninput="setFFTSize(this.value)">
-            </div>
-            <div class="range-control">
-                <div class="range-header">
-                    <span class="range-label">Smoothing</span>
-                    <span class="range-value" id="smoothValue">0.8</span>
-                </div>
-                <input type="range" class="range-slider" id="smoothSlider" min="0" max="95" value="80" step="5" oninput="setSmoothing(this.value)">
-            </div>
-        </div>
-
-        <!-- Visual Options -->
-        <div class="settings-section">
-            <span class="settings-section__label">Visual Options</span>
-            <div class="settings-option" onclick="toggleOption('mirrorMode', this)">
-                <span class="settings-option__text">Mirror Mode</span>
-                <div class="toggle" id="toggleMirror"></div>
-            </div>
-            <div class="settings-option" onclick="toggleOption('glow', this)">
-                <span class="settings-option__text">Glow Effect</span>
-                <div class="toggle active" id="toggleGlow"></div>
-            </div>
-            <div class="settings-option" onclick="toggleOption('reactive', this)">
-                <span class="settings-option__text">Reactive Background</span>
-                <div class="toggle active" id="toggleReactive"></div>
-            </div>
-            <div class="range-control" style="margin-top:var(--space-2)">
-                <div class="range-header">
-                    <span class="range-label">Visual Intensity</span>
-                    <span class="range-value" id="intensityValue">70%</span>
-                </div>
-                <input type="range" class="range-slider" id="intensitySlider" min="10" max="100" value="70" step="5" oninput="setIntensity(this.value)">
-            </div>
-        </div>
-    </aside>
-
-    <!-- ====== Command Palette ====== -->
-    <div class="command-palette" id="commandPalette">
-        <div class="command-palette__backdrop" onclick="closeCommandPalette()"></div>
-        <div class="command-palette__modal">
-            <div class="command-input-wrapper">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                <input type="text" class="command-input" id="commandInput" placeholder="Type a command..." oninput="filterCommands(this.value)">
-            </div>
-            <div class="command-list" id="commandList">
-                <div class="command-group-label">Visualization</div>
-                <div class="command-item" onclick="executeCommand('bars')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="3" height="9" rx="1"/><rect x="8" y="6" width="3" height="15" rx="1"/><rect x="13" y="9" width="3" height="12" rx="1"/><rect x="18" y="3" width="3" height="18" rx="1"/></svg>
-                    <span class="command-item__text">Spectrum Bars</span>
-                    <span class="command-item__shortcut"><kbd class="kbd">1</kbd></span>
-                </div>
-                <div class="command-item" onclick="executeCommand('wave')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c1-3 3-5 5-5s4 5 5 5 3-5 5-5 4 2 5 5"/></svg>
-                    <span class="command-item__text">Waveform</span>
-                    <span class="command-item__shortcut"><kbd class="kbd">2</kbd></span>
-                </div>
-                <div class="command-item" onclick="executeCommand('circle')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
-                    <span class="command-item__text">Radial</span>
-                    <span class="command-item__shortcut"><kbd class="kbd">3</kbd></span>
-                </div>
-                <div class="command-item" onclick="executeCommand('particles')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/></svg>
-                    <span class="command-item__text">Particles</span>
-                    <span class="command-item__shortcut"><kbd class="kbd">4</kbd></span>
-                </div>
-                <div class="command-item" onclick="executeCommand('terrain')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20L8 8l4 6 4-10 6 16H2z"/></svg>
-                    <span class="command-item__text">Terrain</span>
-                    <span class="command-item__shortcut"><kbd class="kbd">5</kbd></span>
-                </div>
-                <div class="command-group-label">Playback</div>
-                <div class="command-item" onclick="executeCommand('toggle-play')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    <span class="command-item__text">Play / Pause</span>
-                    <span class="command-item__shortcut"><kbd class="kbd">Space</kbd></span>
-                </div>
-                <div class="command-item" onclick="executeCommand('open-file')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    <span class="command-item__text">Open File</span>
-                    <span class="command-item__shortcut"><kbd class="kbd">O</kbd></span>
-                </div>
-                <div class="command-group-label">View</div>
-                <div class="command-item" onclick="executeCommand('fullscreen')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/></svg>
-                    <span class="command-item__text">Toggle Fullscreen</span>
-                    <span class="command-item__shortcut"><kbd class="kbd">F</kbd></span>
-                </div>
-                <div class="command-item" onclick="executeCommand('settings')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
-                    <span class="command-item__text">Open Settings</span>
-                    <span class="command-item__shortcut"><kbd class="kbd">,</kbd></span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== Toast Container ====== -->
-    <div class="toast-container" id="toastContainer"></div>
-
-    <!-- ====== Fullscreen Hint ====== -->
-    <div class="fs-hint" id="fsHint">
-        <kbd class="kbd">F</kbd> Fullscreen
-        <span style="margin-left:8px"><kbd class="kbd">⌘K</kbd> Commands</span>
-    </div>
-
+<!-- Now Playing -->
+<div class="np" id="np">
+    <h1 class="np-title" id="npTitle">—</h1>
+    <p class="np-sub" id="npSub">Quantum vacuum · Ground state</p>
 </div>
 
-<script>
-// ============================================
-// SONORIA PRO — CORE ENGINE
-// ============================================
+<!-- Quantum Field HUD -->
+<div class="qft-hud" id="qftHud">
+    <div class="field-readout">
+        <span class="field-label">Low-Freq Field ψ₁</span>
+        <div class="field-value">
+            <span id="fv1">0.00</span>
+            <div class="field-bar"><div class="field-bar-fill" id="fb1" style="width:0%;background:#8b5cf6"></div></div>
+        </div>
+    </div>
+    <div class="field-readout">
+        <span class="field-label">Mid-Freq Field ψ₂</span>
+        <div class="field-value">
+            <span id="fv2">0.00</span>
+            <div class="field-bar"><div class="field-bar-fill" id="fb2" style="width:0%;background:#06b6d4"></div></div>
+        </div>
+    </div>
+    <div class="field-readout">
+        <span class="field-label">High-Freq Field ψ₃</span>
+        <div class="field-value">
+            <span id="fv3">0.00</span>
+            <div class="field-bar"><div class="field-bar-fill" id="fb3" style="width:0%;background:#ec4899"></div></div>
+        </div>
+    </div>
+    <div class="field-readout">
+        <span class="field-label">Vacuum Energy</span>
+        <div class="field-value">
+            <span id="fv4">0.00</span>
+            <div class="field-bar"><div class="field-bar-fill" id="fb4" style="width:0%;background:#fbbf24"></div></div>
+        </div>
+    </div>
+    <div class="field-readout">
+        <span class="field-label">Excitation Count</span>
+        <div class="field-value"><span id="fv5">0</span></div>
+    </div>
+    <div class="field-readout">
+        <span class="field-label">FPS</span>
+        <div class="field-value"><span id="fvFps">60</span></div>
+    </div>
+</div>
 
-// --- State ---
-const state = {
-    audioContext: null,
-    analyser: null,
-    source: null,
-    audioElement: null,
-    isPlaying: false,
-    currentMode: 'bars',
-    colors: ['#8b5cf6', '#a855f7', '#c084fc'],
-    isRainbow: false,
-    settings: {
-        fftSize: 2048,
-        smoothing: 0.8,
-        mirror: false,
-        glow: true,
-        reactive: true,
-        intensity: 0.7
-    },
-    isMuted: false,
-    volume: 0.8,
-    particles: [],
-    terrainHistory: [],
-    frameCount: 0,
-    lastFpsTime: Date.now(),
-    fps: 60
+<!-- Viz Mode Dock -->
+<div class="dock" id="dock">
+    <button class="dock-btn active" data-m="quantumField" onclick="setMode('quantumField',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="12" r="5" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="9" stroke-dasharray="1 4"/></svg>
+        <span class="dock-tip">Quantum Field</span>
+    </button>
+    <button class="dock-btn" data-m="stringTheory" onclick="setMode('stringTheory',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12c2-4 5-6 8-6s6 4 8 0"/><path d="M2 14c2 4 5 6 8 6s6-4 8 0" opacity="0.4"/></svg>
+        <span class="dock-tip">String Theory</span>
+    </button>
+    <button class="dock-btn" data-m="fieldCollapse" onclick="setMode('fieldCollapse',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18" opacity="0.3"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="dock-tip">Field Collapse</span>
+    </button>
+    <button class="dock-btn" data-m="vacuumFluctuation" onclick="setMode('vacuumFluctuation',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12c1-2 2-3 3-3s2 3 3 3 2-3 3-3 2 3 3 3 2-3 3-3 2 1 3 3"/></svg>
+        <span class="dock-tip">Vacuum Fluctuation</span>
+    </button>
+    <button class="dock-btn" data-m="entanglement" onclick="setMode('entanglement',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M9.5 9.5l5 5" stroke-dasharray="2 2"/><circle cx="17" cy="7" r="2" opacity="0.4"/><circle cx="7" cy="17" r="2" opacity="0.4"/></svg>
+        <span class="dock-tip">Entanglement</span>
+    </button>
+</div>
+
+<!-- Player Bar -->
+<div class="player" id="player">
+    <div class="player-top">
+        <div class="art">
+            <div class="art-bars" id="miniBars">
+                <div class="ab" style="height:30%"></div><div class="ab" style="height:60%"></div>
+                <div class="ab" style="height:45%"></div><div class="ab" style="height:80%"></div>
+                <div class="ab" style="height:50%"></div><div class="ab" style="height:35%"></div>
+            </div>
+        </div>
+        <div class="meta">
+            <div class="meta-name" id="pName">No track loaded</div>
+            <div class="meta-detail"><span id="pFmt">—</span><span class="meta-dot"></span><span id="pSr">—</span></div>
+        </div>
+    </div>
+    <div class="prog-row">
+        <span class="prog-t" id="pCur">0:00</span>
+        <div class="prog" id="pBar" onclick="seek(event)">
+            <div class="prog-fill" id="pFill" style="width:0%"></div>
+            <div class="prog-thumb" id="pThumb" style="left:0%"></div>
+        </div>
+        <span class="prog-t" id="pDur">0:00</span>
+    </div>
+    <div class="ctrl" style="position:relative">
+        <button class="ib" onclick="skip(-10)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg></button>
+        <button class="play" id="playBtn" onclick="togglePlay()">
+            <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            <svg class="ic-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/></svg>
+        </button>
+        <button class="ib" onclick="skip(10)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
+        <div class="vol">
+            <button class="ib" onclick="toggleMute()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg></button>
+            <div class="vol-bar" onclick="setVol(event)"><div class="vol-fill" id="volFill" style="width:80%"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Drawer -->
+<div class="drawer-bg" id="drBg" onclick="toggleDrawer()"></div>
+<aside class="drawer" id="dr">
+    <div class="dh">
+        <h2 class="dh-title">Settings</h2>
+        <button class="ib" onclick="toggleDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="ds">
+        <span class="ds-label">Field Color</span>
+        <div class="swatches" id="swatches">
+            <div class="sw on" style="background:linear-gradient(135deg,#8b5cf6,#a855f7)" data-c='["#8b5cf6","#a855f7","#c084fc"]' onclick="setClr(this)"></div>
+            <div class="sw" style="background:linear-gradient(135deg,#06b6d4,#22d3ee)" data-c='["#06b6d4","#22d3ee","#67e8f9"]' onclick="setClr(this)"></div>
+            <div class="sw" style="background:linear-gradient(135deg,#ec4899,#f472b6)" data-c='["#ec4899","#f472b6","#f9a8d4"]' onclick="setClr(this)"></div>
+            <div class="sw" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)" data-c='["#f59e0b","#fbbf24","#fcd34d"]' onclick="setClr(this)"></div>
+            <div class="sw" style="background:linear-gradient(135deg,#10b981,#34d399)" data-c='["#10b981","#34d399","#6ee7b7"]' onclick="setClr(this)"></div>
+            <div class="sw" style="background:linear-gradient(135deg,#ef4444,#f87171)" data-c='["#ef4444","#f87171","#fca5a5"]' onclick="setClr(this)"></div>
+            <div class="sw" style="background:linear-gradient(135deg,#f5f5f5,#a3a3a3)" data-c='["#f5f5f5","#d4d4d4","#a3a3a3"]' onclick="setClr(this)"></div>
+            <div class="sw" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)" data-c='["#8b5cf6","#d946ef","#ec4899"]' onclick="setClr(this)"></div>
+            <div class="sw" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6)" data-c='["#3b82f6","#6366f1","#8b5cf6"]' onclick="setClr(this)"></div>
+            <div class="sw" style="background:conic-gradient(#ef4444,#f59e0b,#10b981,#3b82f6,#8b5cf6,#ef4444)" data-c='["rainbow"]' onclick="setClr(this)"></div>
+        </div>
+    </div>
+    <div class="ds">
+        <span class="ds-label">Field Analysis</span>
+        <div class="rc">
+            <div class="rc-h"><span class="rc-l">FFT Resolution</span><span class="rc-v" id="fftV">2048</span></div>
+            <input type="range" class="rng" min="9" max="14" value="11" step="1" oninput="setFFT(this.value)">
+        </div>
+        <div class="rc">
+            <div class="rc-h"><span class="rc-l">Field Smoothing</span><span class="rc-v" id="smV">0.80</span></div>
+            <input type="range" class="rng" min="0" max="95" value="80" step="5" oninput="setSm(this.value)">
+        </div>
+        <div class="rc">
+            <div class="rc-h"><span class="rc-l">Field Intensity</span><span class="rc-v" id="intV">80%</span></div>
+            <input type="range" class="rng" id="intSlider" min="10" max="100" value="80" step="5" oninput="setInt(this.value)">
+        </div>
+    </div>
+    <div class="ds">
+        <span class="ds-label">Quantum Options</span>
+        <div class="opt" onclick="togOpt('glow',this)"><span class="opt-text">Field Glow</span><div class="tog on" id="tGlow"></div></div>
+        <div class="opt" onclick="togOpt('trails',this)"><span class="opt-text">Particle Trails</span><div class="tog on" id="tTrails"></div></div>
+        <div class="opt" onclick="togOpt('connections',this)"><span class="opt-text">Entanglement Lines</span><div class="tog on" id="tConn"></div></div>
+        <div class="opt" onclick="togOpt('vacuum',this)"><span class="opt-text">Vacuum Fluctuations</span><div class="tog on" id="tVac"></div></div>
+        <div class="opt" onclick="togOpt('fieldLines',this)"><span class="opt-text">Field Lines</span><div class="tog" id="tFL"></div></div>
+    </div>
+</aside>
+
+<!-- Command Palette -->
+<div class="cmd" id="cmd">
+    <div class="cmd-bg" onclick="closeCmd()"></div>
+    <div class="cmd-modal">
+        <div class="cmd-iw">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input class="cmd-in" id="cmdIn" placeholder="Type a command..." oninput="filterCmd(this.value)">
+        </div>
+        <div class="cmd-list" id="cmdList">
+            <div class="cmd-gl">Field Modes</div>
+            <div class="cmd-it" onclick="exCmd('quantumField')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg><span class="cmd-it-t">Quantum Field</span><kbd class="kbd">1</kbd></div>
+            <div class="cmd-it" onclick="exCmd('stringTheory')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c3-5 7-5 10 0s7 5 10 0"/></svg><span class="cmd-it-t">String Theory</span><kbd class="kbd">2</kbd></div>
+            <div class="cmd-it" onclick="exCmd('fieldCollapse')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg><span class="cmd-it-t">Field Collapse</span><kbd class="kbd">3</kbd></div>
+            <div class="cmd-it" onclick="exCmd('vacuumFluctuation')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c1-2 2-3 3-3s2 3 3 3"/></svg><span class="cmd-it-t">Vacuum Fluctuation</span><kbd class="kbd">4</kbd></div>
+            <div class="cmd-it" onclick="exCmd('entanglement')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/></svg><span class="cmd-it-t">Entanglement</span><kbd class="kbd">5</kbd></div>
+            <div class="cmd-gl">Playback</div>
+            <div class="cmd-it" onclick="exCmd('play')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21"/></svg><span class="cmd-it-t">Play / Pause</span><kbd class="kbd">Space</kbd></div>
+            <div class="cmd-it" onclick="exCmd('file')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/></svg><span class="cmd-it-t">Open File</span><kbd class="kbd">O</kbd></div>
+            <div class="cmd-gl">View</div>
+            <div class="cmd-it" onclick="exCmd('fs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/></svg><span class="cmd-it-t">Fullscreen</span><kbd class="kbd">F</kbd></div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-box" id="toastBox"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  SONORIA · QUANTUM FIELD VISUALIZER
+//  "场是根本，粒子是场的激发态"
+// ═══════════════════════════════════════════
+
+const $ = id => document.getElementById(id);
+const canvas = $('c');
+const cx = canvas.getContext('2d');
+
+// ── State ──
+const S = {
+    actx: null, analyser: null, src: null, audio: null,
+    playing: false, muted: false, vol: 0.8,
+    mode: 'quantumField',
+    colors: ['#8b5cf6','#a855f7','#c084fc'],
+    rainbow: false,
+    fftSize: 2048, smoothing: 0.8, intensity: 0.8,
+    opts: { glow: true, trails: true, connections: true, vacuum: true, fieldLines: false },
+
+    // === QUANTUM FIELD STATE ===
+    // The field itself — a 2D grid of field amplitudes
+    fieldGrid: null,
+    fieldW: 0, fieldH: 0,
+    // Particles that emerge FROM the field
+    quanta: [],
+    // Vacuum fluctuations — zero-point energy
+    vacuumBubbles: [],
+    // String vibration modes
+    strings: [],
+    // Entangled pairs
+    pairs: [],
+    // Terrain history for field collapse
+    fieldHistory: [],
+    // Timing
+    t: 0, dt: 0, lastT: 0,
+    frameCount: 0, fpsTime: 0, fps: 60,
+    renderStarted: false
 };
 
-// --- DOM Refs ---
-const canvas = document.getElementById('visualizer-canvas');
-const ctx = canvas.getContext('2d');
-const welcomeZone = document.getElementById('welcomeZone');
-const playerBar = document.getElementById('playerBar');
-const vizPanel = document.getElementById('vizPanel');
-const nowPlaying = document.getElementById('nowPlaying');
-const vizStats = document.getElementById('vizStats');
-const fsHint = document.getElementById('fsHint');
-
-// --- Canvas Resize ---
-function resizeCanvas() {
-    canvas.width = window.innerWidth * window.devicePixelRatio;
-    canvas.height = window.innerHeight * window.devicePixelRatio;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+// ── Canvas Resize ──
+function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = innerWidth * dpr;
+    canvas.height = innerHeight * dpr;
+    canvas.style.width = innerWidth + 'px';
+    canvas.style.height = innerHeight + 'px';
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    initFieldGrid();
 }
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+addEventListener('resize', resize);
+resize();
 
-// --- Audio Init ---
-function initAudio(file) {
-    if (state.audioContext) {
-        state.audioContext.close();
+// ═══════════════════════════════════════════
+//  THE FIELD — The fundamental substrate
+// ═══════════════════════════════════════════
+
+function initFieldGrid() {
+    // The field is a grid. Each cell has an amplitude.
+    // Resolution: roughly one cell per 12px
+    const cellSize = 12;
+    S.fieldW = Math.ceil(innerWidth / cellSize);
+    S.fieldH = Math.ceil(innerHeight / cellSize);
+    S.fieldGrid = new Float32Array(S.fieldW * S.fieldH);
+}
+
+function exciteField(freqData) {
+    // The audio spectrum DIRECTLY modulates the field
+    // Low frequencies excite the bottom of the grid
+    // High frequencies excite the top
+    // This is the core QFT metaphor: audio = external coupling that excites the field
+
+    const fw = S.fieldW, fh = S.fieldH;
+    const grid = S.fieldGrid;
+    const usable = Math.floor(freqData.length * 0.6);
+
+    // Decay existing field (field relaxation)
+    const decay = 0.88;
+    for (let i = 0; i < grid.length; i++) {
+        grid[i] *= decay;
     }
 
-    state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    state.analyser = state.audioContext.createAnalyser();
-    state.analyser.fftSize = state.settings.fftSize;
-    state.analyser.smoothingTimeConstant = state.settings.smoothing;
+    // Excite field from audio — each frequency band maps to a horizontal row
+    for (let fy = 0; fy < fh; fy++) {
+        // Map y position to frequency band (inverted: low freq at bottom)
+        const freqIdx = Math.floor(((fh - 1 - fy) / fh) * usable);
+        const amplitude = freqData[freqIdx] / 255;
 
-    if (state.audioElement) {
-        state.audioElement.pause();
-        state.audioElement.remove();
-    }
+        for (let fx = 0; fx < fw; fx++) {
+            const idx = fy * fw + fx;
 
-    state.audioElement = new Audio();
-    state.audioElement.crossOrigin = 'anonymous';
+            // Spatial modulation — create wave-like patterns across x
+            const spatialWave = Math.sin((fx / fw) * Math.PI * (2 + amplitude * 6) + S.t * 2) * 0.5 + 0.5;
+            const excitation = amplitude * spatialWave * S.intensity;
 
-    if (typeof file === 'string') {
-        state.audioElement.src = file;
-    } else {
-        state.audioElement.src = URL.createObjectURL(file);
-    }
-
-    state.source = state.audioContext.createMediaElementSource(state.audioElement);
-    state.source.connect(state.analyser);
-    state.analyser.connect(state.audioContext.destination);
-
-    state.audioElement.volume = state.volume;
-
-    // Update UI
-    const fileName = typeof file === 'string' ? 'Demo Track' : file.name.replace(/\.[^/.]+$/, '');
-    document.getElementById('trackTitle').textContent = fileName;
-    document.getElementById('playerTrackName').textContent = fileName;
-
-    const ext = typeof file === 'string' ? 'MP3' : file.name.split('.').pop().toUpperCase();
-    document.getElementById('playerFormat').textContent = ext;
-    document.getElementById('playerSampleRate').textContent = state.audioContext.sampleRate + ' Hz';
-    document.getElementById('trackSubtitle').textContent = ext + ' · ' + state.audioContext.sampleRate + ' Hz';
-
-    // Events
-    state.audioElement.addEventListener('loadedmetadata', () => {
-        document.getElementById('totalTime').textContent = formatTime(state.audioElement.duration);
-    });
-
-    state.audioElement.addEventListener('timeupdate', updateProgress);
-
-    state.audioElement.addEventListener('ended', () => {
-        state.isPlaying = false;
-        document.getElementById('playBtn').classList.remove('playing');
-    });
-
-    // Show player UI
-    welcomeZone.classList.add('hidden');
-    playerBar.classList.add('visible');
-    vizPanel.classList.add('visible');
-    nowPlaying.classList.add('visible');
-    vizStats.classList.add('visible');
-    fsHint.classList.add('visible');
-
-    // Auto play
-    state.audioElement.play().then(() => {
-        state.isPlaying = true;
-        document.getElementById('playBtn').classList.add('playing');
-        showToast('Now playing: ' + fileName);
-    }).catch(() => {
-        showToast('Click play to start');
-    });
-
-    // Start render loop
-    if (!state.renderStarted) {
-        state.renderStarted = true;
-        render();
-    }
-}
-
-// --- File Handling ---
-document.getElementById('audioInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) initAudio(file);
-});
-
-// Drag & Drop
-const uploadArea = document.getElementById('uploadArea');
-['dragenter', 'dragover'].forEach(event => {
-    uploadArea.addEventListener(event, (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('drag-over');
-    });
-});
-['dragleave', 'drop'].forEach(event => {
-    uploadArea.addEventListener(event, (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('drag-over');
-    });
-});
-uploadArea.addEventListener('drop', (e) => {
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('audio/')) {
-        initAudio(file);
-    }
-});
-
-// Also allow drop anywhere on page
-document.body.addEventListener('dragover', (e) => e.preventDefault());
-document.body.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('audio/')) {
-        initAudio(file);
-    }
-});
-
-// --- Demo Track ---
-function loadDemoTrack() {
-    // Use a small demo or prompt to select file
-    showToast('Please select a local audio file');
-    document.getElementById('audioInput').click();
-}
-
-// --- Playback Controls ---
-function togglePlay() {
-    if (!state.audioElement) return;
-    if (state.audioContext.state === 'suspended') {
-        state.audioContext.resume();
-    }
-    if (state.isPlaying) {
-        state.audioElement.pause();
-        state.isPlaying = false;
-        document.getElementById('playBtn').classList.remove('playing');
-    } else {
-        state.audioElement.play();
-        state.isPlaying = true;
-        document.getElementById('playBtn').classList.add('playing');
-    }
-}
-
-function skipBack() {
-    if (!state.audioElement) return;
-    state.audioElement.currentTime = Math.max(0, state.audioElement.currentTime - 10);
-}
-
-function skipForward() {
-    if (!state.audioElement) return;
-    state.audioElement.currentTime = Math.min(state.audioElement.duration, state.audioElement.currentTime + 10);
-}
-
-function seekAudio(e) {
-    if (!state.audioElement) return;
-    const bar = document.getElementById('progressBar');
-    const rect = bar.getBoundingClientRect();
-    const pct = (e.clientX - rect.left) / rect.width;
-    state.audioElement.currentTime = pct * state.audioElement.duration;
-}
-
-function updateProgress() {
-    if (!state.audioElement || !state.audioElement.duration) return;
-    const pct = (state.audioElement.currentTime / state.audioElement.duration) * 100;
-    document.getElementById('progressFill').style.width = pct + '%';
-    document.getElementById('progressThumb').style.left = pct + '%';
-    document.getElementById('currentTime').textContent = formatTime(state.audioElement.currentTime);
-}
-
-function toggleMute() {
-    if (!state.audioElement) return;
-    state.isMuted = !state.isMuted;
-    state.audioElement.muted = state.isMuted;
-    document.getElementById('btnMute').classList.toggle('active', state.isMuted);
-}
-
-function setVolume(e) {
-    const slider = document.getElementById('volumeSlider');
-    const rect = slider.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    state.volume = pct;
-    if (state.audioElement) state.audioElement.volume = pct;
-    document.getElementById('volumeFill').style.width = (pct * 100) + '%';
-}
-
-function formatTime(seconds) {
-    if (isNaN(seconds)) return '0:00';
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return m + ':' + (s < 10 ? '0' : '') + s;
-}
-
-// --- Visualization Modes ---
-function setVizMode(mode, btn) {
-    state.currentMode = mode;
-
-    // Update buttons
-    document.querySelectorAll('.viz-mode-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-
-    // Update stats
-    const modeNames = { bars: 'Bars', wave: 'Wave', circle: 'Radial', particles: 'Particles', terrain: 'Terrain' };
-    document.getElementById('statMode').textContent = modeNames[mode] || mode;
-
-    // Reset particles if needed
-    if (mode === 'particles') initParticles();
-    if (mode === 'terrain') state.terrainHistory = [];
-
-    showToast('Mode: ' + (modeNames[mode] || mode));
-}
-
-function shuffleVizMode() {
-    const modes = ['bars', 'wave', 'circle', 'particles', 'terrain'];
-    const current = modes.indexOf(state.currentMode);
-    let next = current;
-    while (next === current) next = Math.floor(Math.random() * modes.length);
-    const btns = document.querySelectorAll('.viz-mode-btn');
-    setVizMode(modes[next], btns[next]);
-}
-
-// --- Color Themes ---
-function setColorTheme(el) {
-    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-    el.classList.add('active');
-    const colors = JSON.parse(el.dataset.colors);
-    if (colors[0] === 'rainbow') {
-        state.isRainbow = true;
-    } else {
-        state.isRainbow = false;
-        state.colors = colors;
-    }
-}
-
-// --- Settings ---
-function toggleSettings() {
-    const drawer = document.getElementById('settingsDrawer');
-    const backdrop = document.getElementById('settingsBackdrop');
-    const isOpen = drawer.classList.contains('open');
-    drawer.classList.toggle('open');
-    backdrop.classList.toggle('open');
-}
-
-function setFFTSize(val) {
-    const size = Math.pow(2, parseInt(val));
-    state.settings.fftSize = size;
-    if (state.analyser) state.analyser.fftSize = size;
-    document.getElementById('fftValue').textContent = size;
-    document.getElementById('statFft').textContent = size;
-}
-
-function setSmoothing(val) {
-    const v = parseInt(val) / 100;
-    state.settings.smoothing = v;
-    if (state.analyser) state.analyser.smoothingTimeConstant = v;
-    document.getElementById('smoothValue').textContent = v.toFixed(2);
-}
-
-function setIntensity(val) {
-    state.settings.intensity = parseInt(val) / 100;
-    document.getElementById('intensityValue').textContent = val + '%';
-}
-
-function toggleOption(option, el) {
-    state.settings[option] = !state.settings[option];
-    const toggle = el.querySelector('.toggle');
-    if (toggle) toggle.classList.toggle('active');
-}
-
-// --- Fullscreen ---
-function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-    } else {
-        document.exitFullscreen();
-    }
-}
-
-// --- Command Palette ---
-function openCommandPalette() {
-    const palette = document.getElementById('commandPalette');
-    palette.classList.add('open');
-    document.getElementById('commandInput').focus();
-    document.getElementById('commandInput').value = '';
-    filterCommands('');
-}
-
-function closeCommandPalette() {
-    document.getElementById('commandPalette').classList.remove('open');
-}
-
-function filterCommands(query) {
-    const items = document.querySelectorAll('.command-item');
-    const q = query.toLowerCase();
-    items.forEach(item => {
-        const text = item.querySelector('.command-item__text').textContent.toLowerCase();
-        item.style.display = text.includes(q) ? 'flex' : 'none';
-    });
-}
-
-function executeCommand(cmd) {
-    closeCommandPalette();
-    switch (cmd) {
-        case 'bars': case 'wave': case 'circle': case 'particles': case 'terrain':
-            const modes = ['bars', 'wave', 'circle', 'particles', 'terrain'];
-            const idx = modes.indexOf(cmd);
-            setVizMode(cmd, document.querySelectorAll('.viz-mode-btn')[idx]);
-            break;
-        case 'toggle-play': togglePlay(); break;
-        case 'open-file': document.getElementById('audioInput').click(); break;
-        case 'fullscreen': toggleFullscreen(); break;
-        case 'settings': toggleSettings(); break;
-    }
-}
-
-// --- Keyboard Shortcuts ---
-document.addEventListener('keydown', (e) => {
-    // Ignore if typing in input
-    if (e.target.tagName === 'INPUT') {
-        if (e.key === 'Escape') closeCommandPalette();
-        return;
-    }
-
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        const palette = document.getElementById('commandPalette');
-        if (palette.classList.contains('open')) {
-            closeCommandPalette();
-        } else {
-            openCommandPalette();
+            // Field is excited where audio energy exists
+            grid[idx] = Math.max(grid[idx], excitation);
         }
-        return;
     }
 
-    switch (e.key) {
-        case ' ':
-            e.preventDefault();
-            togglePlay();
-            break;
-        case 'f': case 'F':
-            toggleFullscreen();
-            break;
-        case '1': setVizMode('bars', document.querySelectorAll('.viz-mode-btn')[0]); break;
-        case '2': setVizMode('wave', document.querySelectorAll('.viz-mode-btn')[1]); break;
-        case '3': setVizMode('circle', document.querySelectorAll('.viz-mode-btn')[2]); break;
-        case '4': setVizMode('particles', document.querySelectorAll('.viz-mode-btn')[3]); break;
-        case '5': setVizMode('terrain', document.querySelectorAll('.viz-mode-btn')[4]); break;
-        case ',':
-            toggleSettings();
-            break;
-        case 'o': case 'O':
-            document.getElementById('audioInput').click();
-            break;
-        case 'ArrowLeft':
-            skipBack();
-            break;
-        case 'ArrowRight':
-            skipForward();
-            break;
-        case 'Escape':
-            closeCommandPalette();
-            const drawer = document.getElementById('settingsDrawer');
-            if (drawer.classList.contains('open')) toggleSettings();
-            break;
+    // Diffusion: neighboring cells influence each other (field continuity)
+    const temp = new Float32Array(grid.length);
+    for (let y = 1; y < fh - 1; y++) {
+        for (let x = 1; x < fw - 1; x++) {
+            const i = y * fw + x;
+            temp[i] = grid[i] * 0.6 +
+                (grid[i-1] + grid[i+1] + grid[i-fw] + grid[i+fw]) * 0.1;
+        }
     }
-});
-
-// --- Toast Notifications ---
-function showToast(message) {
-    const container = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-        ${message}
-    `;
-    container.appendChild(toast);
-    requestAnimationFrame(() => {
-        toast.classList.add('visible');
-    });
-    setTimeout(() => {
-        toast.classList.remove('visible');
-        setTimeout(() => toast.remove(), 300);
-    }, 2500);
+    for (let i = 0; i < grid.length; i++) {
+        grid[i] = temp[i];
+    }
 }
 
-// --- Particles System ---
-function initParticles() {
-    state.particles = [];
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    for (let i = 0; i < 200; i++) {
-        state.particles.push({
-            x: Math.random() * w,
-            y: Math.random() * h,
-            vx: (Math.random() - 0.5) * 2,
-            vy: (Math.random() - 0.5) * 2,
-            radius: Math.random() * 3 + 1,
-            baseRadius: Math.random() * 3 + 1
+// ═══════════════════════════════════════════
+//  PARTICLES — Excitations of the field
+//  "粒子不是独立的小球，是场的某个激发状态"
+// ═══════════════════════════════════════════
+
+function spawnQuanta(freqData) {
+    const usable = Math.floor(freqData.length * 0.5);
+
+    // Particles EMERGE where the field is strongly excited
+    // They are BORN from the field, not pre-placed
+    for (let i = 0; i < usable; i += 4) {
+        const val = freqData[i] / 255;
+
+        // Only spawn above threshold — this IS the excitation threshold
+        // Below this, the field is in ground state. No particles.
+        if (val > 0.5 && Math.random() < val * 0.15) {
+            // Frequency determines the "type" of particle
+            const freqBand = i / usable; // 0=low, 1=high
+            const w = innerWidth, h = innerHeight;
+
+            S.quanta.push({
+                // Born at a position related to its frequency
+                x: (freqBand * 0.6 + 0.2) * w + (Math.random() - 0.5) * w * 0.3,
+                y: h * (1 - val) * 0.8 + Math.random() * h * 0.2,
+                // Velocity from the field energy
+                vx: (Math.random() - 0.5) * val * 4,
+                vy: -val * 3 - Math.random() * 2,
+                // Properties determined by frequency band
+                radius: 1.5 + val * 4 + freqBand * 2,
+                mass: 1 + (1 - freqBand) * 3, // low freq = more massive
+                charge: freqBand, // determines color
+                energy: val,
+                life: 1.0, // starts fully alive
+                maxLife: 60 + Math.random() * 120, // frames until it decays back into the field
+                age: 0,
+                // Spin (visual rotation)
+                spin: (Math.random() - 0.5) * 0.1,
+                angle: Math.random() * Math.PI * 2,
+                // Trail
+                trail: []
+            });
+        }
+    }
+
+    // Hard cap
+    if (S.quanta.length > 500) {
+        S.quanta = S.quanta.slice(-500);
+    }
+}
+
+function updateQuanta() {
+    const w = innerWidth, h = innerHeight;
+    const fw = S.fieldW, fh = S.fieldH;
+    const grid = S.fieldGrid;
+
+    for (let i = S.quanta.length - 1; i >= 0; i--) {
+        const q = S.quanta[i];
+
+        // Age and decay — particle returns to the field
+        q.age++;
+        q.life = 1 - (q.age / q.maxLife);
+
+        if (q.life <= 0) {
+            // Particle DISSOLVES BACK into the field
+            // Its remaining energy returns to the field grid
+            const gx = Math.floor((q.x / w) * fw);
+            const gy = Math.floor((q.y / h) * fh);
+            if (gx >= 0 && gx < fw && gy >= 0 && gy < fh) {
+                grid[gy * fw + gx] = Math.min(1, grid[gy * fw + gx] + q.energy * 0.3);
+            }
+            S.quanta.splice(i, 1);
+            continue;
+        }
+
+        // Field interaction: particles are PUSHED by the field gradient
+        const gx = Math.floor((q.x / w) * fw);
+        const gy = Math.floor((q.y / h) * fh);
+        if (gx > 0 && gx < fw - 1 && gy > 0 && gy < fh - 1) {
+            const fieldHere = grid[gy * fw + gx];
+            // Gradient force
+            const dfdx = (grid[gy * fw + gx + 1] - grid[gy * fw + gx - 1]) * 0.5;
+            const dfdy = (grid[(gy + 1) * fw + gx] - grid[(gy - 1) * fw + gx]) * 0.5;
+            // Particles move toward higher field values (attraction to energy)
+            q.vx += dfdx * 2 / q.mass;
+            q.vy += dfdy * 2 / q.mass;
+            // Also get energy boost from field
+            q.energy = q.energy * 0.95 + fieldHere * 0.05;
+        }
+
+        // Slight upward drift for light particles
+        q.vy -= 0.02 / q.mass;
+
+        // Damping
+        q.vx *= 0.98;
+        q.vy *= 0.98;
+
+        // Move
+        q.x += q.vx;
+        q.y += q.vy;
+        q.angle += q.spin;
+
+        // Trail
+        if (S.opts.trails) {
+            q.trail.push({ x: q.x, y: q.y, a: q.life });
+            if (q.trail.length > 20) q.trail.shift();
+        }
+
+        // Wrap
+        if (q.x < -50) q.x = w + 50;
+        if (q.x > w + 50) q.x = -50;
+        if (q.y < -50 || q.y > h + 50) {
+            S.quanta.splice(i, 1);
+        }
+    }
+}
+
+// ═══════════════════════════════════════════
+//  VACUUM FLUCTUATIONS — Zero-point energy
+//  Even in silence, the quantum vacuum is never truly empty
+// ═══════════════════════════════════════════
+
+function updateVacuum() {
+    if (!S.opts.vacuum) return;
+
+    // Spontaneously create virtual particle-antiparticle pairs
+    if (Math.random() < 0.08) {
+        const x = Math.random() * innerWidth;
+        const y = Math.random() * innerHeight;
+        S.vacuumBubbles.push({
+            x, y,
+            radius: 0,
+            maxRadius: 10 + Math.random() * 30,
+            life: 1.0,
+            speed: 0.3 + Math.random() * 0.5
         });
     }
-}
 
-// ============================================
-// RENDER ENGINE
-// ============================================
-
-function getColor(i, total) {
-    if (state.isRainbow) {
-        const hue = (i / total) * 360 + (Date.now() * 0.05 % 360);
-        return `hsl(${hue % 360}, 80%, 65%)`;
+    for (let i = S.vacuumBubbles.length - 1; i >= 0; i--) {
+        const b = S.vacuumBubbles[i];
+        b.radius += b.speed;
+        b.life = 1 - (b.radius / b.maxRadius);
+        if (b.life <= 0) {
+            S.vacuumBubbles.splice(i, 1);
+        }
     }
-    const t = i / total;
-    const c = state.colors;
-    if (t < 0.5) {
-        return lerpColor(c[0], c[1], t * 2);
+
+    if (S.vacuumBubbles.length > 30) {
+        S.vacuumBubbles = S.vacuumBubbles.slice(-30);
     }
-    return lerpColor(c[1], c[2] || c[1], (t - 0.5) * 2);
 }
 
-function lerpColor(a, b, t) {
-    const ah = parseInt(a.replace('#', ''), 16);
-    const bh = parseInt(b.replace('#', ''), 16);
-    const ar = (ah >> 16) & 0xff, ag = (ah >> 8) & 0xff, ab = ah & 0xff;
-    const br = (bh >> 16) & 0xff, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
-    const rr = Math.round(ar + (br - ar) * t);
-    const rg = Math.round(ag + (bg - ag) * t);
-    const rb = Math.round(ab + (bb - ab) * t);
-    return `rgb(${rr},${rg},${rb})`;
+// ═══════════════════════════════════════════
+//  RENDERING MODES
+// ═══════════════════════════════════════════
+
+function getClr(t01) {
+    if (S.rainbow) {
+        const hue = (t01 * 360 + S.t * 30) % 360;
+        return `hsl(${hue}, 80%, 65%)`;
+    }
+    const c = S.colors;
+    if (t01 < 0.5) return lerpClr(c[0], c[1], t01 * 2);
+    return lerpClr(c[1], c[2] || c[1], (t01 - 0.5) * 2);
 }
 
-function hexToRgba(hex, alpha) {
-    const h = parseInt(hex.replace('#', ''), 16);
-    return `rgba(${(h >> 16) & 0xff},${(h >> 8) & 0xff},${h & 0xff},${alpha})`;
+function lerpClr(a, b, t) {
+    const ah = parseInt(a.slice(1), 16), bh = parseInt(b.slice(1), 16);
+    const ar = (ah>>16)&0xff, ag = (ah>>8)&0xff, ab_ = ah&0xff;
+    const br = (bh>>16)&0xff, bg = (bh>>8)&0xff, bb = bh&0xff;
+    const r = Math.round(ar+(br-ar)*t), g = Math.round(ag+(bg-ag)*t), b2 = Math.round(ab_+(bb-ab_)*t);
+    return `rgb(${r},${g},${b2})`;
 }
+
+function hexRgba(hex, a) {
+    const h = parseInt(hex.slice(1), 16);
+    return `rgba(${(h>>16)&0xff},${(h>>8)&0xff},${h&0xff},${a})`;
+}
+
+// ─── Mode 1: Quantum Field ───
+// Visualize the field grid + particles emerging from it
+function renderQuantumField(freqData, timeData) {
+    const w = innerWidth, h = innerHeight;
+    const fw = S.fieldW, fh = S.fieldH;
+    const grid = S.fieldGrid;
+    const cellW = w / fw, cellH = h / fh;
+
+    // Draw the field as a luminous grid
+    for (let fy = 0; fy < fh; fy++) {
+        for (let fx = 0; fx < fw; fx++) {
+            const val = grid[fy * fw + fx];
+            if (val < 0.05) continue; // Skip ground state cells (optimization)
+
+            const x = fx * cellW, y = fy * cellH;
+            const clr = getClr(fy / fh);
+
+            // Field as glowing points
+            cx.globalAlpha = val * 0.6;
+            cx.fillStyle = clr;
+            const size = 2 + val * 4;
+            cx.beginPath();
+            cx.arc(x + cellW/2, y + cellH/2, size, 0, Math.PI * 2);
+            cx.fill();
+
+            if (S.opts.glow && val > 0.4) {
+                cx.globalAlpha = val * 0.15;
+                cx.beginPath();
+                cx.arc(x + cellW/2, y + cellH/2, size * 4, 0, Math.PI * 2);
+                cx.fill();
+            }
+        }
+    }
+    cx.globalAlpha = 1;
+
+    // Draw particles (field excitations)
+    drawQuanta();
+
+    // Draw vacuum fluctuations
+    drawVacuum();
+
+    // Field lines
+    if (S.opts.fieldLines) {
+        drawFieldLines(grid, fw, fh, w, h);
+    }
+}
+
+// ─── Mode 2: String Theory ───
+// Audio frequencies as vibrating strings in a higher-dimensional space
+function renderStringTheory(freqData) {
+    const w = innerWidth, h = innerHeight;
+    const usable = Math.floor(freqData.length * 0.4);
+    const numStrings = 24;
+
+    for (let s = 0; s < numStrings; s++) {
+        const y0 = (s + 1) / (numStrings + 1) * h;
+        const freqStart = Math.floor((s / numStrings) * usable);
+        const val = freqData[freqStart] / 255;
+
+        cx.beginPath();
+
+        const points = 200;
+        for (let i = 0; i <= points; i++) {
+            const t01 = i / points;
+            const x = t01 * w;
+
+            // Multiple harmonic modes superimposed
+            let dy = 0;
+            const harmonics = 3 + Math.floor(val * 5);
+            for (let n = 1; n <= harmonics; n++) {
+                const amplitude = val * (40 + s * 2) / (n * 0.7) * S.intensity;
+                const phase = S.t * (1 + n * 0.5) + s * 0.3;
+                dy += Math.sin(t01 * Math.PI * n + phase) * amplitude;
+            }
+
+            const y = y0 + dy;
+            if (i === 0) cx.moveTo(x, y);
+            else cx.lineTo(x, y);
+        }
+
+        const clr = getClr(s / numStrings);
+        cx.strokeStyle = clr;
+        cx.lineWidth = 1 + val * 2;
+        cx.globalAlpha = 0.3 + val * 0.7;
+
+        if (S.opts.glow && val > 0.3) {
+            cx.shadowBlur = 15 + val * 20;
+            cx.shadowColor = clr;
+        }
+
+        cx.stroke();
+        cx.shadowBlur = 0;
+    }
+
+    cx.globalAlpha = 1;
+    drawQuanta();
+    drawVacuum();
+}
+
+// ─── Mode 3: Field Collapse ───
+// Radial field that collapses from superposition to definite state with music
+function renderFieldCollapse(freqData) {
+    const w = innerWidth, h = innerHeight;
+    const cx_ = w / 2, cy = h / 2;
+    const usable = Math.floor(freqData.length * 0.5);
+    const avg = freqData.reduce((a,b) => a+b, 0) / freqData.length / 255;
+
+    // Multiple concentric field rings — like probability density shells
+    const rings = 8;
+    for (let r = 0; r < rings; r++) {
+        const baseR = (r + 1) / rings * Math.min(w, h) * 0.45;
+        const freqBand = Math.floor((r / rings) * usable);
+        const val = freqData[freqBand] / 255;
+
+        const points = 120;
+        cx.beginPath();
+        for (let i = 0; i <= points; i++) {
+            const angle = (i / points) * Math.PI * 2;
+            // Uncertainty principle: more energy = more defined shape
+            // Low energy = fuzzy, spread out (superposition)
+            // High energy = sharp, collapsed (definite state)
+            const noise = (1 - val) * 30 * Math.sin(angle * (3 + r) + S.t * (1 + r * 0.3));
+            const spike = val * 60 * Math.sin(angle * (8 + r * 2) + S.t * 2);
+            const radius = baseR + noise + spike;
+
+            const x = cx_ + Math.cos(angle) * radius;
+            const y = cy + Math.sin(angle) * radius;
+            if (i === 0) { cx.moveTo(x, y); } else { cx.lineTo(x, y); }
+        }
+        cx.closePath();
+
+        const clr = getClr(r / rings);
+        cx.strokeStyle = clr;
+        cx.lineWidth = 1 + val;
+        cx.globalAlpha = 0.2 + val * 0.5;
+
+        if (S.opts.glow) {
+            cx.shadowBlur = 10 + val * 25;
+            cx.shadowColor = clr;
+        }
+        cx.stroke();
+        cx.shadowBlur = 0;
+
+        // Fill with probability density
+        const fillAlpha = val * 0.04;
+        cx.fillStyle = hexRgba(S.colors[0], fillAlpha);
+        cx.fill();
+    }
+
+    // Center — the "observation point"
+    const centerPulse = avg;
+    cx.beginPath();
+    cx.arc(cx_, cy, 3 + centerPulse * 15, 0, Math.PI * 2);
+    cx.fillStyle = S.colors[0];
+    cx.globalAlpha = 0.5 + centerPulse * 0.5;
+    if (S.opts.glow) {
+        cx.shadowBlur = 30 + centerPulse * 40;
+        cx.shadowColor = S.colors[0];
+    }
+    cx.fill();
+    cx.shadowBlur = 0;
+    cx.globalAlpha = 1;
+
+    drawQuanta();
+    drawVacuum();
+}
+
+// ─── Mode 4: Vacuum Fluctuation ───
+// The ground state is not empty — it seethes with virtual particles
+function renderVacuumFluctuation(freqData, timeData) {
+    const w = innerWidth, h = innerHeight;
+    const usable = Math.floor(freqData.length * 0.5);
+    const avg = freqData.reduce((a,b) => a+b, 0) / freqData.length / 255;
+
+    // Draw the "vacuum sea" — undulating ground state
+    const layers = 12;
+    for (let l = 0; l < layers; l++) {
+        const y0 = h * 0.3 + (l / layers) * h * 0.5;
+        const freqBand = Math.floor((l / layers) * usable);
+        const val = freqData[freqBand] / 255;
+
+        cx.beginPath();
+        const pts = 300;
+        for (let i = 0; i <= pts; i++) {
+            const t01 = i / pts;
+            const x = t01 * w;
+
+            // Superposition of multiple wavelengths — like real quantum vacuum
+            let dy = 0;
+            dy += Math.sin(t01 * Math.PI * 4 + S.t * 1.2 + l) * 15 * val;
+            dy += Math.sin(t01 * Math.PI * 8 + S.t * 0.8 - l * 0.5) * 8 * val;
+            dy += Math.sin(t01 * Math.PI * 16 + S.t * 2.5 + l * 0.3) * 3 * val * S.intensity;
+            // Zero-point fluctuation even when silent
+            dy += Math.sin(t01 * Math.PI * 6 + S.t * 0.5 + l * 1.1) * 3;
+
+            const y = y0 + dy;
+            if (i === 0) cx.moveTo(x, y);
+            else cx.lineTo(x, y);
+        }
+
+        cx.lineTo(w, h); cx.lineTo(0, h); cx.closePath();
+
+        const clr = getClr(l / layers);
+        cx.fillStyle = hexRgba(clr.startsWith('rgb') ? S.colors[Math.floor(l/layers*2)] || S.colors[0] : S.colors[0], 0.03 + val * 0.06);
+        cx.fill();
+
+        cx.strokeStyle = clr;
+        cx.lineWidth = 0.5 + val;
+        cx.globalAlpha = 0.15 + val * 0.5;
+        if (S.opts.glow && val > 0.3) {
+            cx.shadowBlur = 8;
+            cx.shadowColor = clr;
+        }
+        cx.stroke();
+        cx.shadowBlur = 0;
+        cx.globalAlpha = 1;
+    }
+
+    drawQuanta();
+    drawVacuum();
+}
+
+// ─── Mode 5: Entanglement ───
+// Particles born in correlated pairs, connected across space
+function renderEntanglement(freqData) {
+    const w = innerWidth, h = innerHeight;
+    const usable = Math.floor(freqData.length * 0.5);
+    const avg = freqData.reduce((a,b) => a+b, 0) / freqData.length / 255;
+
+    // Spawn entangled pairs
+    for (let i = 0; i < usable; i += 8) {
+        const val = freqData[i] / 255;
+        if (val > 0.6 && Math.random() < val * 0.08) {
+            const cx_ = Math.random() * w;
+            const cy = Math.random() * h;
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 40 + Math.random() * 100;
+
+            S.pairs.push({
+                // Particle A
+                ax: cx_ + Math.cos(angle) * dist,
+                ay: cy + Math.sin(angle) * dist,
+                avx: Math.cos(angle) * val * 2,
+                avy: Math.sin(angle) * val * 2,
+                // Particle B (anti-correlated)
+                bx: cx_ - Math.cos(angle) * dist,
+                by: cy - Math.sin(angle) * dist,
+                bvx: -Math.cos(angle) * val * 2,
+                bvy: -Math.sin(angle) * val * 2,
+                // Shared properties
+                charge: i / usable,
+                energy: val,
+                life: 1.0,
+                maxLife: 80 + Math.random() * 100,
+                age: 0,
+                radius: 2 + val * 4
+            });
+        }
+    }
+
+    if (S.pairs.length > 120) S.pairs = S.pairs.slice(-120);
+
+    // Update and draw pairs
+    for (let i = S.pairs.length - 1; i >= 0; i--) {
+        const p = S.pairs[i];
+        p.age++;
+        p.life = 1 - (p.age / p.maxLife);
+        if (p.life <= 0) { S.pairs.splice(i, 1); continue; }
+
+        // Move
+        p.ax += p.avx; p.ay += p.avy;
+        p.bx += p.bvx; p.by += p.bvy;
+        p.avx *= 0.99; p.avy *= 0.99;
+        p.bvx *= 0.99; p.bvy *= 0.99;
+
+        const clrA = getClr(p.charge);
+        const clrB = getClr(1 - p.charge);
+
+        // Entanglement line (spooky action at a distance)
+        if (S.opts.connections) {
+            cx.beginPath();
+            cx.moveTo(p.ax, p.ay);
+            // Curved connection — the entanglement "thread"
+            const midX = (p.ax + p.bx) / 2;
+            const midY = (p.ay + p.by) / 2;
+            const waveOff = Math.sin(S.t * 3 + p.charge * 10) * 20 * p.life;
+            cx.quadraticCurveTo(midX + waveOff, midY - waveOff, p.bx, p.by);
+            cx.strokeStyle = hexRgba(S.colors[0], p.life * 0.15);
+            cx.lineWidth = 1;
+            if (S.opts.glow) {
+                cx.shadowBlur = 8;
+                cx.shadowColor = S.colors[0];
+            }
+            cx.stroke();
+            cx.shadowBlur = 0;
+        }
+
+        // Particle A
+        cx.beginPath();
+        cx.arc(p.ax, p.ay, p.radius * p.life, 0, Math.PI * 2);
+        cx.fillStyle = clrA;
+        cx.globalAlpha = p.life * 0.8;
+        if (S.opts.glow) { cx.shadowBlur = 12; cx.shadowColor = clrA; }
+        cx.fill();
+
+        // Particle B
+        cx.beginPath();
+        cx.arc(p.bx, p.by, p.radius * p.life, 0, Math.PI * 2);
+        cx.fillStyle = clrB;
+        cx.fill();
+        cx.shadowBlur = 0;
+        cx.globalAlpha = 1;
+    }
+
+    drawQuanta();
+    drawVacuum();
+}
+
+// ─── Shared: Draw Quanta ───
+function drawQuanta() {
+    for (const q of S.quanta) {
+        const clr = getClr(q.charge);
+
+        // Trail
+        if (S.opts.trails && q.trail.length > 1) {
+            cx.beginPath();
+            for (let j = 0; j < q.trail.length; j++) {
+                const p = q.trail[j];
+                if (j === 0) cx.moveTo(p.x, p.y);
+                else cx.lineTo(p.x, p.y);
+            }
+            cx.strokeStyle = hexRgba(
+                S.rainbow ? S.colors[0] : (typeof clr === 'string' && clr.startsWith('rgb') ? S.colors[0] : S.colors[0]),
+                q.life * 0.15
+            );
+            cx.lineWidth = q.radius * 0.5 * q.life;
+            cx.stroke();
+        }
+
+        // Particle body
+        const r = q.radius * (0.5 + q.energy * 0.5) * q.life;
+        cx.beginPath();
+        cx.arc(q.x, q.y, r, 0, Math.PI * 2);
+        cx.fillStyle = clr;
+        cx.globalAlpha = q.life * (0.4 + q.energy * 0.6);
+
+        if (S.opts.glow && q.energy > 0.3) {
+            cx.shadowBlur = 10 + q.energy * 15;
+            cx.shadowColor = clr;
+        }
+
+        cx.fill();
+        cx.shadowBlur = 0;
+
+        // Inner core
+        if (r > 3) {
+            cx.beginPath();
+            cx.arc(q.x, q.y, r * 0.4, 0, Math.PI * 2);
+            cx.fillStyle = 'rgba(255,255,255,0.5)';
+            cx.globalAlpha = q.life * q.energy * 0.6;
+            cx.fill();
+        }
+
+        cx.globalAlpha = 1;
+    }
+}
+
+// ─── Shared: Draw Vacuum ───
+function drawVacuum() {
+    for (const b of S.vacuumBubbles) {
+        cx.beginPath();
+        cx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+        cx.strokeStyle = hexRgba(S.colors[0], b.life * 0.08);
+        cx.lineWidth = 0.5;
+        cx.stroke();
+    }
+}
+
+// ─── Shared: Field Lines ───
+function drawFieldLines(grid, fw, fh, w, h) {
+    const cellW = w / fw, cellH = h / fh;
+    cx.strokeStyle = hexRgba(S.colors[0], 0.04);
+    cx.lineWidth = 0.5;
+
+    const step = 4;
+    for (let y = 0; y < fh - step; y += step) {
+        for (let x = 0; x < fw - step; x += step) {
+            const val = grid[y * fw + x];
+            if (val < 0.15) continue;
+
+            const x0 = x * cellW + cellW/2;
+            const y0 = y * cellH + cellH/2;
+
+            // Gradient direction
+            const dx = x + step < fw ? grid[y * fw + x + step] - val : 0;
+            const dy = y + step < fh ? grid[(y + step) * fw + x] - val : 0;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 0.01) continue;
+
+            cx.beginPath();
+            cx.moveTo(x0, y0);
+            cx.lineTo(x0 + (dx/len) * cellW * 3, y0 + (dy/len) * cellH * 3);
+            cx.globalAlpha = val * 0.3;
+            cx.stroke();
+        }
+    }
+    cx.globalAlpha = 1;
+}
+
+// ═══════════════════════════════════════════
+//  MAIN RENDER LOOP
+// ═══════════════════════════════════════════
 
 function render() {
     requestAnimationFrame(render);
 
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const now = performance.now() / 1000;
+    S.dt = now - S.lastT;
+    S.lastT = now;
+    S.t = now;
 
-    // FPS counter
-    state.frameCount++;
-    const now = Date.now();
-    if (now - state.lastFpsTime >= 1000) {
-        state.fps = state.frameCount;
-        state.frameCount = 0;
-        state.lastFpsTime = now;
-        document.getElementById('statFps').textContent = state.fps;
+    // FPS
+    S.frameCount++;
+    if (now - S.fpsTime >= 1) {
+        S.fps = S.frameCount;
+        S.frameCount = 0;
+        S.fpsTime = now;
+        $('fvFps').textContent = S.fps;
     }
 
-    // Clear
-    ctx.clearRect(0, 0, w, h);
+    const w = innerWidth, h = innerHeight;
+    cx.clearRect(0, 0, w, h);
 
-    if (!state.analyser) return;
+    if (!S.analyser) return;
 
-    const bufferLength = state.analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    state.analyser.getByteFrequencyData(dataArray);
+    const bufLen = S.analyser.frequencyBinCount;
+    const freqData = new Uint8Array(bufLen);
+    const timeData = new Uint8Array(bufLen);
+    S.analyser.getByteFrequencyData(freqData);
+    S.analyser.getByteTimeDomainData(timeData);
 
-    const timeArray = new Uint8Array(bufferLength);
-    state.analyser.getByteTimeDomainData(timeArray);
+    // ── Core QFT Pipeline ──
+    // 1. Audio excites the field
+    exciteField(freqData);
+    // 2. Field spawns particles where excited above threshold
+    spawnQuanta(freqData);
+    // 3. Particles evolve under field forces
+    updateQuanta();
+    // 4. Vacuum fluctuates
+    updateVacuum();
 
-    const intensity = state.settings.intensity;
-
-    // Update mini viz bars
-    updateMiniViz(dataArray);
-
-    // Update ambient background reactivity
-    if (state.settings.reactive && state.isPlaying) {
-        const avg = dataArray.reduce((a, b) => a + b) / bufferLength;
-        const ambientBg = document.getElementById('ambientBg');
-        ambientBg.style.opacity = 0.2 + (avg / 255) * 0.5;
+    // ── Render active mode ──
+    switch (S.mode) {
+        case 'quantumField': renderQuantumField(freqData, timeData); break;
+        case 'stringTheory': renderStringTheory(freqData); break;
+        case 'fieldCollapse': renderFieldCollapse(freqData); break;
+        case 'vacuumFluctuation': renderVacuumFluctuation(freqData, timeData); break;
+        case 'entanglement': renderEntanglement(freqData); break;
     }
 
-    // Render based on mode
-    switch (state.currentMode) {
-        case 'bars': renderBars(dataArray, w, h, intensity); break;
-        case 'wave': renderWave(timeArray, dataArray, w, h, intensity); break;
-        case 'circle': renderCircle(dataArray, w, h, intensity); break;
-        case 'particles': renderParticles(dataArray, w, h, intensity); break;
-        case 'terrain': renderTerrain(dataArray, w, h, intensity); break;
-    }
+    // ── Update HUD ──
+    updateHUD(freqData);
+    updateMiniViz(freqData);
 }
 
-// --- Bars Visualization ---
-function renderBars(data, w, h, intensity) {
-    const usable = Math.floor(data.length * 0.6);
-    const barCount = Math.min(usable, 128);
-    const gap = 3;
-    const totalGaps = (barCount - 1) * gap;
-    const availableWidth = w * 0.8;
-    const barWidth = (availableWidth - totalGaps) / barCount;
-    const startX = (w - availableWidth) / 2;
+// ── HUD Update ──
+function updateHUD(freqData) {
+    const len = freqData.length;
+    const third = Math.floor(len / 3);
 
-    for (let i = 0; i < barCount; i++) {
-        const dataIdx = Math.floor((i / barCount) * usable);
-        const val = data[dataIdx] / 255;
-        const barH = val * h * 0.6 * intensity;
-        const x = startX + i * (barWidth + gap);
-        const y = h - barH;
+    // Band energies
+    let low = 0, mid = 0, high = 0;
+    for (let i = 0; i < third; i++) low += freqData[i];
+    for (let i = third; i < third*2; i++) mid += freqData[i];
+    for (let i = third*2; i < len; i++) high += freqData[i];
+    low = low / third / 255;
+    mid = mid / third / 255;
+    high = high / (len - third*2) / 255;
+    const total = (low + mid + high) / 3;
 
-        const color = getColor(i, barCount);
-
-        // Glow
-        if (state.settings.glow && val > 0.3) {
-            ctx.shadowBlur = 20 * val;
-            ctx.shadowColor = color;
-        }
-
-        // Rounded bars
-        const radius = Math.min(barWidth / 2, 4);
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.lineTo(x + barWidth - radius, y);
-        ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
-        ctx.lineTo(x + barWidth, h);
-        ctx.lineTo(x, h);
-        ctx.lineTo(x, y + radius);
-        ctx.quadraticCurveTo(x, y, x + radius, y);
-        ctx.closePath();
-
-        ctx.fillStyle = color;
-        ctx.fill();
-
-        // Mirror
-        if (state.settings.mirror) {
-            ctx.globalAlpha = 0.15;
-            ctx.fillRect(x, 0, barWidth, barH * 0.3);
-            ctx.globalAlpha = 1;
-        }
-
-        ctx.shadowBlur = 0;
-    }
+    $('fv1').textContent = low.toFixed(2);
+    $('fb1').style.width = (low * 100) + '%';
+    $('fv2').textContent = mid.toFixed(2);
+    $('fb2').style.width = (mid * 100) + '%';
+    $('fv3').textContent = high.toFixed(2);
+    $('fb3').style.width = (high * 100) + '%';
+    $('fv4').textContent = total.toFixed(2);
+    $('fb4').style.width = (total * 100) + '%';
+    $('fv5').textContent = S.quanta.length + (S.pairs.length * 2);
 }
 
-// --- Wave Visualization ---
-function renderWave(timeData, freqData, w, h, intensity) {
-    const avg = freqData.reduce((a, b) => a + b) / freqData.length / 255;
-
-    // Main waveform
-    ctx.beginPath();
-    const sliceWidth = w / timeData.length;
-
-    for (let i = 0; i < timeData.length; i++) {
-        const v = timeData[i] / 128.0;
-        const y = (v * h / 2) * intensity + (h * (1 - intensity)) / 2;
-        const x = i * sliceWidth;
-
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-    }
-
-    const gradient = ctx.createLinearGradient(0, 0, w, 0);
-    gradient.addColorStop(0, state.colors[0] || '#8b5cf6');
-    gradient.addColorStop(0.5, state.colors[1] || '#a855f7');
-    gradient.addColorStop(1, state.colors[2] || state.colors[0] || '#8b5cf6');
-
-    ctx.strokeStyle = gradient;
-    ctx.lineWidth = 2 + avg * 4;
-
-    if (state.settings.glow) {
-        ctx.shadowBlur = 20 + avg * 30;
-        ctx.shadowColor = state.colors[0];
-    }
-
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    // Fill below the wave
-    ctx.lineTo(w, h);
-    ctx.lineTo(0, h);
-    ctx.closePath();
-
-    const fillGradient = ctx.createLinearGradient(0, h / 2, 0, h);
-    fillGradient.addColorStop(0, hexToRgba(state.colors[0], 0.08));
-    fillGradient.addColorStop(1, 'transparent');
-    ctx.fillStyle = fillGradient;
-    ctx.fill();
-}
-
-// --- Circle/Radial Visualization ---
-function renderCircle(data, w, h, intensity) {
-    const cx = w / 2;
-    const cy = h / 2;
-    const usable = Math.floor(data.length * 0.5);
-    const points = Math.min(usable, 180);
-    const baseRadius = Math.min(w, h) * 0.15;
-    const maxSpike = Math.min(w, h) * 0.3 * intensity;
-
-    // Outer ring
-    ctx.beginPath();
-    for (let i = 0; i <= points; i++) {
-        const idx = Math.floor((i % points) / points * usable);
-        const val = data[idx] / 255;
-        const angle = (i / points) * Math.PI * 2 - Math.PI / 2;
-        const r = baseRadius + val * maxSpike;
-        const x = cx + Math.cos(angle) * r;
-        const y = cy + Math.sin(angle) * r;
-
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-    }
-    ctx.closePath();
-
-    const gradient = ctx.createRadialGradient(cx, cy, baseRadius, cx, cy, baseRadius + maxSpike);
-    gradient.addColorStop(0, hexToRgba(state.colors[0], 0.6));
-    gradient.addColorStop(0.5, hexToRgba(state.colors[1] || state.colors[0], 0.3));
-    gradient.addColorStop(1, 'transparent');
-
-    if (state.settings.glow) {
-        ctx.shadowBlur = 30;
-        ctx.shadowColor = state.colors[0];
-    }
-
-    ctx.fillStyle = gradient;
-    ctx.fill();
-
-    ctx.strokeStyle = state.colors[0];
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.shadowBlur = 0;
-
-    // Inner circle
-    ctx.beginPath();
-    ctx.arc(cx, cy, baseRadius * 0.5, 0, Math.PI * 2);
-    ctx.strokeStyle = hexToRgba(state.colors[1] || state.colors[0], 0.2);
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Center dot
-    ctx.beginPath();
-    const avg = data.reduce((a, b) => a + b) / data.length / 255;
-    ctx.arc(cx, cy, 4 + avg * 8, 0, Math.PI * 2);
-    ctx.fillStyle = state.colors[0];
-    if (state.settings.glow) {
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = state.colors[0];
-    }
-    ctx.fill();
-    ctx.shadowBlur = 0;
-}
-
-// --- Particles Visualization ---
-function renderParticles(data, w, h, intensity) {
-    if (state.particles.length === 0) initParticles();
-
-    const avg = data.reduce((a, b) => a + b) / data.length / 255;
-
-    state.particles.forEach((p, i) => {
-        const dataIdx = Math.floor((i / state.particles.length) * data.length * 0.5);
-        const val = data[dataIdx] / 255;
-
-        // Movement
-        p.x += p.vx * (1 + avg * 3) * intensity;
-        p.y += p.vy * (1 + avg * 3) * intensity;
-
-        // Wrap
-        if (p.x < 0) p.x = w;
-        if (p.x > w) p.x = 0;
-        if (p.y < 0) p.y = h;
-        if (p.y > h) p.y = 0;
-
-        // Size
-        p.radius = p.baseRadius + val * 6 * intensity;
-
-        // Color
-        const color = getColor(i, state.particles.length);
-
-        // Draw
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.3 + val * 0.7;
-
-        if (state.settings.glow && val > 0.4) {
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = color;
-        }
-
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-    });
-
-    // Draw connections
-    const connectionDist = 100 + avg * 80;
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i < state.particles.length; i++) {
-        for (let j = i + 1; j < Math.min(i + 10, state.particles.length); j++) {
-            const dx = state.particles[i].x - state.particles[j].x;
-            const dy = state.particles[i].y - state.particles[j].y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < connectionDist) {
-                ctx.beginPath();
-                ctx.moveTo(state.particles[i].x, state.particles[i].y);
-                ctx.lineTo(state.particles[j].x, state.particles[j].y);
-                ctx.strokeStyle = hexToRgba(state.colors[0], (1 - dist / connectionDist) * 0.15);
-                ctx.stroke();
-            }
-        }
-    }
-}
-
-// --- Terrain Visualization ---
-function renderTerrain(data, w, h, intensity) {
-    const usable = Math.floor(data.length * 0.4);
-    const row = [];
-    for (let i = 0; i < usable; i++) {
-        row.push(data[i] / 255);
-    }
-
-    state.terrainHistory.unshift(row);
-    if (state.terrainHistory.length > 60) state.terrainHistory.pop();
-
-    const rows = state.terrainHistory.length;
-    const rowHeight = h / (rows + 5);
-
-    for (let r = rows - 1; r >= 0; r--) {
-        const rowData = state.terrainHistory[r];
-        const y = h * 0.9 - r * rowHeight * 0.8;
-        const alpha = 1 - (r / rows);
-
-        ctx.beginPath();
-        for (let i = 0; i < rowData.length; i++) {
-            const x = (i / rowData.length) * w;
-            const val = rowData[i] * h * 0.15 * intensity;
-
-            if (i === 0) ctx.moveTo(x, y - val);
-            else ctx.lineTo(x, y - val);
-        }
-
-        ctx.lineTo(w, y + 20);
-        ctx.lineTo(0, y + 20);
-        ctx.closePath();
-
-        const color = getColor(r, rows);
-        ctx.fillStyle = hexToRgba(color.startsWith('rgb') ? state.colors[0] : color, alpha * 0.3);
-        ctx.fill();
-
-        ctx.strokeStyle = hexToRgba(state.colors[0], alpha * 0.6);
-        ctx.lineWidth = 1;
-
-        if (state.settings.glow && r < 5) {
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = state.colors[0];
-        }
-
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-    }
-}
-
-// --- Mini Viz Bars (in track artwork) ---
 function updateMiniViz(data) {
-    const bars = document.querySelectorAll('.mini-bar');
+    const bars = document.querySelectorAll('.ab');
     const step = Math.floor(data.length * 0.3 / bars.length);
-    bars.forEach((bar, i) => {
-        const val = data[i * step] / 255;
-        bar.style.height = (15 + val * 85) + '%';
-        bar.style.background = getColor(i, bars.length);
+    bars.forEach((b, i) => {
+        const v = data[i * step] / 255;
+        b.style.height = (15 + v * 85) + '%';
+        b.style.background = getClr(i / bars.length);
     });
 }
 
-// --- Auto-hide top bar on idle ---
-let idleTimer;
+// ═══════════════════════════════════════════
+//  AUDIO MANAGEMENT
+// ═══════════════════════════════════════════
+
+function initAudio(file) {
+    if (S.actx) S.actx.close();
+    S.actx = new (AudioContext || webkitAudioContext)();
+    S.analyser = S.actx.createAnalyser();
+    S.analyser.fftSize = S.fftSize;
+    S.analyser.smoothingTimeConstant = S.smoothing;
+
+    if (S.audio) { S.audio.pause(); S.audio.remove(); }
+    S.audio = new Audio();
+    S.audio.crossOrigin = 'anonymous';
+    S.audio.src = typeof file === 'string' ? file : URL.createObjectURL(file);
+
+    S.src = S.actx.createMediaElementSource(S.audio);
+    S.src.connect(S.analyser);
+    S.analyser.connect(S.actx.destination);
+    S.audio.volume = S.vol;
+
+    const name = typeof file === 'string' ? 'Demo' : file.name.replace(/\.[^/.]+$/, '');
+    const ext = typeof file === 'string' ? 'MP3' : file.name.split('.').pop().toUpperCase();
+    $('npTitle').textContent = name;
+    $('npSub').textContent = `${ext} · ${S.actx.sampleRate} Hz · Field excited`;
+    $('pName').textContent = name;
+    $('pFmt').textContent = ext;
+    $('pSr').textContent = S.actx.sampleRate + ' Hz';
+
+    S.audio.addEventListener('loadedmetadata', () => {
+        $('pDur').textContent = fmtTime(S.audio.duration);
+    });
+    S.audio.addEventListener('timeupdate', () => {
+        if (!S.audio.duration) return;
+        const pct = (S.audio.currentTime / S.audio.duration) * 100;
+        $('pFill').style.width = pct + '%';
+        $('pThumb').style.left = pct + '%';
+        $('pCur').textContent = fmtTime(S.audio.currentTime);
+    });
+    S.audio.addEventListener('ended', () => {
+        S.playing = false;
+        $('playBtn').classList.remove('on');
+    });
+
+    $('uz').classList.add('gone');
+    $('player').classList.add('on');
+    $('dock').classList.add('on');
+    $('np').classList.add('on');
+    $('qftHud').classList.add('on');
+
+    S.audio.play().then(() => {
+        S.playing = true;
+        $('playBtn').classList.add('on');
+        toast('Field excited: ' + name);
+    }).catch(() => toast('Click play to excite the field'));
+
+    if (!S.renderStarted) { S.renderStarted = true; render(); }
+}
+
+$('fi').addEventListener('change', e => { if (e.target.files[0]) initAudio(e.target.files[0]); });
+
+// Drag & Drop
+const uc = $('uc');
+['dragenter','dragover'].forEach(ev => uc.addEventListener(ev, e => { e.preventDefault(); uc.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => uc.addEventListener(ev, e => { e.preventDefault(); uc.classList.remove('drag'); }));
+uc.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f?.type.startsWith('audio/')) initAudio(f); });
+document.body.addEventListener('dragover', e => e.preventDefault());
+document.body.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f?.type.startsWith('audio/')) initAudio(f); });
+
+// ── Controls ──
+function togglePlay() {
+    if (!S.audio) return;
+    if (S.actx.state === 'suspended') S.actx.resume();
+    if (S.playing) { S.audio.pause(); S.playing = false; $('playBtn').classList.remove('on'); }
+    else { S.audio.play(); S.playing = true; $('playBtn').classList.add('on'); }
+}
+
+function skip(s) { if (S.audio) S.audio.currentTime = Math.max(0, Math.min(S.audio.duration, S.audio.currentTime + s)); }
+
+function seek(e) {
+    if (!S.audio) return;
+    const r = $('pBar').getBoundingClientRect();
+    S.audio.currentTime = ((e.clientX - r.left) / r.width) * S.audio.duration;
+}
+
+function toggleMute() {
+    if (!S.audio) return;
+    S.muted = !S.muted;
+    S.audio.muted = S.muted;
+}
+
+function setVol(e) {
+    const r = e.currentTarget.getBoundingClientRect();
+    const v = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    S.vol = v;
+    if (S.audio) S.audio.volume = v;
+    $('volFill').style.width = (v * 100) + '%';
+}
+
+function fmtTime(s) {
+    if (isNaN(s)) return '0:00';
+    const m = Math.floor(s/60), sec = Math.floor(s%60);
+    return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+// ── Mode Switch ──
+function setMode(mode, btn) {
+    S.mode = mode;
+    document.querySelectorAll('.dock-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    S.quanta = []; S.pairs = []; S.vacuumBubbles = [];
+    const names = { quantumField:'Quantum Field', stringTheory:'String Theory', fieldCollapse:'Field Collapse', vacuumFluctuation:'Vacuum Fluctuation', entanglement:'Entanglement' };
+    toast('Mode: ' + (names[mode] || mode));
+}
+
+// ── Color ──
+function setClr(el) {
+    document.querySelectorAll('.sw').forEach(s => s.classList.remove('on'));
+    el.classList.add('on');
+    const c = JSON.parse(el.dataset.c);
+    if (c[0] === 'rainbow') { S.rainbow = true; } else { S.rainbow = false; S.colors = c; }
+}
+
+// ── Settings ──
+function toggleDrawer() {
+    $('dr').classList.toggle('on');
+    $('drBg').classList.toggle('on');
+}
+
+function setFFT(v) { const s = Math.pow(2, parseInt(v)); S.fftSize = s; if (S.analyser) S.analyser.fftSize = s; $('fftV').textContent = s; }
+function setSm(v) { const s = parseInt(v)/100; S.smoothing = s; if (S.analyser) S.analyser.smoothingTimeConstant = s; $('smV').textContent = s.toFixed(2); }
+function setInt(v) { S.intensity = parseInt(v)/100; $('intV').textContent = v + '%'; }
+
+function togOpt(key, el) {
+    S.opts[key] = !S.opts[key];
+    el.querySelector('.tog').classList.toggle('on');
+}
+
+// ── Fullscreen ──
+function toggleFS() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+}
+
+// ── Command Palette ──
+function openCmd() { $('cmd').classList.add('on'); $('cmdIn').focus(); $('cmdIn').value = ''; filterCmd(''); }
+function closeCmd() { $('cmd').classList.remove('on'); }
+function filterCmd(q) {
+    document.querySelectorAll('.cmd-it').forEach(it => {
+        it.style.display = it.querySelector('.cmd-it-t').textContent.toLowerCase().includes(q.toLowerCase()) ? 'flex' : 'none';
+    });
+}
+function exCmd(c) {
+    closeCmd();
+    const modes = ['quantumField','stringTheory','fieldCollapse','vacuumFluctuation','entanglement'];
+    if (modes.includes(c)) { setMode(c, document.querySelectorAll('.dock-btn')[modes.indexOf(c)]); }
+    else if (c === 'play') togglePlay();
+    else if (c === 'file') $('fi').click();
+    else if (c === 'fs') toggleFS();
+}
+
+// ── Keyboard ──
+document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') { if (e.key === 'Escape') closeCmd(); return; }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); $('cmd').classList.contains('on') ? closeCmd() : openCmd(); return; }
+    const modes = ['quantumField','stringTheory','fieldCollapse','vacuumFluctuation','entanglement'];
+    switch (e.key) {
+        case ' ': e.preventDefault(); togglePlay(); break;
+        case 'f': case 'F': toggleFS(); break;
+        case '1': case '2': case '3': case '4': case '5':
+            const i = parseInt(e.key) - 1;
+            setMode(modes[i], document.querySelectorAll('.dock-btn')[i]); break;
+        case ',': toggleDrawer(); break;
+        case 'o': case 'O': $('fi').click(); break;
+        case 'ArrowLeft': skip(-10); break;
+        case 'ArrowRight': skip(10); break;
+        case 'Escape':
+            closeCmd();
+            if ($('dr').classList.contains('on')) toggleDrawer();
+            break;
+    }
+});
+
+// ── Toast ──
+function toast(msg) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>${msg}`;
+    $('toastBox').appendChild(t);
+    requestAnimationFrame(() => t.classList.add('on'));
+    setTimeout(() => { t.classList.remove('on'); setTimeout(() => t.remove(), 300); }, 2500);
+}
+
+// ── Auto-hide Header ──
+let idleT;
 function resetIdle() {
-    document.getElementById('topBar').classList.remove('hidden');
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
-        if (state.isPlaying) {
-            document.getElementById('topBar').classList.add('hidden');
-        }
-    }, 4000);
+    $('hdr').classList.remove('hidden');
+    clearTimeout(idleT);
+    idleT = setTimeout(() => { if (S.playing) $('hdr').classList.add('hidden'); }, 4000);
 }
 document.addEventListener('mousemove', resetIdle);
-document.addEventListener('click', resetIdle);
 
-// --- Toggle Shuffle (placeholder) ---
-function toggleShuffle() {
-    const btn = document.getElementById('btnShuffle');
-    btn.classList.toggle('active');
-    showToast(btn.classList.contains('active') ? 'Auto-switch modes: ON' : 'Auto-switch modes: OFF');
-}
-
-// --- Init ---
-initParticles();
-console.log('%c✦ Sonoria Pro v2.0', 'color:#8b5cf6;font-size:20px;font-weight:bold');
-console.log('%cImmersive Music Visualizer — Redesigned with Variant-level design system', 'color:#a78bfa;font-size:12px');
-
+// ── Init ──
+console.log('%c✦ Sonoria · Quantum Field', 'color:#8b5cf6;font-size:20px;font-weight:bold');
+console.log('%c"场是更根本的存在，粒子只是场被激发后的表现"', 'color:#a78bfa;font-size:12px;font-style:italic');
 </script>
 </body>
 </html>
