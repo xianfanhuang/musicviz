@@ -10,7 +10,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎐</text></svg>">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://js.puter.com/v2/"></script>
+<script src="https://cdn.jsdelivr.net/npm/openai@4.28.0/dist/openai.min.js"></script>
 <style>
 :root{
 --primary:#8E2DE2;--ai-primary:#7C3AED;--accent:#00d2ff;
@@ -85,6 +85,7 @@ canvas#viz{position:fixed;top:0;left:0;z-index:1;transition:opacity 1s ease}
 .capsule-btn:active{background:rgba(255,255,255,.2)}
 .toast{position:fixed;top:calc(20px + var(--safe-top));left:50%;transform:translateX(-50%) translateY(-20px);background:rgba(20,20,20,.8);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);padding:10px 20px;border-radius:30px;font-size:.85rem;color:#fff;opacity:0;transition:.4s var(--ease-elastic);z-index:1000;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal-overlay{display:flex!important}
 .toast.ai{background:rgba(124,58,237,.8)}
 .toast.error{background:rgba(239,68,68,.8)}
 .toast.success{background:rgba(16,185,129,.8)}
@@ -98,6 +99,7 @@ input[type="file"]{display:none}
 <div class="lens-card" id="card">
 <div class="header">
 <button class="icon-btn" id="zen-btn"><i class="material-icons-round">keyboard_arrow_down</i></button>
+<button class="icon-btn" id="settings-btn" title="Settings"><i class="material-icons-round">settings</i></button>
 <div class="brand" id="brand">SONORIA</div>
 <button class="icon-btn" id="playlist-btn"><i class="material-icons-round">queue_music</i></button>
 </div>
@@ -149,6 +151,21 @@ input[type="file"]{display:none}
 <div class="capsule-info" id="capsule-text">Soul Frequency</div>
 <button class="capsule-btn" id="capsule-play"><i class="material-icons-round">play_arrow</i></button>
 </div>
+<div class="modal-overlay" id="settings-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;justify-content:center;align-items:center;">
+<div style="background:#1a1a1a;border-radius:20px;padding:24px;max-width:340px;width:90%;border:1px solid rgba(255,255,255,.1)">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+<div style="font-weight:600;font-size:1rem">GitHub Token 设置</div>
+<button class="icon-btn" id="close-settings"><i class="material-icons-round">close</i></button>
+</div>
+<p style="color:var(--text-sub);font-size:.85rem;margin-bottom:12px">输入你的 GitHub Personal Access Token 以启用 AI 功能</p>
+<input type="password" class="glass-input" id="github-token-input" placeholder="ghp_xxxxxxxxxxxx" style="margin-bottom:12px">
+<button class="full-btn" id="save-token-btn" style="background:var(--ai-primary)">保存 Token</button>
+<div style="margin-top:12px;font-size:.75rem;color:var(--text-sub)">
+<a href="https://github.com/settings/tokens/new?scopes=read:user&description=Sonoria%20AI" target="_blank" style="color:var(--accent)">创建 Token →</a>
+（需要 read:user 权限）
+</div>
+</div>
+</div>
 <div class="toast" id="toast"><span id="toast-msg">Ready</span></div>
 <input type="file" id="file-input" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.wma,.webm" multiple>
 <script>
@@ -186,9 +203,9 @@ micDenied:'麦克风权限被拒绝',
 micOff:'麦克风已关闭',
 addMusicFirst:'请先添加音乐',
 themeName:'Theme: {name}',
-aiWelcome:'我是 Sonoria AI，由 Puter 驱动。我可以帮你：\n• 分析这首歌的情绪和风格\n• 自动匹配最佳可视化主题\n• 调整可视化参数\n• 推荐相似的音乐\n• 用自然语言控制播放器',
-puterConnected:'Puter AI 已连接',
-puterOffline:'Puter AI 不可用，已切换到离线模式',
+aiWelcome:'我是 Sonoria AI，由 GitHub Models 驱动。我可以帮你：\n• 分析这首歌的情绪和风格\n• 自动匹配最佳可视化主题\n• 调整可视化参数\n• 推荐相似的音乐\n• 用自然语言控制播放器',
+puterConnected:'GitHub AI 已连接',
+puterOffline:'GitHub AI 不可用，已切换到离线模式',
 aiCallFailed:'AI 调用失败，已自动切换到离线模式',
 offlineHelp:'离线模式下可用功能：\n• 分析歌曲情绪\n• 切换可视化主题\n• 控制播放\n\n连接网络后可获得完整AI能力',
 moodIntense:'🔥 歌曲情绪：高能亢奋\n\n强烈的低频和高能量表明这是一首充满激情的音乐',
@@ -233,9 +250,9 @@ micDenied:'Microphone access denied',
 micOff:'Microphone off',
 addMusicFirst:'Please add music first',
 themeName:'Theme: {name}',
-aiWelcome:'I am Sonoria AI, powered by Puter. I can help you:\n• Analyze mood and style of the current track\n• Auto-match the best visual theme\n• Adjust visualizer parameters\n• Recommend similar music\n• Control the player with natural language',
-puterConnected:'Puter AI connected',
-puterOffline:'Puter AI unavailable, offline mode',
+aiWelcome:'I am Sonoria AI, powered by GitHub Models. I can help you:\n• Analyze mood and style of the current track\n• Auto-match the best visual theme\n• Adjust visualizer parameters\n• Recommend similar music\n• Control the player with natural language',
+puterConnected:'GitHub AI connected',
+puterOffline:'GitHub AI unavailable, offline mode',
 aiCallFailed:'AI call failed, switched to offline mode',
 offlineHelp:'Offline features:\n• Analyze song mood\n• Switch visual theme\n• Control playback\n\nConnect to network for full AI capabilities',
 moodIntense:'🔥 Mood: Intense\n\nStrong bass and high energy suggest passionate music',
@@ -870,13 +887,22 @@ showToast(t('themeName',{name:MODES[next].name()}));
 }
 
 // ============================================================
-// Puter AI Engine
+// GitHub AI Engine (using OpenAI SDK with GitHub Models)
 // ============================================================
-class PuterAIEngine{
-constructor(){this.isAvailable=false;this.checkAvailability()}
-checkAvailability(){
-if(typeof puter!=='undefined'){this.isAvailable=true;S.puterAvailable=true;showToast(t('puterConnected'),'ai')}
-else{this.isAvailable=false;S.puterAvailable=false;showToast(t('puterOffline'),'error')}
+class GitHubAIEngine{
+constructor(){this.isAvailable=false;this.client=null;this.apiKey=null;this.checkAvailability()}
+async checkAvailability(){
+// Check if user has configured GitHub token
+this.apiKey=sessionStorage.getItem('sonoria_github_token');
+if(this.apiKey && this.apiKey.startsWith('ghp_')){
+this.isAvailable=true;
+S.puterAvailable=true;
+showToast(t('githubConnected'),'ai');
+}else{
+this.isAvailable=false;
+S.puterAvailable=false;
+showToast(t('githubSetupRequired'),'error');
+}
 }
 getSystemPrompt(){
 const track=S.playlist[S.trackIdx];
@@ -884,19 +910,41 @@ const trackInfo=track?`${t('nowPlaying',{name:track.name})}`:'No track playing';
 const audioStats=`Realtime: energy=${S.energy.toFixed(2)}, bass=${S.bassEnergy.toFixed(2)}, mid=${S.midEnergy.toFixed(2)}, treble=${S.trebleEnergy.toFixed(2)}, BPM≈${audioAnalyzer.features.bpm}`;
 const modes=Object.values(MODES).map(m=>m.name()).join(' / ');
 const langInstruction=lang==='zh'?'Respond in Chinese, concise <80 chars.':'Respond in English, concise <80 chars.';
-return`You are Sonoria AI, a music visualization assistant.\n${trackInfo}\n${audioStats}\nAvailable modes: ${modes}\n${langInstruction}\nSupport commands: switch [mode], analyze mood, pause/play, next/prev, zen mode.`;
+return`You are Sonoria AI, a music visualization assistant.
+${trackInfo}
+${audioStats}
+Available modes: ${modes}
+${langInstruction}
+Support commands: switch [mode], analyze mood, pause/play, next/prev, zen mode.`;
 }
 async chat(message){
 if(!this.isAvailable)return this.offlineFallback(message);
 try{
-const messages=[{role:'system',content:this.getSystemPrompt()},...S.aiConversation,{role:'user',content:message}];
-const response=await puter.ai.chat(messages);
-S.aiConversation.push({role:'user',content:message});
-S.aiConversation.push({role:'assistant',content:response.content||response.message?.content||''});
-const text=response.content||response.message?.content||'';
+// Initialize OpenAI client with GitHub Models endpoint
+if(!this.client){
+this.client=new OpenAI({
+baseURL:"https://models.github.ai/v1",
+apiKey:this.apiKey,
+dangerouslyAllowBrowser:true
+});
+}
+const messages=[{role:"system",content:this.getSystemPrompt()},...S.aiConversation,{role:"user",content:message}];
+const response=await this.client.chat.completions.create({
+model:"gpt-4o-mini",
+messages:messages,
+max_tokens:200,
+temperature:0.7
+});
+const text=response.choices[0]?.message?.content||"";
+S.aiConversation.push({role:"user",content:message});
+S.aiConversation.push({role:"assistant",content:text});
 await this.executeCommand(text);
 return text;
-}catch(e){console.error('Puter AI error:',e);return t('aiCallFailed')+'\n'+this.offlineFallback(message)}
+}catch(e){
+console.error('GitHub AI error:',e);
+return t('aiCallFailed')+'
+'+this.offlineFallback(message);
+}
 }
 async executeCommand(resp){
 const l=resp.toLowerCase();
@@ -925,8 +973,20 @@ if(keys.some(k=>l.includes(k))){switchMode(id);return t('moodSwitched',{name:MOD
 if(l.includes('theme')||l.includes('主题')||l.includes('切换')){randomTheme();return t('themeName',{name:MODES[S.currentMode].name()})}
 return t('offlineHelp');
 }
+setToken(token){
+if(token && token.startsWith('ghp_')){
+this.apiKey=token;
+sessionStorage.setItem('sonoria_github_token',token);
+this.isAvailable=true;
+S.puterAvailable=true;
+this.client=null;// Reset client to reinitialize with new token
+showToast(t('githubConnected'),'ai');
+return true;
 }
-const aiEngine=new PuterAIEngine();
+return false;
+}
+}
+const aiEngine=new GitHubAIEngine();
 
 // ============================================================
 // AI Chat
@@ -1009,6 +1069,27 @@ document.getElementById('next-btn').addEventListener('click',()=>engine.playNext
 // ============================================================
 // Init
 // ============================================================
+// Settings Modal functionality
+document.getElementById('settings-btn').addEventListener('click',()=>{
+const modal=document.getElementById('settings-modal');
+const input=document.getElementById('github-token-input');
+input.value=sessionStorage.getItem('sonoria_github_token')||'';
+modal.style.display='flex';
+});
+document.getElementById('close-settings').addEventListener('click',()=>{
+document.getElementById('settings-modal').style.display='none';
+});
+document.getElementById('settings-modal').addEventListener('click',(e)=>{
+if(e.target.id==='settings-modal')document.getElementById('settings-modal').style.display='none';
+});
+document.getElementById('save-token-btn').addEventListener('click',()=>{
+const token=document.getElementById('github-token-input').value.trim();
+if(aiEngine.setToken(token)){
+document.getElementById('settings-modal').style.display='none';
+}else{
+showToast('Token 无效，必须以 ghp_ 开头','error');
+}
+});
 applyI18n();
 // Add initial AI welcome message
 addAIMessage(t('aiWelcome'),'bot');
