@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Sonoria AI功能测试</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e4e4e7; }
+        .test-btn { width: 100%; padding: 16px; background: #7C3AED; color: #fff; border: none; border-radius: 12px; font-size: 18px; cursor: pointer; margin: 20px 0; }
+        .test-btn:hover { background: #6d28d9; }
+        #result { padding: 20px; background: #18181b; border-radius: 12px; min-height: 200px; border: 1px solid #3f3f46; }
+        .success { color: #4ade80; }
+        .error { color: #ef4444; }
+        .info { color: #60a5fa; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>🎐 Sonoria AI功能测试</h1>
+
+    <div class="info">
+        <p><strong>测试目标：</strong>验证GitCode千问模型集成是否正常工作</p>
+        <p><strong>API Key：</strong>rNDJ5dN2PdCRU4qeBieTtSZ5</p>
+        <p><strong>模型：</strong>Qwen/Qwen3.5-35B-A3B</p>
+    </div>
+
+    <button class="test-btn" onclick="testAIFunction()">🧪 测试AI对话功能</button>
+
+    <div id="result">点击按钮开始测试...</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/openai@4.28.0/dist/openai.min.js"></script>
+    <script>
+        // 模拟Sonoria的AI对话功能
+        async function testAIFunction() {
+            const resultDiv = document.getElementById('result');
+            const apiKey = 'rNDJ5dN2PdCRU4qeBieTtSZ5';
+            const model = 'Qwen/Qwen3.5-35B-A3B';
+
+            resultDiv.innerHTML = '<p class="info">⏳ 正在测试AI对话功能...</p>';
+
+            // 模拟系统提示
+            const systemPrompt = `你是Sonoria AI，一个音乐可视化助手。
+当前没有播放音乐。
+可用模式: 深海 / 赛博 / 极光 / 量子 / 岩浆 / 禅
+用中文回复，简洁，不超过80个字符。
+支持命令: 切换[模式], 分析情绪, 暂停/播放, 下一首/上一首, 禅模式。`;
+
+            const messages = [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: '你好，请介绍一下你自己' }
+            ];
+
+            try {
+                const client = new OpenAI({
+                    baseURL: 'https://api-ai.gitcode.com/v1',
+                    apiKey: apiKey,
+                    dangerouslyAllowBrowser: true
+                });
+
+                const response = await client.chat.completions.create({
+                    model: model,
+                    messages: messages,
+                    max_tokens: 200,
+                    temperature: 0.7
+                });
+
+                const content = response.choices[0]?.message?.content || '无内容';
+                const usage = response.usage;
+
+                resultDiv.innerHTML = `
+                    <p class="success">✅ 测试成功！</p>
+                    <p><strong>AI回复：</strong></p>
+                    <p style="background: #27272a; padding: 12px; border-radius: 8px; color: #fff;">${content}</p>
+                    <p><strong>Token使用：</strong> ${usage.total_tokens} (prompt: ${usage.prompt_tokens}, completion: ${usage.completion_tokens})</p>
+                    <p><strong>命令识别测试：</strong></p>
+                    <p>${testCommandRecognition(content)}</p>
+                `;
+
+                console.log('完整响应：', response);
+
+            } catch (error) {
+                console.error('错误：', error);
+                resultDiv.innerHTML = `
+                    <p class="error">❌ 测试失败</p>
+                    <p><strong>错误信息：</strong></p>
+                    <pre style="background: #27272a; padding: 12px; border-radius: 8px; color: #ef4444;">${error.message}</pre>
+                `;
+            }
+        }
+
+        // 测试命令识别
+        function testCommandRecognition(response) {
+            const modeMap = {
+                深海: 'abyss',
+                赛博: 'cyber',
+                极光: 'aurora',
+                量子: 'quantum',
+                岩浆: 'magma',
+                禅: 'zen'
+            };
+
+            for (const [name, id] of Object.entries(modeMap)) {
+                if (response.includes(name)) {
+                    return `✅ 检测到模式切换命令: ${name} (${id})`;
+                }
+            }
+
+            if (response.includes('情绪') || response.includes('分析')) {
+                return '✅ 检测到情绪分析命令';
+            }
+
+            return 'ℹ️ 未检测到特定命令（这是正常的，正常对话场景）';
+        }
+    </script>
+</body>
+</html>
