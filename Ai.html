@@ -157,11 +157,11 @@ input[type="file"]{display:none}
 <div style="font-weight:600;font-size:1rem">GitHub Token 设置</div>
 <button class="icon-btn" id="close-settings"><i class="material-icons-round">close</i></button>
 </div>
-<p style="color:var(--text-sub);font-size:.85rem;margin-bottom:12px">输入你的 GitHub Personal Access Token 以启用 AI 功能</p>
-<input type="password" class="glass-input" id="github-token-input" placeholder="ghp_xxxxxxxxxxxx" style="margin-bottom:12px">
+<p style="color:var(--text-sub);font-size:.85rem;margin-bottom:12px">输入你的 GitCode API Key 以启用 AI 功能</p>
+<input type="password" class="glass-input" id="gitcode-token-input" placeholder="你的GitCode API Key" style="margin-bottom:12px">
 <button class="full-btn" id="save-token-btn" style="background:var(--ai-primary)">保存 Token</button>
 <div style="margin-top:12px;font-size:.75rem;color:var(--text-sub)">
-<a href="https://github.com/settings/tokens/new?scopes=read:user&description=Sonoria%20AI" target="_blank" style="color:var(--accent)">创建 Token →</a>
+<a href="https://ai.gitcode.com/dashboard/api-key?scopes=read:user&description=Sonoria%20AI" target="_blank" style="color:var(--accent)">创建 Token →</a>
 （需要 read:user 权限）
 </div>
 </div>
@@ -203,9 +203,9 @@ micDenied:'麦克风权限被拒绝',
 micOff:'麦克风已关闭',
 addMusicFirst:'请先添加音乐',
 themeName:'Theme: {name}',
-aiWelcome:'我是 Sonoria AI，由 GitHub Models 驱动。我可以帮你：\n• 分析这首歌的情绪和风格\n• 自动匹配最佳可视化主题\n• 调整可视化参数\n• 推荐相似的音乐\n• 用自然语言控制播放器',
-puterConnected:'GitHub AI 已连接',
-puterOffline:'GitHub AI 不可用，已切换到离线模式',
+aiWelcome:'我是 Sonoria AI，由 GitCode Qwen 驱动。我可以帮你：\n• 分析这首歌的情绪和风格\n• 自动匹配最佳可视化主题\n• 调整可视化参数\n• 推荐相似的音乐\n• 用自然语言控制播放器',
+	gitcodeSetupRequired:'请配置 GitCode API Key 以使用 AI 功能',
+gitcodeOffline:'GitCode AI 不可用，已切换到离线模式',
 aiCallFailed:'AI 调用失败，已自动切换到离线模式',
 offlineHelp:'离线模式下可用功能：\n• 分析歌曲情绪\n• 切换可视化主题\n• 控制播放\n\n连接网络后可获得完整AI能力',
 moodIntense:'🔥 歌曲情绪：高能亢奋\n\n强烈的低频和高能量表明这是一首充满激情的音乐',
@@ -250,9 +250,9 @@ micDenied:'Microphone access denied',
 micOff:'Microphone off',
 addMusicFirst:'Please add music first',
 themeName:'Theme: {name}',
-aiWelcome:'I am Sonoria AI, powered by GitHub Models. I can help you:\n• Analyze mood and style of the current track\n• Auto-match the best visual theme\n• Adjust visualizer parameters\n• Recommend similar music\n• Control the player with natural language',
-puterConnected:'GitHub AI connected',
-puterOffline:'GitHub AI unavailable, offline mode',
+aiWelcome:'I am Sonoria AI, powered by GitCode Qwen. I can help you:\n• Analyze mood and style of the current track\n• Auto-match the best visual theme\n• Adjust visualizer parameters\n• Recommend similar music\n• Control the player with natural language',
+	gitcodeSetupRequired:'Please configure GitCode API Key to use AI features',
+gitcodeOffline:'GitCode AI unavailable, offline mode',
 aiCallFailed:'AI call failed, switched to offline mode',
 offlineHelp:'Offline features:\n• Analyze song mood\n• Switch visual theme\n• Control playback\n\nConnect to network for full AI capabilities',
 moodIntense:'🔥 Mood: Intense\n\nStrong bass and high energy suggest passionate music',
@@ -887,21 +887,20 @@ showToast(t('themeName',{name:MODES[next].name()}));
 }
 
 // ============================================================
-// GitHub AI Engine (using OpenAI SDK with GitHub Models)
+// GitCode Qwen AI Engine (using OpenAI SDK with GitCode)
 // ============================================================
-class GitHubAIEngine{
+class GitCodeQwenEngine{
 constructor(){this.isAvailable=false;this.client=null;this.apiKey=null;this.checkAvailability()}
 async checkAvailability(){
-// Check if user has configured GitHub token
-this.apiKey=sessionStorage.getItem('sonoria_github_token');
-if(this.apiKey && this.apiKey.startsWith('ghp_')){
+// Check if user has configured GitCode token
+this.apiKey=sessionStorage.getItem('sonoria_gitcode_token');
+if(this.apiKey && this.apiKey.length>10){
 this.isAvailable=true;
 S.puterAvailable=true;
-showToast(t('githubConnected'),'ai');
 }else{
 this.isAvailable=false;
 S.puterAvailable=false;
-showToast(t('githubSetupRequired'),'error');
+showToast(t('gitcodeSetupRequired'),'error');
 }
 }
 getSystemPrompt(){
@@ -909,28 +908,28 @@ const track=S.playlist[S.trackIdx];
 const trackInfo=track?`${t('nowPlaying',{name:track.name})}`:'No track playing';
 const audioStats=`Realtime: energy=${S.energy.toFixed(2)}, bass=${S.bassEnergy.toFixed(2)}, mid=${S.midEnergy.toFixed(2)}, treble=${S.trebleEnergy.toFixed(2)}, BPM≈${audioAnalyzer.features.bpm}`;
 const modes=Object.values(MODES).map(m=>m.name()).join(' / ');
-const langInstruction=lang==='zh'?'Respond in Chinese, concise <80 chars.':'Respond in English, concise <80 chars.';
-return`You are Sonoria AI, a music visualization assistant.
+const langInstruction=lang==='zh'?'用中文回复，简洁，不超过80个字符。':'Respond in English, concise, max 80 chars.';
+return`你是Sonoria AI，一个音乐可视化助手。
 ${trackInfo}
 ${audioStats}
-Available modes: ${modes}
+可用模式: ${modes}
 ${langInstruction}
-Support commands: switch [mode], analyze mood, pause/play, next/prev, zen mode.`;
+支持命令: 切换[模式], 分析情绪, 暂停/播放, 下一首/上一首, 禅模式。`;
 }
 async chat(message){
 if(!this.isAvailable)return this.offlineFallback(message);
 try{
-// Initialize OpenAI client with GitHub Models endpoint
+// Initialize OpenAI client with GitCode endpoint
 if(!this.client){
 this.client=new OpenAI({
-baseURL:"https://models.github.ai/v1",
+baseURL:"https://api-ai.gitcode.com/v1",
 apiKey:this.apiKey,
 dangerouslyAllowBrowser:true
 });
 }
 const messages=[{role:"system",content:this.getSystemPrompt()},...S.aiConversation,{role:"user",content:message}];
 const response=await this.client.chat.completions.create({
-model:"gpt-4o-mini",
+model:"Qwen/Qwen3.5-35B-A3B",
 messages:messages,
 max_tokens:200,
 temperature:0.7
@@ -941,7 +940,7 @@ S.aiConversation.push({role:"assistant",content:text});
 await this.executeCommand(text);
 return text;
 }catch(e){
-console.error('GitHub AI error:',e);
+console.error('GitCode AI error:',e);
 return t('aiCallFailed')+'
 '+this.offlineFallback(message);
 }
@@ -974,19 +973,18 @@ if(l.includes('theme')||l.includes('主题')||l.includes('切换')){randomTheme(
 return t('offlineHelp');
 }
 setToken(token){
-if(token && token.startsWith('ghp_')){
+if(token && token.length>10){
 this.apiKey=token;
-sessionStorage.setItem('sonoria_github_token',token);
+sessionStorage.setItem('sonoria_gitcode_token',token);
 this.isAvailable=true;
 S.puterAvailable=true;
 this.client=null;// Reset client to reinitialize with new token
-showToast(t('githubConnected'),'ai');
 return true;
 }
 return false;
 }
 }
-const aiEngine=new GitHubAIEngine();
+const aiEngine=new GitCodeQwenEngine();
 
 // ============================================================
 // AI Chat
@@ -1072,8 +1070,8 @@ document.getElementById('next-btn').addEventListener('click',()=>engine.playNext
 // Settings Modal functionality
 document.getElementById('settings-btn').addEventListener('click',()=>{
 const modal=document.getElementById('settings-modal');
-const input=document.getElementById('github-token-input');
-input.value=sessionStorage.getItem('sonoria_github_token')||'';
+const input=document.getElementById('gitcode-token-input');
+input.value=sessionStorage.getItem('sonoria_gitcode_token')||'';
 modal.style.display='flex';
 });
 document.getElementById('close-settings').addEventListener('click',()=>{
@@ -1083,11 +1081,11 @@ document.getElementById('settings-modal').addEventListener('click',(e)=>{
 if(e.target.id==='settings-modal')document.getElementById('settings-modal').style.display='none';
 });
 document.getElementById('save-token-btn').addEventListener('click',()=>{
-const token=document.getElementById('github-token-input').value.trim();
+const token=document.getElementById('gitcode-token-input').value.trim();
 if(aiEngine.setToken(token)){
 document.getElementById('settings-modal').style.display='none';
 }else{
-showToast('Token 无效，必须以 ghp_ 开头','error');
+showToast('Token 无效，请输入有效的GitCode API Key','error');
 }
 });
 applyI18n();

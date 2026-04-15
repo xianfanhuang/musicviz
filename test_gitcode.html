@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/openai@4.28.0/dist/openai.min.js"></script>
+</head>
+<body>
+    <h2>GitCode Qwen API 测试</h2>
+    <div id="result" style="margin:20px;padding:20px;background:#f0f0f0;border-radius:8px;"></div>
+    <script>
+        // 用户提供的API Key（拼接两行）
+        const apiKey = 'rNDJ5dN2PdCRU4qeBieTtSZ5(V8)-XXP9UKXxTwfarhDyqEYChST(V9)';
+
+        const client = new OpenAI({
+            baseURL: 'https://api-ai.gitcode.com/v1',
+            apiKey: apiKey,
+            dangerouslyAllowBrowser: true
+        });
+
+        document.getElementById('result').innerHTML = '<p style="color:blue;">正在测试 GitCode API...</p>';
+
+        async function test() {
+            try {
+                const response = await client.chat.completions.create({
+                    model: 'Qwen/Qwen3.5-35B-A3B',
+                    messages: [
+                        { role: 'system', content: '你是一个有帮助的AI助手。' },
+                        { role: 'user', content: '你好' }
+                    ],
+                    max_tokens: 100
+                });
+
+                const content = response.choices[0]?.message?.content || '无内容';
+                const usage = response.usage;
+
+                document.getElementById('result').innerHTML = `
+                    <p style="color:green;">✅ 测试成功！</p>
+                    <p><strong>AI回复：</strong></p>
+                    <p style="background:#fff;padding:10px;border-radius:4px;">${content}</p>
+                    <p><strong>Token使用：</strong> ${usage.total_tokens}</p>
+                `;
+
+            } catch (error) {
+                console.error('错误：', error);
+                document.getElementById('result').innerHTML = `
+                    <p style="color:red;">❌ 测试失败</p>
+                    <p><strong>错误信息：</strong></p>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+
+        test();
+    </script>
+</body>
+</html>
