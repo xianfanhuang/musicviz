@@ -11,7 +11,17 @@
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <!-- Puter SDK - 异步加载优化 -->
-	<script src="https://cdn.jsdelivr.net/npm/openai@4.28.0/dist/openai.min.js"></script>
+<script>
+    (function() {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://js.puter.com/v2/';
+        script.onerror = function() {
+            console.warn('[Sonoria] Puter SDK加载失败，使用本地模式');
+            window.puterUnavailable = true;
+        };
+        document.head.appendChild(script);
+    })();
 </script>
 <style>
 :root{
