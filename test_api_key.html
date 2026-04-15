@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/openai@4.28.0/dist/openai.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background: #1a1a1a; color: #e4e4e7; }
+        .test-box { background: #27272a; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; background: #18181b; border: 1px solid #3f3f46; border-radius: 8px; color: #fff; }
+        button { padding: 12px 24px; background: #7C3AED; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+        #result { padding: 16px; background: #0f0f0f; border-radius: 8px; min-height: 100px; }
+        .success { color: #4ade80; }
+        .error { color: #ef4444; }
+        .info { color: #60a5fa; font-size: 14px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h2>🔧 GitCode API Key 测试工具</h2>
+
+    <div class="test-box">
+        <p class="info">💡 输入两行API Key，我会尝试不同的拼接方式</p>
+
+        <label>第一行（带编号）：</label>
+        <input type="text" id="key1" value="rNDJ5dN2PdCRU4qeBieTtSZ5(V8)">
+
+        <label>第二行（带编号）：</label>
+        <input type="text" id="key2" value="XXP9UKXxTwfarhDyqEYChST(V9)">
+
+        <button onclick="testAll()">🚀 测试所有方式</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        async function testAll() {
+            const key1 = document.getElementById('key1').value.trim();
+            const key2 = document.getElementById('key2').value.trim();
+            const resultDiv = document.getElementById('result');
+            const model = 'Qwen/Qwen3.5-35B-A3B';
+
+            resultDiv.innerHTML = '<p class="info">正在测试各种拼接方式...</p>';
+
+            // 方式1: 去掉编号，用减号拼接
+            const cleanKey1 = key1.replace(/\(.*\)/g, '');
+            const cleanKey2 = key2.replace(/\(.*\)/g, '');
+            const way1 = cleanKey1 + '-' + cleanKey2;
+
+            // 方式2: 完整拼接
+            const way2 = key1 + '-' + key2;
+
+            // 方式3: 只用第一个
+            const way3 = key1.replace(/\(.*\)/g, '');
+
+            // 方式4: 只用第二个
+            const way4 = key2.replace(/\(.*\)/g, '');
+
+            const tests = [
+                { name: '方式1（去掉编号+减号拼接）', key: way1 },
+                { name: '方式2（完整拼接）', key: way2 },
+                { name: '方式3（只用第一行）', key: way3 },
+                { name: '方式4（只用第二行）', key: way4 }
+            ];
+
+            let html = '';
+
+            for (const test of tests) {
+                html += `<div style="margin: 20px 0; padding: 12px; background: #18181b; border-radius: 8px;">
+                    <strong>${test.name}</strong><br>
+                    Key: <code style="color: #60a5fa; word-break: break-all;">${test.key.substring(0, 50)}...</code><br>
+                    `;
+
+                try {
+                    const client = new OpenAI({
+                        baseURL: 'https://api-ai.gitcode.com/v1',
+                        apiKey: test.key,
+                        dangerouslyAllowBrowser: true
+                    });
+
+                    const response = await client.chat.completions.create({
+                        model: model,
+                        messages: [
+                            { role: 'system', content: '你是一个AI助手。' },
+                            { role: 'user', content: '你好' }
+                        ],
+                        max_tokens: 50
+                    });
+
+                    const content = response.choices[0]?.message?.content || '无';
+                    html += `<span class="success">✅ 成功！</span><br>
+                        AI回复: ${content.substring(0, 50)}...<br>
+                        Token: ${response.usage.total_tokens}<br>`;
+
+                } catch (e) {
+                    html += `<span class="error">❌ 失败</span><br>
+                        错误: ${e.message}<br>`;
+                }
+
+                html += '</div>';
+            }
+
+            resultDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
