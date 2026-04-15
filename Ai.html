@@ -11,17 +11,6 @@
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <!-- Puter SDK - 异步加载优化 -->
-<script>
-    (function() {
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://js.puter.com/v2/';
-        script.onerror = function() {
-            console.warn('[Sonoria] Puter SDK加载失败，使用本地模式');
-            window.puterUnavailable = true;
-        };
-        document.head.appendChild(script);
-    })();
 </script>
 <style>
 :root{
@@ -892,31 +881,57 @@ showToast(t('themeName',{name:MODES[next].name()}));
 // ============================================================
 // Puter AI Engine
 // ============================================================
-class PuterAIEngine{
-constructor(){this.isAvailable=false;this.checkAvailability()}
-checkAvailability(){
-if(typeof puter!=='undefined'){this.isAvailable=true;S.puterAvailable=true;showToast(t('puterConnected'),'ai')}
-else{this.isAvailable=false;S.puterAvailable=false;showToast(t('puterOffline'),'error')}
+
+// ============================================================
+// GitCode Qwen AI Engine (硬编码API Key)
+// ============================================================
+class GitCodeQwenEngine{
+constructor(){this.isAvailable=true;this.client=null;this.apiKey='-XXP9UKXxTwfarhDyqEYChST';this.initClient()}
+async initClient(){
+if(!this.client){
+this.client=new OpenAI({
+baseURL:"https://api-ai.gitcode.com/v1",
+apiKey:this.apiKey,
+dangerouslyAllowBrowser:true
+});
+}
+}
+async checkAvailability(){
+await this.initClient();
+S.puterAvailable=true;
 }
 getSystemPrompt(){
 const track=S.playlist[S.trackIdx];
-const trackInfo=track?`${t('nowPlaying',{name:track.name})}`:'No track playing';
-const audioStats=`Realtime: energy=${S.energy.toFixed(2)}, bass=${S.bassEnergy.toFixed(2)}, mid=${S.midEnergy.toFixed(2)}, treble=${S.trebleEnergy.toFixed(2)}, BPM≈${audioAnalyzer.features.bpm}`;
+const trackInfo=track?`\${t('nowPlaying',{name:track.name})}\`:'No track playing';
+const audioStats=\`Realtime: energy=\${S.energy.toFixed(2)}, bass=\${S.bassEnergy.toFixed(2)}, mid=\${S.midEnergy.toFixed(2)}, treble=\${S.trebleEnergy.toFixed(2)}, BPM≈\${audioAnalyzer.features.bpm}\`;
 const modes=Object.values(MODES).map(m=>m.name()).join(' / ');
-const langInstruction=lang==='zh'?'Respond in Chinese, concise <80 chars.':'Respond in English, concise <80 chars.';
-return`You are Sonoria AI, a music visualization assistant.\n${trackInfo}\n${audioStats}\nAvailable modes: ${modes}\n${langInstruction}\nSupport commands: switch [mode], analyze mood, pause/play, next/prev, zen mode.`;
+const langInstruction=lang==='zh'?'用中文回复，简洁，不超过80个字符。':'Respond in English, concise, max 80 chars.';
+return\`你是Sonoria AI，一个音乐可视化助手。
+\${trackInfo}
+\${audioStats}
+可用模式: \${modes}
+\${langInstruction}
+支持命令: 切换[模式], 分析情绪, 暂停/播放, 下一首/上一首, 禅模式。\`;
 }
 async chat(message){
-if(!this.isAvailable)return this.offlineFallback(message);
 try{
-const messages=[{role:'system',content:this.getSystemPrompt()},...S.aiConversation,{role:'user',content:message}];
-const response=await puter.ai.chat(messages);
-S.aiConversation.push({role:'user',content:message});
-S.aiConversation.push({role:'assistant',content:response.content||response.message?.content||''});
-const text=response.content||response.message?.content||'';
+await this.initClient();
+const messages=[{role:"system",content:this.getSystemPrompt()},...S.aiConversation,{role:"user",content:message}];
+const response=await this.client.chat.completions.create({
+model:"Qwen/Qwen3.5-35B-A3B",
+messages:messages,
+max_tokens:200,
+temperature:0.7
+});
+const text=response.choices[0]?.message?.content||"";
+S.aiConversation.push({role:"user",content:message});
+S.aiConversation.push({role:"assistant",content:text});
 await this.executeCommand(text);
 return text;
-}catch(e){console.error('Puter AI error:',e);return t('aiCallFailed')+'\n'+this.offlineFallback(message)}
+}catch(e){
+console.error('GitCode AI error:',e);
+return t('aiCallFailed')+'\\n'+this.offlineFallback(message);
+}
 }
 async executeCommand(resp){
 const l=resp.toLowerCase();
@@ -946,6 +961,7 @@ if(l.includes('theme')||l.includes('主题')||l.includes('切换')){randomTheme(
 return t('offlineHelp');
 }
 }
+const aiEngine=new GitCodeQwenEngine();
 const aiEngine=new PuterAIEngine();
 
 // ============================================================
