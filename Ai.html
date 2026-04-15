@@ -1,1262 +1,1040 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sonoria AI | 生成式音乐感知引擎</title>
-
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#000000">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-
-    <!-- Puter SDK - 异步加载优化 -->
-    <script>
-        (function() {
-            const script = document.createElement('script');
-            script.async = true;
-            script.src = 'https://js.puter.com/v2/';
-            script.onerror = function() {
-                console.warn('[Sonoria] Puter SDK加载失败，使用本地模式');
-                window.puterUnavailable = true;
-            };
-            document.head.appendChild(script);
-        })();
-    </script>
-
-    <style>
-        :root {
-            --primary: #8E2DE2;
-            --accent: #00d2ff;
-            --ai-glow: #00f2ff;
-            --bg-deep: #000000;
-            --glass: rgba(255, 255, 255, 0.03);
-            --glass-strong: rgba(255, 255, 255, 0.08);
-            --border: rgba(255, 255, 255, 0.06);
-            --highlight: rgba(255, 255, 255, 0.15);
-            --text-main: rgba(255, 255, 255, 0.95);
-            --text-sub: rgba(255, 255, 255, 0.55);
-            --ease-smooth: cubic-bezier(0.23, 1, 0.32, 1);
-            --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
-            --safe-top: env(safe-area-inset-top, 20px);
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            background: var(--bg-deep);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            position: fixed;
-        }
-
-        /* AI Status Indicator */
-        .ai-status {
-            position: fixed; top: 20px; right: 20px; z-index: 1000;
-            display: flex; align-items: center; gap: 8px;
-            background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.2);
-            padding: 8px 16px; border-radius: 100px; font-size: 0.75rem;
-            color: var(--ai-glow); opacity: 0; transform: translateY(-20px);
-            transition: all 0.4s var(--ease-elastic); font-family: 'Space Grotesk', monospace;
-            backdrop-filter: blur(10px);
-        }
-        .ai-status.active { opacity: 1; transform: translateY(0); }
-        .ai-pulse { width: 8px; height: 8px; background: var(--ai-glow); border-radius: 50%;
-            box-shadow: 0 0 10px var(--ai-glow); animation: ai-breathe 2s infinite; }
-        @keyframes ai-breathe {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
-        }
-
-        /* Visualizer Canvas */
-        #visualizer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1; filter: contrast(1.2) saturate(1.3);
-        }
-        .vignette {
-            position: fixed; inset: 0; z-index: 2; pointer-events: none;
-            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.6) 100%);
-        }
-
-        /* Particle Overlay for AI Art */
-        #ai-particles {
-            position: fixed; inset: 0; z-index: 3; pointer-events: none;
-            mix-blend-mode: screen;
-        }
-
-        /* Main UI */
-        .app-shell {
-            position: relative; z-index: 10; height: 100vh; width: 100vw;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: var(--safe-top) 20px calc(20px + var(--safe-bottom));
-            transition: all 0.6s var(--ease-smooth);
-        }
-
-        .lens-card {
-            width: 100%; max-width: 440px;
-            background: var(--glass);
-            backdrop-filter: blur(40px) saturate(180%);
-            border: 1px solid var(--border);
-            border-top: 1px solid var(--highlight);
-            border-radius: 32px;
-            padding: 28px;
-            display: flex; flex-direction: column; gap: 20px;
-            box-shadow: 0 30px 80px -20px rgba(0,0,0,0.6);
-            transform-style: preserve-3d;
-            transition: all 0.5s var(--ease-smooth);
-            position: relative;
-            overflow: hidden;
-        }
-        .lens-card::before {
-            content: ''; position: absolute; inset: 0; border-radius: inherit;
-            background: linear-gradient(135deg, rgba(0, 210, 255, 0.05), transparent 50%);
-            pointer-events: none;
-        }
-
-        /* AI Insight Bubble */
-        .ai-insight {
-            position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); border: 1px solid rgba(0, 210, 255, 0.3);
-            padding: 12px 20px; border-radius: 16px; font-size: 0.8rem;
-            color: var(--ai-glow); max-width: 90%; text-align: center;
-            opacity: 0; pointer-events: none; transition: all 0.4s;
-            backdrop-filter: blur(20px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .ai-insight.show { opacity: 1; top: -50px; }
-
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .brand {
-            font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem;
-            letter-spacing: 3px; font-weight: 700;
-            color: var(--text-sub); display: flex; align-items: center; gap: 8px;
-            text-transform: uppercase;
-        }
-        .ai-badge {
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            font-weight: 800;
-        }
-
-        .icon-btn {
-            background: transparent; border: none; color: var(--text-main);
-            width: 40px; height: 40px; border-radius: 50%;
-            display: grid; place-items: center; cursor: pointer;
-            transition: all 0.2s; position: relative;
-        }
-        .icon-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
-        .icon-btn.ai-active { color: var(--ai-glow); text-shadow: 0 0 20px var(--ai-glow); }
-
-        /* Hero Section with AI Mood */
-        .hero-text { text-align: center; margin: 8px 0; position: relative; }
-        .mood-indicator {
-            display: inline-flex; align-items: center; gap: 6px;
-            font-size: 0.7rem; color: var(--ai-glow); margin-bottom: 8px;
-            opacity: 0; transition: opacity 0.5s; font-family: 'Space Grotesk', monospace;
-            border: 1px solid rgba(0, 242, 255, 0.2); padding: 4px 12px; border-radius: 100px;
-            background: rgba(0, 242, 255, 0.05);
-        }
-        .mood-indicator.active { opacity: 1; }
-
-        .title {
-            font-size: 1.3rem; font-weight: 700; line-height: 1.4;
-            color: var(--text-main); margin-bottom: 6px;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .artist {
-            font-size: 0.9rem; color: var(--text-sub);
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-
-        /* AI Chat Interface */
-        .ai-drawer {
-            max-height: 0; overflow: hidden; transition: all 0.4s var(--ease-smooth);
-            background: rgba(0,0,0,0.4); border-radius: 20px; margin-top: 0;
-        }
-        .ai-drawer.open { max-height: 300px; margin-top: 16px; border: 1px solid rgba(0, 210, 255, 0.2); }
-
-        .chat-container { padding: 16px; display: flex; flex-direction: column; gap: 12px; height: 300px; }
-        .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .chat-message {
-            padding: 10px 14px; border-radius: 12px; max-width: 85%; font-size: 0.85rem;
-            animation: message-in 0.3s var(--ease-elastic);
-        }
-        @keyframes message-in {
-            from { opacity: 0; transform: translateY(10px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .chat-message.user {
-            background: rgba(255,255,255,0.1); align-self: flex-end; border-bottom-right-radius: 4px;
-        }
-        .chat-message.ai {
-            background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.2);
-            align-self: flex-start; border-bottom-left-radius: 4px; color: var(--ai-glow);
-        }
-        .chat-input-row { display: flex; gap: 8px; }
-        .chat-input {
-            flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-            padding: 12px 16px; border-radius: 100px; color: #fff; outline: none;
-        }
-        .chat-input:focus { border-color: var(--ai-glow); }
-        .chat-send {
-            width: 40px; height: 40px; border-radius: 50%; background: var(--ai-glow); border: none;
-            color: #000; display: grid; place-items: center; cursor: pointer; transition: transform 0.2s;
-        }
-        .chat-send:hover { transform: scale(1.1); }
-        .chat-send:active { transform: scale(0.95); }
-
-        /* Progress & Controls */
-        .progress-container { padding: 16px 0; cursor: pointer; touch-action: none; }
-        .progress-rail {
-            height: 4px; background: rgba(255,255,255,0.1); width: 100%; border-radius: 2px; overflow: hidden;
-            position: relative;
-        }
-        .progress-fill {
-            height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent));
-            width: 0%; border-radius: 2px; transition: width 0.1s linear;
-            box-shadow: 0 0 10px var(--accent);
-        }
-        .time-meta {
-            display: flex; justify-content: space-between; font-size: 0.75rem;
-            color: var(--text-sub); margin-top: 8px; font-variant-numeric: tabular-nums;
-        }
-
-        .controls {
-            display: flex; justify-content: center; align-items: center; gap: 32px; padding: 10px 0;
-        }
-        .play-btn {
-            width: 72px; height: 72px; border-radius: 50%;
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; display: grid; place-items: center; cursor: pointer;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(0, 210, 255, 0.1);
-            transition: all 0.3s var(--ease-elastic); backdrop-filter: blur(10px);
-        }
-        .play-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(0, 210, 255, 0.3); }
-        .play-btn.ai-listening { animation: ai-pulse-border 2s infinite; border-color: var(--ai-glow); }
-        @keyframes ai-pulse-border {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.4); }
-            50% { box-shadow: 0 0 20px 5px rgba(0, 242, 255, 0.2); }
-        }
-
-        .control-btn {
-            background: none; border: none; color: var(--text-sub); cursor: pointer;
-            transition: all 0.2s; display: grid; place-items: center;
-        }
-        .control-btn:hover { color: #fff; transform: scale(1.1); }
-
-        /* Toolbar */
-        .toolbar {
-            display: flex; justify-content: space-between; align-items: center;
-            border-top: 1px solid var(--border); padding-top: 20px; gap: 8px;
-        }
-        .toolbar-group { display: flex; gap: 8px; }
-        .pill {
-            height: 36px; padding: 0 16px; border-radius: 100px;
-            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-            color: var(--text-main); font-size: 0.8rem; cursor: pointer;
-            transition: all 0.2s; display: flex; align-items: center; gap: 6px;
-        }
-        .pill:hover { background: rgba(255,255,255,0.1); }
-        .pill.ai-mode {
-            background: rgba(0, 210, 255, 0.15); border-color: rgba(0, 210, 255, 0.3); color: var(--ai-glow);
-        }
-
-        /* Zen Capsule with AI */
-        .phantom-capsule {
-            position: fixed; bottom: calc(24px + var(--safe-bottom)); left: 50%;
-            transform: translateX(-50%) translateY(200px);
-            background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(40px);
-            border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 100px;
-            padding: 8px; display: flex; align-items: center; gap: 12px;
-            z-index: 100; opacity: 0; pointer-events: none;
-            transition: all 0.6s var(--ease-elastic);
-        }
-        .app-shell.zen ~ .phantom-capsule {
-            transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto;
-        }
-        .capsule-core {
-            width: 44px; height: 44px; position: relative; display: grid; place-items: center;
-            border-radius: 50%; border: 2px solid rgba(0, 210, 255, 0.3);
-        }
-        .capsule-ai-indicator {
-            position: absolute; inset: -4px; border-radius: 50%;
-            border: 2px solid transparent; border-top-color: var(--ai-glow);
-            animation: spin 3s linear infinite; opacity: 0; transition: opacity 0.3s;
-        }
-        .capsule-core.ai-active .capsule-ai-indicator { opacity: 1; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Toast */
-        .toast {
-            position: fixed; top: calc(20px + var(--safe-top)); left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            background: rgba(0,0,0,0.9); border: 1px solid rgba(0, 210, 255, 0.3);
-            padding: 12px 24px; border-radius: 100px; color: var(--ai-glow);
-            font-size: 0.9rem; z-index: 2000; opacity: 0; transition: all 0.4s var(--ease-elastic);
-            display: flex; align-items: center; gap: 8px;
-        }
-        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-        /* Puter Integration Specifics */
-        .puter-auth-btn {
-            position: fixed; top: 20px; left: 20px; z-index: 1000;
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; padding: 8px 16px; border-radius: 100px; cursor: pointer;
-            font-size: 0.8rem; display: flex; align-items: center; gap: 8px;
-            transition: all 0.3s;
-        }
-        .puter-auth-btn:hover { background: rgba(255,255,255,0.2); }
-        .puter-auth-btn.authenticated { background: rgba(46, 213, 115, 0.2); border-color: rgba(46, 213, 115, 0.4); color: #2ed573; }
-
-        /* Loading State */
-        .loading-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-            z-index: 3000; display: none; align-items: center; justify-content: center;
-            flex-direction: column; gap: 16px;
-        }
-        .loading-overlay.active { display: flex; }
-        .loading-spinner {
-            width: 40px; height: 40px; border: 3px solid rgba(0, 242, 255, 0.2);
-            border-top-color: var(--ai-glow); border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Sonoria AI | 听见灵魂</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎐</text></svg>">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Puter SDK - 异步加载优化 -->
+<script>
+    (function() {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://js.puter.com/v2/';
+        script.onerror = function() {
+            console.warn('[Sonoria] Puter SDK加载失败，使用本地模式');
+            window.puterUnavailable = true;
+        };
+        document.head.appendChild(script);
+    })();
+</script>
+<style>
+:root{
+--primary:#8E2DE2;--ai-primary:#7C3AED;--accent:#00d2ff;
+--bg-deep:#000;--glass:rgba(255,255,255,.02);--border:rgba(255,255,255,.06);
+--highlight:rgba(255,255,255,.12);
+--text-main:rgba(255,255,255,.95);--text-sub:rgba(255,255,255,.55);
+--ease-elastic:cubic-bezier(.34,1.56,.64,1);--ease-smooth:cubic-bezier(.23,1,.32,1);
+--safe-top:env(safe-area-inset-top,20px);--safe-bottom:env(safe-area-inset-bottom,20px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg-deep);color:var(--text-main);font-family:'Inter',sans-serif;overflow:hidden;height:100vh;width:100vw;user-select:none;position:fixed}
+canvas#viz{position:fixed;top:0;left:0;z-index:1;transition:opacity 1s ease}
+.vignette{position:fixed;inset:0;background:radial-gradient(circle at center,transparent 30%,rgba(0,0,0,.6) 100%);z-index:2;pointer-events:none}
+.app-shell{position:relative;z-index:10;height:100vh;width:100vw;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:var(--safe-top) 20px var(--safe-bottom);transition:all .8s var(--ease-smooth);perspective:1000px}
+.lens-card{width:100%;max-width:380px;background:var(--glass);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--border);border-top:1px solid var(--highlight);border-radius:40px;padding:32px 28px;display:flex;flex-direction:column;gap:24px;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);transform-style:preserve-3d;transition:all .8s var(--ease-smooth);will-change:transform,opacity}
+.header{display:flex;justify-content:space-between;align-items:center;opacity:.9}
+.brand{font-size:.75rem;letter-spacing:3px;font-weight:700;color:var(--text-sub);display:flex;align-items:center;gap:8px;text-transform:uppercase;transition:color .3s}
+.brand.ai{color:var(--ai-primary);text-shadow:0 0 10px rgba(124,58,237,.5)}
+.icon-btn{background:transparent;border:none;color:var(--text-main);width:44px;height:44px;border-radius:50%;display:grid;place-items:center;transition:.3s;cursor:pointer}
+.icon-btn:active{background:rgba(255,255,255,.1);transform:scale(.95)}
+.icon-btn.ai.active{color:var(--ai-primary);background:rgba(124,58,237,.1)}
+.hero-text{text-align:center;margin-top:10px}
+.title{font-size:1.5rem;font-weight:700;line-height:1.3;color:var(--text-main);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;letter-spacing:-.5px}
+.artist{font-size:.9rem;color:var(--text-sub);display:flex;align-items:center;justify-content:center;gap:8px}
+.artist::before{content:'';width:4px;height:4px;background:var(--text-sub);border-radius:50%;opacity:.5}
+.drawer{height:0;overflow:hidden;transition:.5s var(--ease-smooth);opacity:0;background:rgba(0,0,0,.2);border-radius:20px}
+.drawer.open{height:auto;max-height:350px;opacity:1;margin-top:16px;padding:16px;border:1px solid var(--border);overflow-y:auto}
+.glass-input{width:100%;background:rgba(255,255,255,.08);border:1px solid transparent;padding:14px;border-radius:12px;color:#fff;margin-bottom:10px;outline:none;font-size:.9rem;transition:.3s}
+.glass-input:focus{border-color:var(--accent);background:rgba(255,255,255,.12)}
+.glass-input.ai:focus{border-color:var(--ai-primary)}
+.full-btn{width:100%;padding:12px;background:var(--primary);border:none;border-radius:12px;color:#fff;font-weight:600;cursor:pointer;transition:.3s}
+.full-btn:active{opacity:.8}
+.playlist-view{max-height:200px;overflow-y:auto}
+.pl-item{padding:12px;border-radius:10px;font-size:.9rem;color:var(--text-sub);cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.03)}
+.pl-item.active{background:rgba(255,255,255,.08);color:#fff}
+.ai-messages{max-height:250px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:12px}
+.ai-message{padding:10px 14px;border-radius:16px;max-width:85%;font-size:.85rem;line-height:1.5;white-space:pre-wrap}
+.ai-message.user{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px}
+.ai-message.bot{align-self:flex-start;background:rgba(255,255,255,.08);border:1px solid var(--border);border-bottom-left-radius:4px}
+.ai-message.loading{display:flex;align-items:center;gap:6px}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--ai-primary);animation:ai-dot 1.4s infinite ease-in-out both}
+.ai-dot:nth-child(1){animation-delay:-.32s}
+.ai-dot:nth-child(2){animation-delay:-.16s}
+@keyframes ai-dot{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+.ai-input-container{display:flex;gap:8px;align-items:center}
+.ai-input-container .glass-input{margin-bottom:0;flex:1}
+.ai-send-btn{width:44px;height:44px;border-radius:50%;background:var(--ai-primary);border:none;color:#fff;display:grid;place-items:center;cursor:pointer;transition:.3s;flex-shrink:0}
+.ai-send-btn:active{transform:scale(.95)}
+.progress-container{padding:16px 0;cursor:pointer;touch-action:none}
+.progress-rail{height:3px;background:rgba(255,255,255,.1);width:100%;border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--text-main);width:0%;border-radius:2px;transition:width .1s linear}
+.time-meta{display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-sub);margin-top:8px;font-variant-numeric:tabular-nums}
+.controls{display:flex;justify-content:center;align-items:center;gap:36px;padding:10px 0}
+.play-btn{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:32px;display:grid;place-items:center;box-shadow:0 10px 30px rgba(0,0,0,.2);cursor:pointer;transition:.3s var(--ease-elastic);backdrop-filter:blur(10px)}
+.play-btn:active{transform:scale(.92);background:rgba(255,255,255,.2)}
+.sub-btn{font-size:30px;color:var(--text-sub);background:none;border:none;cursor:pointer;transition:.3s}
+.sub-btn:active{color:#fff;transform:scale(.9)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:24px;margin-top:8px}
+.pill{height:40px;padding:0 18px;border-radius:100px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.05);color:#fff;font-size:.85rem;display:flex;align-items:center;gap:8px;cursor:pointer;transition:.3s}
+.pill:active{background:rgba(255,255,255,.15);transform:scale(.98)}
+#mic-btn.active{color:var(--accent);text-shadow:0 0 15px rgba(0,210,255,.6)}
+.phantom-capsule{position:fixed;bottom:calc(30px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(150px);background:rgba(10,10,15,.7);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:6px 8px 6px 10px;display:flex;align-items:center;gap:14px;z-index:999;opacity:0;pointer-events:none;transition:all .8s var(--ease-elastic);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.app-shell.zen .lens-card{opacity:0;transform:scale(.92) translateY(-40px);filter:blur(30px);pointer-events:none}
+.app-shell.zen~.phantom-capsule{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+.capsule-core{width:42px;height:42px;position:relative;display:grid;place-items:center;border-radius:50%;flex-shrink:0;transition:transform .05s linear,box-shadow .1s linear}
+.ring-svg{position:absolute;transform:rotate(-90deg);width:100%;height:100%;overflow:visible}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.1);stroke-width:3}
+.ring-progress{fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .1s linear,stroke .5s}
+.ring-logo{font-size:20px;z-index:1;color:#fff;transition:color .5s}
+.capsule-info{width:120px;font-size:.9rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.capsule-btn{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;border:none;display:grid;place-items:center;cursor:pointer;flex-shrink:0}
+.capsule-btn:active{background:rgba(255,255,255,.2)}
+.toast{position:fixed;top:calc(20px + var(--safe-top));left:50%;transform:translateX(-50%) translateY(-20px);background:rgba(20,20,20,.8);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);padding:10px 20px;border-radius:30px;font-size:.85rem;color:#fff;opacity:0;transition:.4s var(--ease-elastic);z-index:1000;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ai{background:rgba(124,58,237,.8)}
+.toast.error{background:rgba(239,68,68,.8)}
+.toast.success{background:rgba(16,185,129,.8)}
+input[type="file"]{display:none}
+</style>
 </head>
 <body>
-    <!-- Puter Auth -->
-    <button class="puter-auth-btn" id="puter-auth" onclick="togglePuterAuth()">
-        <i class="material-icons-round" style="font-size:18px;">account_circle</i>
-        <span id="auth-text">连接 Puter</span>
-    </button>
-
-    <!-- AI Status -->
-    <div class="ai-status" id="ai-status">
-        <span class="ai-pulse"></span>
-        <span>AI 感知引擎运行中</span>
-    </div>
-
-    <!-- Canvas Layers -->
-    <canvas id="visualizer"></canvas>
-    <canvas id="ai-particles"></canvas>
-    <div class="vignette"></div>
-
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loading-overlay">
-        <div class="loading-spinner"></div>
-        <div style="color: var(--ai-glow); font-size: 0.9rem;">AI 正在分析...</div>
-    </div>
-
-    <!-- Main App -->
-    <main class="app-shell" id="app-shell">
-        <div class="lens-card" id="card">
-            <!-- AI Insight Bubble -->
-            <div class="ai-insight" id="ai-insight">
-                正在分析音频特征...
-            </div>
-
-            <div class="header">
-                <button class="icon-btn" onclick="enterZen()">
-                    <i class="material-icons-round">keyboard_arrow_down</i>
-                </button>
-                <div class="brand">
-                    <span class="ai-badge">AI</span> SONORIA
-                </div>
-                <button class="icon-btn ai-active" id="ai-chat-toggle" onclick="toggleAIChat()">
-                    <i class="material-icons-round">psychology</i>
-                </button>
-            </div>
-
-            <div class="hero-text">
-                <div class="mood-indicator" id="mood-indicator">
-                    <i class="material-icons-round" style="font-size:14px;">auto_awesome</i>
-                    <span id="mood-text">分析中...</span>
-                </div>
-                <div class="title" id="track-title">导入音乐或连接麦克风</div>
-                <div class="artist" id="track-artist">AI 将实时分析音频特征</div>
-            </div>
-
-            <!-- AI Chat Drawer -->
-            <div class="ai-drawer" id="ai-drawer">
-                <div class="chat-container">
-                    <div class="chat-messages" id="chat-messages">
-                        <div class="chat-message ai">
-                            我是 Sonoria AI。我可以帮你：<br>
-                            • "分析这首歌的情绪"<br>
-                            • "生成迷幻视觉"<br>
-                            • "推荐相似音乐"<br>
-                            • "解释歌词含义"
-                        </div>
-                    </div>
-                    <div class="chat-input-row">
-                        <input type="text" class="chat-input" id="chat-input" placeholder="输入指令或提问..." onkeypress="handleChatKey(event)">
-                        <button class="chat-send" onclick="sendChat()">
-                            <i class="material-icons-round">send</i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="progress-container" id="progress-container">
-                <div class="progress-rail"><div class="progress-fill" id="progress-fill"></div></div>
-                <div class="time-meta">
-                    <span id="curr-time">0:00</span>
-                    <span id="total-time">0:00</span>
-                </div>
-            </div>
-
-            <div class="controls">
-                <button class="control-btn" onclick="playPrev()">
-                    <i class="material-icons-round" style="font-size:32px;">skip_previous</i>
-                </button>
-                <button class="play-btn" id="main-play" onclick="togglePlay()">
-                    <i class="material-icons-round" style="font-size:32px;">play_arrow</i>
-                </button>
-                <button class="control-btn" onclick="playNext()">
-                    <i class="material-icons-round" style="font-size:32px;">skip_next</i>
-                </button>
-            </div>
-
-            <div class="toolbar">
-                <button class="pill" onclick="document.getElementById('file-input').click()">
-                    <i class="material-icons-round">add</i> 导入
-                </button>
-                <div class="toolbar-group">
-                    <button class="pill ai-mode" onclick="analyzeCurrentTrack()">
-                        <i class="material-icons-round">analytics</i> 分析
-                    </button>
-                    <button class="icon-btn" onclick="toggleMic()" id="mic-btn">
-                        <i class="material-icons-round">mic</i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Zen Capsule -->
-    <div class="phantom-capsule" id="capsule" onclick="exitZen()">
-        <div class="capsule-core" id="capsule-core">
-            <div class="capsule-ai-indicator"></div>
-            <i class="material-icons-round" style="color:#fff;">graphic_eq</i>
-        </div>
-        <div style="width:120px;">
-            <div style="font-size:0.85rem;font-weight:600;color:#fff;" id="capsule-title">就绪</div>
-        </div>
-        <button class="icon-btn" onclick="event.stopPropagation(); togglePlay()" style="color:#fff;">
-            <i class="material-icons-round" id="capsule-play-icon">play_arrow</i>
-        </button>
-    </div>
-
-    <div class="toast" id="toast">Puter 模式离线运行</div>
-    <input type="file" id="file-input" accept="audio/mp3,audio/m4a,audio/wav,audio/flac,audio/*" multiple="" style="display:none" onchange="handleFiles(this.files)">
-
-    <script>
-        // ==========================================
-        // Sonoria AI Core - Optimized Version
-        // ==========================================
-
-        const AppState = {
-            playing: false,
-            aiActive: false,
-            zenMode: false,
-            currentTrack: null,
-            audioContext: null,
-            analyser: null,
-            source: null,
-            audioEl: null,
-            playlist: [],
-            currentIndex: 0,
-            aiHistory: [],
-            puterReady: false,
-            animationFrameId: null,  // 优化：动画帧ID管理
-            visualParams: {
-                hue: 0,
-                energy: 0,
-                mood: 'neutral',
-                complexity: 0.5,
-                colorPalette: ['#00d2ff', '#8E2DE2']
-            }
-        };
-
-        // ==========================================
-        // Audio Analysis Engine - 优化版
-        // ==========================================
-
-        class AudioAnalyzer {
-            constructor() {
-                this.features = {
-                    bpm: 120,
-                    energy: 0,
-                    spectralCentroid: 0,
-                    onsetDetected: false
-                };
-                this.history = [];
-                this.lastOnset = 0;
-                this.maxHistorySize = 100;  // 优化：限制历史数据大小
-            }
-
-            analyze() {
-                if (!AppState.analyser) return;
-
-                const dataArray = new Uint8Array(AppState.analyser.frequencyBinCount);
-                AppState.analyser.getByteFrequencyData(dataArray);
-
-                // Calculate energy (bass)
-                let bass = 0, treble = 0;
-                for (let i = 0; i < 20; i++) bass += dataArray[i];
-                for (let i = 100; i < 200; i++) treble += dataArray[i];
-
-                const totalEnergy = bass / 20 / 255;
-                this.features.energy = totalEnergy;
-                this.features.spectralCentroid = this.calculateSpectralCentroid(dataArray);
-
-                // Onset detection for beat
-                if (totalEnergy > 0.6 && Date.now() - this.lastOnset > 300) {
-                    this.features.onsetDetected = true;
-                    this.lastOnset = Date.now();
-                    this.onBeat();
-                } else {
-                    this.features.onsetDetected = false;
-                }
-
-                // 优化：限制历史数据大小，防止内存泄漏
-                this.history.push({...this.features});
-                if (this.history.length > this.maxHistorySize) {
-                    this.history.shift();
-                }
-
-                return this.features;
-            }
-
-            calculateSpectralCentroid(data) {
-                let numerator = 0, denominator = 0;
-                for (let i = 0; i < data.length; i++) {
-                    numerator += i * data[i];
-                    denominator += data[i];
-                }
-                return denominator === 0 ? 0 : numerator / denominator;
-            }
-
-            onBeat() {
-                // Trigger visual effects on beat
-                AppState.visualParams.energy = 1.0;
-                const capsuleCore = document.getElementById('capsule-core');
-                if (capsuleCore) {
-                    capsuleCore.style.transform = 'scale(1.2)';
-                    setTimeout(() => {
-                        capsuleCore.style.transform = 'scale(1)';
-                    }, 100);
-                }
-            }
-
-            // 优化：清理历史数据
-            clearHistory() {
-                this.history = [];
-            }
-        }
-
-        const analyzer = new AudioAnalyzer();
-
-        // ==========================================
-        // Generative Visualizer - 性能优化版
-        // ==========================================
-
-        class GenerativeVisualizer {
-            constructor() {
-                this.canvas = document.getElementById('visualizer');
-                this.ctx = this.canvas.getContext('2d');
-                this.particles = [];
-                this.resize();
-                window.addEventListener('resize', () => this.resize());
-
-                // AI-influenced parameters
-                this.params = {
-                    particleCount: 100,
-                    connectionDistance: 100,
-                    turbulence: 0.5,
-                    colorShift: 0
-                };
-
-                // 优化：空间分区网格
-                this.gridSize = 50;
-                this.grid = {};
-            }
-
-            resize() {
-                this.canvas.width = window.innerWidth;
-                this.canvas.height = window.innerHeight;
-            }
-
-            updateParams(aiAnalysis) {
-                if (!aiAnalysis) return;
-
-                // Adjust visual params based on AI mood analysis
-                switch(aiAnalysis.mood) {
-                    case 'energetic':
-                        this.params.particleCount = 150;
-                        this.params.turbulence = 0.8;
-                        break;
-                    case 'calm':
-                        this.params.particleCount = 60;
-                        this.params.turbulence = 0.2;
-                        break;
-                    case 'intense':
-                        this.params.particleCount = 200;
-                        this.params.turbulence = 1.2;
-                        break;
-                }
-
-                AppState.visualParams.colorPalette = aiAnalysis.colorScheme || ['#00d2ff', '#8E2DE2'];
-            }
-
-            // 优化：空间分区算法 - 将O(n²)降为O(n)
-            buildGrid() {
-                this.grid = {};
-                this.particles.forEach((p, i) => {
-                    const gx = Math.floor(p.x / this.gridSize);
-                    const gy = Math.floor(p.y / this.gridSize);
-                    const key = `${gx},${gy}`;
-                    if (!this.grid[key]) this.grid[key] = [];
-                    this.grid[key].push(i);
-                });
-            }
-
-            getNearbyParticles(x, y) {
-                const nearby = [];
-                const gx = Math.floor(x / this.gridSize);
-                const gy = Math.floor(y / this.gridSize);
-
-                // 检查周围9个格子
-                for (let dx = -1; dx <= 1; dx++) {
-                    for (let dy = -1; dy <= 1; dy++) {
-                        const key = `${gx + dx},${gy + dy}`;
-                        if (this.grid[key]) {
-                            nearby.push(...this.grid[key]);
-                        }
-                    }
-                }
-                return nearby;
-            }
-
-            render() {
-                if (!AppState.playing) return;
-
-                const features = analyzer.analyze();
-                const energy = features.energy;
-
-                // Fade effect
-                this.ctx.fillStyle = 'rgba(0,0,0,0.1)';
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-                // AI-driven color
-                AppState.visualParams.hue += 0.5 + energy;
-                const [c1, c2] = AppState.visualParams.colorPalette;
-
-                // Dynamic visualization based on AI mode
-                this.renderNeuralNetwork(features, c1, c2);
-
-                // Update global energy decay
-                AppState.visualParams.energy *= 0.95;
-            }
-
-            renderNeuralNetwork(features, color1, color2) {
-                const { width, height } = this.canvas;
-                const cx = width / 2, cy = height / 2;
-                const count = this.params.particleCount;
-
-                // Generate nodes based on frequency data
-                while (this.particles.length < count) {
-                    this.particles.push({
-                        x: Math.random() * width,
-                        y: Math.random() * height,
-                        vx: 0, vy: 0,
-                        size: Math.random() * 3 + 1
-                    });
-                }
-
-                // Trim excess particles
-                while (this.particles.length > count) {
-                    this.particles.pop();
-                }
-
-                const data = new Uint8Array(AppState.analyser.frequencyBinCount);
-                AppState.analyser.getByteFrequencyData(data);
-
-                // 优化：构建空间分区网格
-                this.buildGrid();
-
-                this.particles.forEach((p, i) => {
-                    // Movement influenced by audio and AI turbulence
-                    const freq = data[i % data.length] / 255;
-                    const angle = (i / count) * Math.PI * 2 + AppState.visualParams.hue * 0.01;
-                    const radius = 100 + freq * 200;
-
-                    const targetX = cx + Math.cos(angle) * radius;
-                    const targetY = cy + Math.sin(angle) * radius;
-
-                    p.x += (targetX - p.x) * 0.05 * this.params.turbulence;
-                    p.y += (targetY - p.y) * 0.05 * this.params.turbulence;
-
-                    // Draw node
-                    this.ctx.beginPath();
-                    this.ctx.arc(p.x, p.y, p.size * (1 + features.energy), 0, Math.PI * 2);
-                    this.ctx.fillStyle = color1;
-                    this.ctx.fill();
-
-                    // 优化：使用空间分区查找邻近粒子
-                    const nearbyIndices = this.getNearbyParticles(p.x, p.y);
-                    const maxConnections = 10;  // 限制每粒子的最大连接数
-
-                    nearbyIndices.slice(0, maxConnections).forEach(j => {
-                        if (j <= i) return;  // 避免重复连接
-
-                        const p2 = this.particles[j];
-                        const dx = p.x - p2.x;
-                        const dy = p.y - p2.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
-
-                        if (dist < this.params.connectionDistance * (1 + features.energy)) {
-                            this.ctx.beginPath();
-                            this.ctx.moveTo(p.x, p.y);
-                            this.ctx.lineTo(p2.x, p2.y);
-                            const alpha = (1 - dist / this.params.connectionDistance) * 0.5;
-                            this.ctx.strokeStyle = color2 + Math.floor(alpha * 255).toString(16).padStart(2, '0');
-                            this.ctx.stroke();
-                        }
-                    });
-                });
-            }
-
-            // 优化：清理粒子
-            clearParticles() {
-                this.particles = [];
-                this.grid = {};
-            }
-        }
-
-        const viz = new GenerativeVisualizer();
-
-        // ==========================================
-        // AI Services - 增强版
-        // ==========================================
-
-        class AIService {
-            static async analyzeAudio(features) {
-                // Check if Puter is available and authenticated
-                if (AppState.puterReady && typeof puter !== 'undefined' && puter.auth && puter.auth.isSignedIn()) {
-                    try {
-                        const prompt = `分析以下音频特征并返回JSON格式：{
-                            "mood": "情绪标签(energetic/calm/melancholic/intense)",
-                            "colorScheme": ["主色", "辅色"],
-                            "description": "一句话描述",
-                            "visualStyle": "推荐的视觉风格"
-                        }
-                        音频特征：BPM估算${features.bpm}, 平均能量${features.energy}, 频谱集中度${features.spectralCentroid}`;
-
-                        const response = await puter.ai.chat(prompt);
-                        return JSON.parse(response.message.content);
-                    } catch (e) {
-                        console.warn('[AI] Puter分析失败，使用本地fallback:', e);
-                        return this.localAnalysis(features);
-                    }
-                }
-                return this.localAnalysis(features);
-            }
-
-            static localAnalysis(features) {
-                // Fallback analysis without API - 优化版
-                const moods = ['energetic', 'calm', 'intense', 'melancholic'];
-                let mood;
-                if (features.energy > 0.7) {
-                    mood = 'intense';
-                } else if (features.energy > 0.4) {
-                    mood = 'energetic';
-                } else if (features.energy < 0.2) {
-                    mood = 'melancholic';
-                } else {
-                    mood = 'calm';
-                }
-
-                const colors = {
-                    energetic: ['#ff006e', '#fb5607'],
-                    calm: ['#00d2ff', '#8E2DE2'],
-                    intense: ['#ff0000', '#ff8800'],
-                    melancholic: ['#3a86ff', '#8338ec']
-                };
-
-                return {
-                    mood,
-                    colorScheme: colors[mood],
-                    description: `检测到${mood === 'intense' ? '高强度' : mood === 'energetic' ? '活跃' : mood === 'calm' ? '平静' : '忧郁'}的音乐氛围`,
-                    visualStyle: mood
-                };
-            }
-
-            static async chat(message, context = '') {
-                // Check if Puter is available and authenticated
-                if (AppState.puterReady && typeof puter !== 'undefined' && puter.auth && puter.auth.isSignedIn()) {
-                    try {
-                        const systemPrompt = `你是 Sonoria AI，一个懂音乐、艺术和心理学的高级 AI。当前播放：${AppState.currentTrack?.title || '无'}。请简短回答（少于100字）。`;
-                        const response = await puter.ai.chat([
-                            { role: 'system', content: systemPrompt },
-                            { role: 'user', content: message }
-                        ]);
-                        return response.message.content;
-                    } catch (e) {
-                        console.warn('[AI] Puter对话失败，使用本地fallback:', e);
-                        return this.localChatResponse(message);
-                    }
-                }
-                return this.localChatResponse(message);
-            }
-
-            static localChatResponse(message) {
-                // 优化：增强的本地响应逻辑
-                const lower = message.toLowerCase();
-
-                // 情绪/分析类
-                if (lower.includes('分析') || lower.includes('情绪') || lower.includes('mood')) {
-                    return `正在分析当前音频波形特征...检测到${AppState.visualParams.mood || '平静'}的音乐氛围，建议切换"量子"可视化模式以获得最佳体验。`;
-                }
-
-                // 视觉类
-                if (lower.includes('视觉') || lower.includes('画面') || lower.includes('visual')) {
-                    return '已调整生成参数：增加粒子密度，启用流体动力学模拟，色彩映射基于频谱分析实时生成。';
-                }
-
-                // 推荐类
-                if (lower.includes('推荐') || lower.includes('recommend') || lower.includes('相似')) {
-                    return '基于当前音乐特征，推荐您探索：Porter Robinson的《Virtual Self》、Kavinsky的《Outrun》系列，以及整体Synthwave流派作品。';
-                }
-
-                // 歌词类
-                if (lower.includes('歌词') || lower.includes('lyrics') || lower.includes('含义')) {
-                    return '很抱歉，当前版本暂不支持歌词分析。请连接 Puter 账户以启用完整 AI 能力，包括深度歌词解读和智能推荐。';
-                }
-
-                // 控制类
-                if (lower.includes('播放') || lower.includes('play')) {
-                    playAudio();
-                    return '已开始播放';
-                }
-                if (lower.includes('暂停') || lower.includes('pause') || lower.includes('停止')) {
-                    pauseAudio();
-                    return '已暂停播放';
-                }
-                if (lower.includes('禅') || lower.includes('zen')) {
-                    enterZen();
-                    return '已进入禅模式';
-                }
-
-                // 默认回复
-                return '我理解了。要解锁完整 AI 能力（包括深度音乐分析、智能推荐、歌词解读），请点击左上角连接 Puter 账户。';
-            }
-
-            static async generateArtPrompt(mood) {
-                const prompts = {
-                    energetic: 'futuristic neon city, cyberpunk, high energy, motion blur, electric blue and magenta',
-                    calm: 'underwater bioluminescence, deep ocean, floating particles, cyan and purple gradient, ethereal',
-                    intense: 'supernova explosion, fractal flames, red and orange plasma, high contrast, chaotic',
-                    melancholic: 'rainy window, bokeh lights, blue monochromatic, slow shutter, nostalgic'
-                };
-                return prompts[mood] || prompts.calm;
-            }
-        }
-
-        // ==========================================
-        // Puter Integration
-        // ==========================================
-
-        async function initPuter() {
-            // 等待Puter SDK加载
-            let attempts = 0;
-            const maxAttempts = 50;  // 5秒超时
-
-            while (typeof puter === 'undefined' && attempts < maxAttempts) {
-                await new Promise(r => setTimeout(r, 100));
-                attempts++;
-            }
-
-            if (typeof puter === 'undefined') {
-                console.warn('[Puter] SDK加载超时，使用本地模式');
-                return;
-            }
-
-            try {
-                await puter.init();
-                AppState.puterReady = true;
-                console.log('[Puter] Initialized');
-
-                // Check auth status
-                if (puter.auth.isSignedIn()) {
-                    updateAuthUI(true);
-                    showToast('已连接到 Puter AI 云');
-                }
-
-                // Load saved playlist if any
-                loadFromPuterFS();
-            } catch (e) {
-                console.warn('[Puter] 初始化失败:', e);
-                showToast('Puter 模式离线运行');
-            }
-        }
-
-        function togglePuterAuth() {
-            if (!AppState.puterReady || typeof puter === 'undefined') {
-                showToast('Puter 不可用，使用本地模式');
-                return;
-            }
-
-            if (puter.auth.isSignedIn()) {
-                puter.auth.signOut();
-                updateAuthUI(false);
-            } else {
-                puter.auth.signIn();
-                updateAuthUI(true);
-            }
-        }
-
-        function updateAuthUI(authed) {
-            const btn = document.getElementById('puter-auth');
-            const text = document.getElementById('auth-text');
-            if (authed) {
-                btn.classList.add('authenticated');
-                text.textContent = '已连接';
-            } else {
-                btn.classList.remove('authenticated');
-                text.textContent = '连接 Puter';
-            }
-        }
-
-        async function saveAnalysisToPuter(title, analysis) {
-            if (!AppState.puterReady || typeof puter === 'undefined') return;
-            try {
-                const data = JSON.stringify({ title, analysis, timestamp: new Date().toISOString() });
-                await puter.fs.write(`/sonoria_analyses/${Date.now()}.json`, data);
-            } catch (e) {
-                console.log('保存失败', e);
-            }
-        }
-
-        async function loadFromPuterFS() {
-            if (!AppState.puterReady || typeof puter === 'undefined') return;
-            try {
-                const files = await puter.fs.readdir('/sonoria_playlist');
-                // Implementation for loading saved playlists
-            } catch (e) {
-                // Directory might not exist
-            }
-        }
-
-        // ==========================================
-        // Chat Interface
-        // ==========================================
-
-        function toggleAIChat() {
-            const drawer = document.getElementById('ai-drawer');
-            drawer.classList.toggle('open');
-            if (drawer.classList.contains('open')) {
-                setTimeout(() => document.getElementById('chat-input').focus(), 100);
-            }
-        }
-
-        function handleChatKey(e) {
-            if (e.key === 'Enter') sendChat();
-        }
-
-        async function sendChat() {
-            const input = document.getElementById('chat-input');
-            const message = input.value.trim();
-            if (!message) return;
-
-            input.value = '';
-            addChatMessage(message, 'user');
-
-            // Show typing indicator
-            const aiStatus = document.getElementById('ai-status');
-            aiStatus.classList.add('active');
-
-            try {
-                const response = await AIService.chat(message);
-                addChatMessage(response, 'ai');
-
-                // Process commands
-                processAICommand(message.toLowerCase());
-            } catch (e) {
-                console.error(e);
-                addChatMessage('抱歉，处理请求时出错。', 'ai');
-            } finally {
-                setTimeout(() => aiStatus.classList.remove('active'), 1000);
-            }
-        }
-
-        function addChatMessage(text, sender) {
-            const container = document.getElementById('chat-messages');
-            const div = document.createElement('div');
-            div.className = `chat-message ${sender}`;
-            div.textContent = text;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function processAICommand(cmd) {
-            if (cmd.includes('禅') || cmd.includes('zen')) enterZen();
-            if (cmd.includes('分析')) analyzeCurrentTrack();
-            if (cmd.includes('停止') || cmd.includes('暂停')) pauseAudio();
-            if (cmd.includes('播放')) playAudio();
-        }
-
-        // ==========================================
-        // Audio Control - 优化版
-        // ==========================================
-
-        async function initAudio() {
-            if (AppState.audioContext) return;
-
-            AppState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            AppState.analyser = AppState.audioContext.createAnalyser();
-            AppState.analyser.fftSize = 2048;
-            AppState.analyser.smoothingTimeConstant = 0.8;
-        }
-
-        async function handleFiles(files) {
-            // 显示加载状态
-            const loadingOverlay = document.getElementById('loading-overlay');
-            loadingOverlay.classList.add('active');
-
-            await initAudio();
-
-            const file = files[0];
-            if (!file) {
-                loadingOverlay.classList.remove('active');
-                return;
-            }
-
-            AppState.currentTrack = {
-                title: file.name.replace(/\.[^/.]+$/, ""),
-                file: file
-            };
-
-            const url = URL.createObjectURL(file);
-            if (AppState.audioEl) {
-                AppState.audioEl.pause();
-                AppState.audioEl = null;
-            }
-
-            AppState.audioEl = new Audio(url);
-            AppState.audioEl.onended = () => {
-                pauseAudio();
-            };
-
-            // Connect to analyzer
-            const source = AppState.audioContext.createMediaElementSource(AppState.audioEl);
-            source.connect(AppState.analyser);
-            AppState.analyser.connect(AppState.audioContext.destination);
-
-            document.getElementById('track-title').textContent = AppState.currentTrack.title;
-            document.getElementById('track-artist').textContent = '本地文件';
-
-            // 隐藏加载状态
-            loadingOverlay.classList.remove('active');
-
-            playAudio();
-
-            // Auto analyze after 5 seconds
-            setTimeout(analyzeCurrentTrack, 5000);
-        }
-
-        async function analyzeCurrentTrack() {
-            if (!AppState.analyser) return;
-
-            const insight = document.getElementById('ai-insight');
-            const moodIndicator = document.getElementById('mood-indicator');
-            const moodText = document.getElementById('mood-text');
-
-            insight.textContent = '正在分析音频特征与情绪...';
-            insight.classList.add('show');
-            moodIndicator.classList.add('active');
-
-            // Show loading
-            const loadingOverlay = document.getElementById('loading-overlay');
-            loadingOverlay.classList.add('active');
-
-            // Collect 3 seconds of analysis
-            const samples = [];
-            for (let i = 0; i < 30; i++) {
-                samples.push(analyzer.analyze());
-                await new Promise(r => setTimeout(r, 100));
-            }
-
-            const avgEnergy = samples.reduce((a, s) => a + s.energy, 0) / samples.length;
-            const features = { energy: avgEnergy, bpm: 128, spectralCentroid: 2000 };
-
-            const analysis = await AIService.analyzeAudio(features);
-
-            // Hide loading
-            loadingOverlay.classList.remove('active');
-
-            // Update UI with results
-            AppState.visualParams.mood = analysis.mood;
-            viz.updateParams(analysis);
-
-            insight.textContent = analysis.description;
-            moodText.textContent = analysis.mood.toUpperCase();
-
-            document.getElementById('ai-status').classList.add('active');
-            AppState.aiActive = true;
-
-            setTimeout(() => {
-                insight.classList.remove('show');
-            }, 5000);
-
-            // Save analysis
-            saveAnalysisToPuter(AppState.currentTrack.title, analysis);
-        }
-
-        function togglePlay() {
-            if (!AppState.audioEl) {
-                document.getElementById('file-input').click();
-                return;
-            }
-
-            if (AppState.playing) {
-                pauseAudio();
-            } else {
-                playAudio();
-            }
-        }
-
-        function playAudio() {
-            if (AppState.audioEl) {
-                AppState.audioEl.play();
-                AppState.playing = true;
-                updatePlayButton();
-                animate();
-                document.getElementById('ai-status').classList.add('active');
-            }
-        }
-
-        function pauseAudio() {
-            if (AppState.audioEl) {
-                AppState.audioEl.pause();
-                AppState.playing = false;
-                updatePlayButton();
-
-                // 优化：正确停止动画循环
-                if (AppState.animationFrameId) {
-                    cancelAnimationFrame(AppState.animationFrameId);
-                    AppState.animationFrameId = null;
-                }
-            }
-        }
-
-        function updatePlayButton() {
-            const icon = AppState.playing ? 'pause' : 'play_arrow';
-            document.querySelector('#main-play i').textContent = icon;
-            document.getElementById('capsule-play-icon').textContent = icon;
-        }
-
-        function playNext() { showToast('播放下一首 (示例)'); }
-        function playPrev() { showToast('播放上一首 (示例)'); }
-
-        async function toggleMic() {
-            await initAudio();
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const source = AppState.audioContext.createMediaStreamSource(stream);
-                source.connect(AppState.analyser);
-                AppState.playing = true;
-                animate();
-                document.getElementById('mic-btn').classList.add('ai-active');
-                showToast('AI 正在实时聆听环境音');
-            } catch (e) {
-                showToast('无法访问麦克风');
-            }
-        }
-
-        // ==========================================
-        // Animation Loop - 优化版
-        // ==========================================
-
-        function animate() {
-            if (!AppState.playing) return;
-
-            viz.render();
-
-            // 优化：保存动画帧ID
-            AppState.animationFrameId = requestAnimationFrame(animate);
-        }
-
-        // ==========================================
-        // UI Helpers
-        // ==========================================
-
-        function enterZen() {
-            document.getElementById('app-shell').classList.add('zen');
-            AppState.zenMode = true;
-        }
-
-        function exitZen() {
-            document.getElementById('app-shell').classList.remove('zen');
-            AppState.zenMode = false;
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        // Progress bar interaction
-        document.getElementById('progress-container').addEventListener('click', function(e) {
-            if (!AppState.audioEl) return;
-            const pct = e.offsetX / this.offsetWidth;
-            AppState.audioEl.currentTime = pct * AppState.audioEl.duration;
-        });
-
-        // Update progress
-        setInterval(() => {
-            if (AppState.audioEl && AppState.playing) {
-                const pct = AppState.audioEl.currentTime / AppState.audioEl.duration;
-                document.getElementById('progress-fill').style.width = (pct * 100) + '%';
-                document.getElementById('curr-time').textContent = formatTime(AppState.audioEl.currentTime);
-                document.getElementById('total-time').textContent = formatTime(AppState.audioEl.duration || 0);
-            }
-        }, 100);
-
-        function formatTime(s) {
-            if (!s) return '0:00';
-            const m = Math.floor(s / 60);
-            const sec = Math.floor(s % 60);
-            return `${m}:${sec.toString().padStart(2, '0')}`;
-        }
-
-        // 优化：页面卸载时清理资源
-        window.addEventListener('beforeunload', () => {
-            if (AppState.animationFrameId) {
-                cancelAnimationFrame(AppState.animationFrameId);
-            }
-            analyzer.clearHistory();
-            viz.clearParticles();
-        });
-
-        // Init
-        window.addEventListener('load', () => {
-            initPuter();
-
-            // Demo mode if no file
-            setTimeout(() => {
-                if (!AppState.currentTrack) {
-                    document.getElementById('track-title').textContent = '导入音乐或连接麦克风';
-                    document.getElementById('track-artist').textContent = 'AI 将实时分析音频特征';
-                }
-            }, 1000);
-        });
-    </script>
+<canvas id="viz"></canvas>
+<div class="vignette"></div>
+<div class="app-shell" id="app-shell">
+<div class="lens-card" id="card">
+<div class="header">
+<button class="icon-btn" id="zen-btn"><i class="material-icons-round">keyboard_arrow_down</i></button>
+<div class="brand" id="brand">SONORIA</div>
+<button class="icon-btn" id="playlist-btn"><i class="material-icons-round">queue_music</i></button>
+</div>
+<div class="hero-text">
+<div class="title" id="track-title">Soul Frequency</div>
+<div class="artist" id="track-artist"></div>
+</div>
+<div class="drawer" id="input-drawer">
+<input type="text" class="glass-input" id="url-input" placeholder="">
+<div class="action-row">
+<button class="full-btn" id="file-btn"><i class="material-icons-round" style="vertical-align:middle;font-size:18px">folder_open</i> <span id="file-btn-text"></span></button>
+</div>
+</div>
+<div class="drawer" id="playlist-drawer">
+<div class="playlist-view" id="playlist-view"><div style="text-align:center;color:var(--text-sub);padding:10px" id="pl-empty"></div></div>
+</div>
+<div class="drawer" id="ai-drawer">
+<div class="ai-messages" id="ai-messages"></div>
+<div class="ai-input-container">
+<input type="text" class="glass-input ai" id="ai-input" placeholder="">
+<button class="ai-send-btn" id="ai-send-btn"><i class="material-icons-round">send</i></button>
+</div>
+</div>
+<div class="progress-container" id="progress-container">
+<div class="progress-rail"><div class="progress-fill" id="progress-fill"></div></div>
+<div class="time-meta"><span id="curr-time">0:00</span><span id="total-time">0:00</span></div>
+</div>
+<div class="controls">
+<button class="sub-btn" id="prev-btn"><i class="material-icons-round">skip_previous</i></button>
+<button class="play-btn" id="main-play"><i class="material-icons-round">play_arrow</i></button>
+<button class="sub-btn" id="next-btn"><i class="material-icons-round">skip_next</i></button>
+</div>
+<div class="toolbar">
+<button class="pill" id="add-pill"><i class="material-icons-round">add</i> <span id="add-pill-text"></span></button>
+<button class="icon-btn" id="ai-btn"><i class="material-icons-round">psychology</i></button>
+<button class="icon-btn" id="mic-btn"><i class="material-icons-round">blur_on</i></button>
+<button class="icon-btn" id="magic-btn"><i class="material-icons-round">auto_awesome</i></button>
+</div>
+</div>
+</div>
+<div class="phantom-capsule" id="capsule">
+<div class="capsule-core" id="capsule-core">
+<svg class="ring-svg" viewBox="0 0 36 36">
+<path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+<path class="ring-progress" id="ring-progress" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+</svg>
+<i class="material-icons-round ring-logo" id="ring-logo">graphic_eq</i>
+</div>
+<div class="capsule-info" id="capsule-text">Soul Frequency</div>
+<button class="capsule-btn" id="capsule-play"><i class="material-icons-round">play_arrow</i></button>
+</div>
+<div class="toast" id="toast"><span id="toast-msg">Ready</span></div>
+<input type="file" id="file-input" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.wma,.webm" multiple>
+<script>
+// ============================================================
+// i18n
+// ============================================================
+const i18n={
+zh:{
+defaultTitle:'Soul Frequency',
+defaultArtist:'点击"添加"选择音乐文件',
+addPill:'添加',
+fileBtn:'本地文件',
+urlPlaceholder:'粘贴音频链接 (mp3/wav) 并回车...',
+aiPlaceholder:'输入指令...',
+plEmpty:'列表为空',
+networkAudio:'网络音频',
+trackOf:'第 {n} 首 / 共 {total} 首',
+airResonance:'空气共鸣',
+listening:'聆听中...',
+ready:'Sonoria 已就绪，点击"添加"选择音乐文件',
+processingFiles:'正在处理 {n} 个文件...',
+noFiles:'未选择任何文件',
+unsupportedFormat:'不支持的格式：{name}',
+fileTooLarge:'文件过大：{name}',
+noValidFiles:'没有有效的音频文件',
+addedTracks:'已添加 {n} 首歌曲',
+requestingStream:'正在请求音频流...',
+streamSuccess:'音频加载成功，可视化已启动',
+corsWarning:'受源站限制，仅播放音频（无可视化）',
+loadFailed:'无法加载链接：{msg}',
+playbackFailed:'播放失败：{msg}',
+nowPlaying:'正在播放：{name}',
+micOn:'麦克风已开启',
+micDenied:'麦克风权限被拒绝',
+micOff:'麦克风已关闭',
+addMusicFirst:'请先添加音乐',
+themeName:'Theme: {name}',
+aiWelcome:'我是 Sonoria AI，由 Puter 驱动。我可以帮你：\n• 分析这首歌的情绪和风格\n• 自动匹配最佳可视化主题\n• 调整可视化参数\n• 推荐相似的音乐\n• 用自然语言控制播放器',
+puterConnected:'Puter AI 已连接',
+puterOffline:'Puter AI 不可用，已切换到离线模式',
+aiCallFailed:'AI 调用失败，已自动切换到离线模式',
+offlineHelp:'离线模式下可用功能：\n• 分析歌曲情绪\n• 切换可视化主题\n• 控制播放\n\n连接网络后可获得完整AI能力',
+moodIntense:'🔥 歌曲情绪：高能亢奋\n\n强烈的低频和高能量表明这是一首充满激情的音乐',
+moodBright:'☀️ 歌曲情绪：明亮欢快\n\n丰富的频率和中等能量带来愉悦的听觉体验',
+moodCalm:'🌙 歌曲情绪：宁静舒缓\n\n低能量和柔和的频率营造出放松的氛围',
+moodNeutral:'🎵 歌曲情绪：中性平和\n\n平衡的频率分布和能量水平',
+moodSwitched:'已切换到 {name} 主题',
+zenEntered:'已进入禅模式',
+modeAbyss:'深海',modeCyber:'赛博',modeAurora:'极光',modeQuantum:'量子',modeMagma:'岩浆',modeZen:'禅',
+switchedMode:'切换至{name}模式',
+paused:'已暂停播放',
+playing:'开始播放',
+analyzing:'正在分析音频特征与情绪...',
+},
+en:{
+defaultTitle:'Soul Frequency',
+defaultArtist:'Tap "Add" to select music',
+addPill:'Add',
+fileBtn:'Local File',
+urlPlaceholder:'Paste audio URL (mp3/wav) and Enter...',
+aiPlaceholder:'Enter command...',
+plEmpty:'Playlist is empty',
+networkAudio:'Network Audio',
+trackOf:'Track {n} / {total}',
+airResonance:'Air Resonance',
+listening:'Listening...',
+ready:'Sonoria ready. Tap "Add" to select music',
+processingFiles:'Processing {n} files...',
+noFiles:'No files selected',
+unsupportedFormat:'Unsupported format: {name}',
+fileTooLarge:'File too large: {name}',
+noValidFiles:'No valid audio files',
+addedTracks:'Added {n} tracks',
+requestingStream:'Requesting audio stream...',
+streamSuccess:'Audio loaded, visualizer active',
+corsWarning:'Source restricted: audio only (no viz)',
+loadFailed:'Cannot load URL: {msg}',
+playbackFailed:'Playback failed: {msg}',
+nowPlaying:'Now playing: {name}',
+micOn:'Microphone on',
+micDenied:'Microphone access denied',
+micOff:'Microphone off',
+addMusicFirst:'Please add music first',
+themeName:'Theme: {name}',
+aiWelcome:'I am Sonoria AI, powered by Puter. I can help you:\n• Analyze mood and style of the current track\n• Auto-match the best visual theme\n• Adjust visualizer parameters\n• Recommend similar music\n• Control the player with natural language',
+puterConnected:'Puter AI connected',
+puterOffline:'Puter AI unavailable, offline mode',
+aiCallFailed:'AI call failed, switched to offline mode',
+offlineHelp:'Offline features:\n• Analyze song mood\n• Switch visual theme\n• Control playback\n\nConnect to network for full AI capabilities',
+moodIntense:'🔥 Mood: Intense\n\nStrong bass and high energy suggest passionate music',
+moodBright:'☀️ Mood: Bright & Cheerful\n\nRich frequencies and moderate energy create a pleasant experience',
+moodCalm:'🌙 Mood: Calm & Soothing\n\nLow energy and soft frequencies create a relaxing atmosphere',
+moodNeutral:'🎵 Mood: Neutral & Balanced\n\nBalanced frequency distribution and energy levels',
+moodSwitched:'Switched to {name} theme',
+zenEntered:'Zen mode activated',
+modeAbyss:'Abyss',modeCyber:'Cyber',modeAurora:'Aurora',modeQuantum:'Quantum',modeMagma:'Magma',modeZen:'Zen',
+switchedMode:'Switched to {name} mode',
+paused:'Paused',
+playing:'Playing',
+analyzing:'Analyzing audio features & mood...',
+}
+};
+let lang=navigator.language.startsWith('zh')?'zh':'en';
+function t(key,vars){
+let s=i18n[lang][key]||i18n.en[key]||key;
+if(vars)for(let k in vars)s=s.replace('{'+k+'}',vars[k]);
+return s;
+}
+function applyI18n(){
+document.getElementById('track-artist').textContent=t('defaultArtist');
+document.getElementById('add-pill-text').textContent=t('addPill');
+document.getElementById('file-btn-text').textContent=t('fileBtn');
+document.getElementById('url-input').placeholder=t('urlPlaceholder');
+document.getElementById('ai-input').placeholder=t('aiPlaceholder');
+document.getElementById('pl-empty').textContent=t('plEmpty');
+}
+
+// ============================================================
+// Simplex Noise (~80 lines)
+// ============================================================
+class SimplexNoise{
+constructor(r=Math.random){this.grad3=[[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]];
+this.p=[];for(let i=0;i<256;i++)this.p[i]=Math.floor(r()*256);
+this.perm=[];for(let i=0;i<512;i++)this.perm[i]=this.p[i&255]}
+dot3(g,x,y,z){return g[0]*x+g[1]*y+g[2]*z}
+noise3D(xin,yin,zin){
+const F3=1/3,G3=1/6;let s=(xin+yin+zin)*F3;let i=Math.floor(xin+s),j=Math.floor(yin+s),k=Math.floor(zin+s);
+let t=(i+j+k)*G3;let X0=i-t,Y0=j-t,Z0=k-t;let x0=xin-X0,y0=yin-Y0,z0=zin-Z0;
+let i1,j1,k1,i2,j2,k2;
+if(x0>=y0){if(y0>=z0){i1=1;j1=0;k1=0;i2=1;j2=1;k2=0}else if(x0>=z0){i1=1;j1=0;k1=0;i2=1;j2=0;k2=1}else{i1=0;j1=0;k1=1;i2=1;j2=0;k2=1}}
+else{if(y0<z0){i1=0;j1=0;k1=1;i2=0;j2=1;k2=1}else if(x0<z0){i1=0;j1=1;k1=0;i2=0;j2=1;k2=1}else{i1=0;j1=1;k1=0;i2=1;j2=1;k2=0}}
+let x1=x0-i1+G3,y1=y0-j1+G3,z1=z0-k1+G3;
+let x2=x0-i2+2*G3,y2=y0-j2+2*G3,z2=z0-k2+2*G3;
+let x3=x0-1+3*G3,y3=y0-1+3*G3,z3=z0-1+3*G3;
+let ii=i&255,jj=j&255,kk=k&255;
+let n0=0,n1=0,n2=0,n3=0;
+let t0=.6-x0*x0-y0*y0-z0*z0;if(t0>0){t0*=t0;n0=t0*t0*this.dot3(this.grad3[this.perm[ii+this.perm[jj+this.perm[kk]]]%12],x0,y0,z0)}
+let t1=.6-x1*x1-y1*y1-z1*z1;if(t1>0){t1*=t1;n1=t1*t1*this.dot3(this.grad3[this.perm[ii+i1+this.perm[jj+j1+this.perm[kk+k1]]]%12],x1,y1,z1)}
+let t2=.6-x2*x2-y2*y2-z2*z2;if(t2>0){t2*=t2;n2=t2*t2*this.dot3(this.grad3[this.perm[ii+i2+this.perm[jj+j2+this.perm[kk+k2]]]%12],x2,y2,z2)}
+let t3=.6-x3*x3-y3*y3-z3*z3;if(t3>0){t3*=t3;n3=t3*t3*this.dot3(this.grad3[this.perm[ii+1+this.perm[jj+1+this.perm[kk+1]]]%12],x3,y3,z3)}
+return 32*(n0+n1+n2+n3)}
+noise2D(x,y){return this.noise3D(x,y,0)}
+}
+const simplex=new SimplexNoise();
+
+// ============================================================
+// State
+// ============================================================
+const S={
+playing:false,mic:false,currentMode:'abyss',zenTimer:null,
+ctx:null,analyser:null,src:null,audioEl:null,
+playlist:[],trackIdx:0,touchStartX:0,
+spectrum:new Uint8Array(1024),
+energy:0,bassEnergy:0,midEnergy:0,trebleEnergy:0,hue:0,
+aiActive:false,puterAvailable:false,aiConversation:[],
+mouseX:0,mouseY:0,gyroX:0,gyroY:0,
+onBeat:null,beatCooldown:0
+};
+
+// ============================================================
+// Modes
+// ============================================================
+const MODES={
+abyss:{id:'abyss',name:()=>t('modeAbyss'),primitives:['FLUX'],bg:[0,6,12],primary:'#006688',secondary:'#00ccff',accent:'#00ccff'},
+cyber:{id:'cyber',name:()=>t('modeCyber'),primitives:['LATTICE'],bg:[4,0,12],primary:'#ff00ff',secondary:'#00d2ff',accent:'#00d2ff'},
+aurora:{id:'aurora',name:()=>t('modeAurora'),primitives:['WAVE','FLUX'],bg:[2,4,8],primary:'#00ff88',secondary:'#8800ff',accent:'#44ffaa'},
+quantum:{id:'quantum',name:()=>t('modeQuantum'),primitives:['PULSE','NOVA'],bg:[8,4,0],primary:'#ffffff',secondary:'#ffd700',accent:'#ffd700'},
+magma:{id:'magma',name:()=>t('modeMagma'),primitives:['NOVA'],bg:[12,4,0],primary:'#ff4400',secondary:'#ffcc00',accent:'#ff8800'},
+zen:{id:'zen',name:()=>t('modeZen'),primitives:['WAVE'],bg:[0,0,0],primary:'#555555',secondary:'#888888',accent:'#888888'}
+};
+
+function switchMode(id){
+if(!MODES[id])return;
+S.currentMode=id;
+// Clear transient primitives
+for(let k of['PULSE','NOVA'])if(primitives[k]){
+if(k==='PULSE')primitives[k].rings=[];
+if(k==='NOVA')primitives[k].particles=[];
+}
+showToast(t('switchedMode',{name:MODES[id].name()}));
+}
+
+// ============================================================
+// Audio Analysis Engine (BPM, section, 3D emotion)
+// ============================================================
+class AudioAnalyzer{
+constructor(){
+this.features={energy:0,bassEnergy:0,midEnergy:0,trebleEnergy:0,spectralCentroid:0,
+bpm:0,section:'intro',valence:.5,tension:.5,onsetDetected:false};
+this.energyHistory=[];this.beatTimes=[];this.sectionEnergy=[];
+this.lastOnsetTime=0;
+}
+analyze(){
+if(!S.analyser)return this.features;
+const freq=new Uint8Array(S.analyser.frequencyBinCount);
+S.analyser.getByteFrequencyData(freq);
+const time=new Uint8Array(S.analyser.frequencyBinCount);
+S.analyser.getByteTimeDomainData(time);
+// Band energies
+let bass=0,mid=0,treble=0,total=0;
+for(let i=0;i<20;i++)bass+=freq[i];
+for(let i=20;i<200;i++)mid+=freq[i];
+for(let i=200;i<500;i++)treble+=freq[i];
+for(let i=0;i<Math.min(freq.length,500);i++)total+=freq[i];
+this.features.bassEnergy=bass/20/255;
+this.features.midEnergy=mid/180/255;
+this.features.trebleEnergy=treble/300/255;
+this.features.energy=total/500/255;
+// Spectral centroid
+let scW=0,scT=0;
+for(let i=0;i<freq.length;i++){scW+=i*freq[i];scT+=freq[i]}
+this.features.spectralCentroid=scT>0?scW/scT:0;
+// Onset detection
+const now=performance.now();
+this.energyHistory.push({e:this.features.energy,t:now});
+if(this.energyHistory.length>60)this.energyHistory.shift();
+if(this.energyHistory.length>2){
+const prev=this.energyHistory[this.energyHistory.length-2].e;
+const curr=this.features.energy;
+if(curr-prev>.12&&now-this.lastOnsetTime>200){
+this.features.onsetDetected=true;
+this.lastOnsetTime=now;
+this.beatTimes.push(now);
+if(this.beatTimes.length>30)this.beatTimes.shift();
+if(S.onBeat)S.onBeat();
+}else{this.features.onsetDetected=false}
+}
+// BPM (autocorrelation from beat intervals)
+if(this.beatTimes.length>=4){
+let intervals=[];
+for(let i=1;i<this.beatTimes.length;i++)intervals.push(this.beatTimes[i]-this.beatTimes[i-1]);
+intervals=intervals.filter(v=>v>200&&v<2000);
+if(intervals.length>2){
+const avg=intervals.reduce((a,b)=>a+b,0)/intervals.length;
+this.features.bpm=Math.round(60000/avg);
+}
+}
+// Section detection (simplified)
+this.sectionEnergy.push(this.features.energy);
+if(this.sectionEnergy.length>100)this.sectionEnergy.shift();
+const recent=this.sectionEnergy.slice(-20).reduce((a,b)=>a+b,0)/20;
+const overall=this.sectionEnergy.reduce((a,b)=>a+b,0)/this.sectionEnergy.length;
+if(recent>overall*1.5)this.features.section='chorus';
+else if(recent<overall*.6)this.features.section='breakdown';
+else this.features.section='verse';
+// 3D emotion
+this.features.valence=Math.min(1,this.features.midEnergy*2+this.features.trebleEnergy);
+this.features.tension=Math.min(1,this.features.bassEnergy*1.5+this.features.energy*.5);
+// Sync to global
+S.energy=this.features.energy;
+S.bassEnergy=this.features.bassEnergy;
+S.midEnergy=this.features.midEnergy;
+S.trebleEnergy=this.features.trebleEnergy;
+return this.features;
+}
+}
+const audioAnalyzer=new AudioAnalyzer();
+
+// ============================================================
+// Canvas Visualization Primitives
+// ============================================================
+let primitives={};
+const canvas=document.getElementById('viz');
+const ctx=canvas.getContext('2d');
+
+function resizeCanvas(){
+canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+for(let k of Object.keys(primitives))if(primitives[k].resize)primitives[k].resize(canvas.width,canvas.height);
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+// -- FLUX: Noise flow field particles + spatial partition connections
+primitives.FLUX={
+particles:[],targetCount:300,w:0,h:0,
+resize(w,h){this.w=w;this.h=h;this.initParticles()},
+initParticles(){
+this.particles=[];
+for(let i=0;i<this.targetCount;i++)
+this.particles.push({x:Math.random()*this.w,y:Math.random()*this.h,vx:0,vy:0,life:Math.random(),speed:.5+Math.random()*.5});
+},
+render(features,time){
+const count=Math.min(this.targetCount,Math.floor(this.targetCount*(.3+S.energy*.7)));
+while(this.particles.length<count)this.particles.push({x:Math.random()*this.w,y:Math.random()*this.h,vx:0,vy:0,life:Math.random(),speed:.5+Math.random()*.5});
+while(this.particles.length>count)this.particles.pop();
+const speed=(1+features.energy*6)*.8;
+const t=time*.0003;
+for(let p of this.particles){
+const nx=p.x/this.w*2,ny=p.y/this.h*2;
+let angle=simplex.noise3D(nx,ny,t)*Math.PI*2;
+if(features.onsetDetected)angle+=Math.PI*.5;
+let dx=Math.cos(angle)*speed*p.speed;
+let dy=Math.sin(angle)*speed*p.speed;
+dx+=(S.mouseX/this.w-.5)*4*features.energy*.5;
+dy+=(S.mouseY/this.h-.5)*4*features.energy*.5;
+dx+=S.gyroX*features.energy*.3;dy+=S.gyroY*features.energy*.3;
+p.vx=p.vx*.9+dx*.1;p.vy=p.vy*.9+dy*.1;
+p.x+=p.vx;p.y+=p.vy;p.life-=.002;
+if(p.x<0)p.x=this.w;if(p.x>this.w)p.x=0;
+if(p.y<0)p.y=this.h;if(p.y>this.h)p.y=0;
+if(p.life<=0){p.x=Math.random()*this.w;p.y=Math.random()*this.h;p.life=1}
+const alpha=Math.min(1,p.life)*(.3+features.energy*.7);
+// Color: cyan-blue #006688 → #00ccff
+const r=0,g=Math.floor(102+features.energy*102),b=Math.floor(136+features.energy*119);
+ctx.beginPath();ctx.arc(p.x,p.y,1+features.energy*2,0,Math.PI*2);
+ctx.fillStyle=`rgba(${r},${g},${b},${alpha})`;ctx.fill();
+}
+// Spatial partition connections
+const cellSize=80;const grid={};
+for(let i=0;i<this.particles.length;i++){
+const p=this.particles[i];
+const cx=Math.floor(p.x/cellSize),cy=Math.floor(p.y/cellSize);
+const key=cx+','+cy;if(!grid[key])grid[key]=[];grid[key].push(i);
+}
+ctx.lineWidth=.5;
+for(let i=0;i<this.particles.length;i++){
+const p=this.particles[i];
+const cx=Math.floor(p.x/cellSize),cy=Math.floor(p.y/cellSize);
+for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
+const key=(cx+dx)+','+(cy+dy);if(!grid[key])continue;
+for(let j of grid[key]){if(j<=i)continue;const p2=this.particles[j];
+const dist=Math.hypot(p.x-p2.x,p.y-p2.y);
+if(dist<cellSize){const a=(1-dist/cellSize)*.15*(.5+features.energy);
+ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p2.x,p2.y);
+ctx.strokeStyle=`rgba(0,${g},${b},${a})`;ctx.stroke()}}
+}}
+};
+
+// -- PULSE: Beat-triggered concentric rings
+primitives.PULSE={
+rings:[],w:0,h:0,
+resize(w,h){this.w=w;this.h=h},
+render(features,time){
+const cx=this.w/2+S.gyroX*50;const cy=this.h/2+S.gyroY*50;
+if(features.onsetDetected){
+const thickness=2+features.bassEnergy*8;
+this.rings.push({radius:10,maxRadius:Math.max(this.w,this.h)*.7,thickness,speed:3+features.energy*6,opacity:1});
+}
+for(let i=this.rings.length-1;i>=0;i--){
+const r=this.rings[i];
+r.radius+=r.speed;r.opacity=1-r.radius/r.maxRadius;
+if(r.opacity<=0){this.rings.splice(i,1);continue}
+const glow=features.trebleEnergy*2;
+ctx.beginPath();ctx.arc(cx,cy,r.radius,0,Math.PI*2);
+// White-gold: #fff → #ffd700
+ctx.strokeStyle=`rgba(255,${Math.floor(215+40*glow)},${Math.floor(glow*100)},${r.opacity*(.5+glow*.5)})`;
+ctx.lineWidth=r.thickness;
+ctx.shadowColor='#ffd700';ctx.shadowBlur=10+glow*20;
+ctx.stroke();ctx.shadowBlur=0;
+}}
+};
+
+// -- LATTICE: Grid deformation + elastic rebound
+primitives.LATTICE={
+cols:20,rows:14,nodes:[],w:0,h:0,
+resize(w,h){
+this.w=w;this.h=h;this.nodes=[];
+const sx=w/(this.cols-1),sy=h/(this.rows-1);
+for(let r=0;r<this.rows;r++)for(let c=0;c<this.cols;c++)
+this.nodes.push({bx:c*sx,by:r*sy,x:c*sx,y:r*sy,vx:0,vy:0});
+},
+render(features,time){
+const t=time*.001;
+for(let n of this.nodes){
+const displacement=simplex.noise3D(n.bx/this.w*2,n.by/this.h*2,t)*features.energy*60;
+const dx=displacement*(1+features.bassEnergy);
+const dy=simplex.noise3D(n.bx/this.w*2+50,n.by/this.h*2+50,t)*features.energy*40*(1+features.midEnergy);
+if(features.onsetDetected){n.vx+=(Math.random()-.5)*10;n.vy+=(Math.random()-.5)*10}
+n.vx=n.vx*.85+(dx-n.x+n.bx)*.1;n.vy=n.vy*.85+(dy-n.y+n.by)*.1;
+n.x+=n.vx;n.y+=n.vy;
+}
+ctx.lineWidth=.8;
+for(let r=0;r<this.rows;r++)for(let c=0;c<this.cols;c++){
+const i=r*this.cols+c;const n=this.nodes[i];
+// Neon magenta #ff00ff + electric blue #00d2ff
+if(c<this.cols-1){const n2=this.nodes[i+1];
+const dist=Math.hypot(n.x-n2.x,n.y-n2.y);
+const alpha=Math.max(0,1-dist/200)*(.2+features.energy*.4);
+if(alpha>0){ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(n2.x,n2.y);
+ctx.strokeStyle=`rgba(255,0,255,${alpha})`;ctx.stroke()}}
+if(r<this.rows-1){const n2=this.nodes[i+this.cols];
+const dist=Math.hypot(n.x-n2.x,n.y-n2.y);
+const alpha=Math.max(0,1-dist/200)*(.2+features.energy*.4);
+if(alpha>0){ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(n2.x,n2.y);
+ctx.strokeStyle=`rgba(0,210,255,${alpha})`;ctx.stroke()}}
+const size=2+features.energy*3;
+ctx.beginPath();ctx.arc(n.x,n.y,size,0,Math.PI*2);
+ctx.fillStyle=`rgba(0,210,255,${.3+features.energy*.5})`;ctx.fill();
+}}
+};
+
+// -- WAVE: Multi-layer time-domain waveform mountains
+primitives.WAVE={
+layers:5,w:0,h:0,
+resize(w,h){this.w=w;this.h=h},
+render(features,time){
+if(!S.analyser)return;
+const timeData=new Uint8Array(S.analyser.frequencyBinCount);
+S.analyser.getByteTimeDomainData(timeData);
+const t=time*.0005;
+const layerCount=Math.floor(2+features.energy*this.layers);
+const isZen=S.currentMode==='zen';
+for(let l=0;l<layerCount;l++){
+const yBase=this.h*.3+l*(this.h*.5/layerCount);
+const freqOffset=l*50;
+const layerAlpha=.15+(1-l/layerCount)*.4;
+ctx.beginPath();ctx.moveTo(0,this.h);
+const step=4;
+for(let x=0;x<=this.w;x+=step){
+const idx=Math.floor((x/this.w)*timeData.length);
+const val=(timeData[(idx+freqOffset)%timeData.length]-128)/128;
+const noise=simplex.noise3D(x/this.w*3,l,t)*features.energy*40;
+const y=yBase+val*(50+features.bassEnergy*80)+noise;
+if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+}
+ctx.lineTo(this.w,this.h);ctx.lineTo(0,this.h);ctx.closePath();
+// Green-purple: #00ff88 → #8800ff
+const hue=l/layerCount*120+120;// green(120) to purple(240)
+const sat=isZen?0:50+l*10;
+ctx.fillStyle=`hsla(${hue},${sat}%,${40+l*8}%,${layerAlpha})`;ctx.fill();
+if(!isZen){ctx.strokeStyle=`hsla(${hue},${sat}%,70%,${layerAlpha*.6})`;ctx.lineWidth=1;ctx.stroke()}
+}}
+};
+
+// -- NOVA: Central burst particles + trails + gravity
+primitives.NOVA={
+particles:[],w:0,h:0,
+resize(w,h){this.w=w;this.h=h},
+render(features,time){
+const cx=this.w/2+S.gyroX*80;const cy=this.h/2+S.gyroY*80;
+if(features.onsetDetected){
+const burstCount=30+Math.floor(features.energy*50);
+for(let i=0;i<burstCount;i++){const angle=Math.random()*Math.PI*2;
+const speed=2+Math.random()*8*features.energy;
+// Red-orange: #ff4400 → #ffcc00
+const hue=Math.random()*40+10;// 10-50 range (red to orange-yellow)
+this.particles.push({x:cx,y:cy,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
+life:1,decay:.008+Math.random()*.015,size:2+Math.random()*3,hue,gravity:.02+features.bassEnergy*.03,trail:[]})}
+}
+if(this.particles.length>800)this.particles.splice(0,this.particles.length-800);
+for(let i=this.particles.length-1;i>=0;i--){
+const p=this.particles[i];
+p.trail.push({x:p.x,y:p.y});if(p.trail.length>8)p.trail.shift();
+p.vy+=p.gravity;p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.vy*=.99;p.life-=p.decay;
+if(p.life<=0||p.x<-50||p.x>this.w+50||p.y>this.h+50){this.particles.splice(i,1);continue}
+// Trail
+if(p.trail.length>1){ctx.beginPath();ctx.moveTo(p.trail[0].x,p.trail[0].y);
+for(let t=1;t<p.trail.length;t++)ctx.lineTo(p.trail[t].x,p.trail[t].y);
+ctx.lineTo(p.x,p.y);
+ctx.strokeStyle=`hsla(${p.hue},90%,60%,${p.life*.3})`;ctx.lineWidth=p.size*.5;ctx.stroke()}
+// Head
+ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);
+ctx.fillStyle=`hsla(${p.hue},90%,70%,${p.life*.8})`;
+ctx.shadowColor=`hsla(${p.hue},90%,60%,.5)`;ctx.shadowBlur=6;
+ctx.fill();ctx.shadowBlur=0;
+}}
+};
+
+// ============================================================
+// Visual Engine (pure Canvas 2D render loop)
+// ============================================================
+let vizRunning=false;
+function renderViz(timestamp){
+const features=audioAnalyzer.analyze();
+const mode=MODES[S.currentMode];
+const[bR,bG,bB]=mode.bg;
+// Clear with fade
+ctx.fillStyle=`rgba(${bR},${bG},${bB},0.15)`;
+ctx.fillRect(0,0,canvas.width,canvas.height);
+// Render primitives for current mode
+for(let pName of mode.primitives){
+const p=primitives[pName];
+if(p&&p.render)p.render(features,timestamp);
+}
+// Dynamic capsule visual feedback
+const themeColor=`hsl(${S.hue%360},80%,60%)`;
+S.hue+=.2+S.energy;
+const scale=1+S.energy*.35;
+const core=document.getElementById('capsule-core');
+core.style.transform=`scale(${scale})`;
+document.getElementById('ring-logo').style.color=themeColor;
+document.getElementById('ring-progress').style.stroke=themeColor;
+core.style.boxShadow=`0 0 ${15+S.energy*40}px ${themeColor}66`;
+if(vizRunning)requestAnimationFrame(renderViz);
+}
+function startViz(){if(!vizRunning){vizRunning=true;requestAnimationFrame(renderViz)}}
+function stopViz(){vizRunning=false}
+
+// Beat callback
+S.onBeat=()=>{
+const core=document.getElementById('capsule-core');
+core.style.transform='scale(1.2)';setTimeout(()=>core.style.transform='scale(1)',100);
+};
+
+// ============================================================
+// UI References
+// ============================================================
+const ui={
+shell:document.getElementById('app-shell'),
+card:document.getElementById('card'),
+playBtns:[document.getElementById('main-play'),document.getElementById('capsule-play')],
+title:document.getElementById('track-title'),
+artist:document.getElementById('track-artist'),
+cText:document.getElementById('capsule-text'),
+pFill:document.getElementById('progress-fill'),
+cTime:document.getElementById('curr-time'),
+tTime:document.getElementById('total-time'),
+mic:document.getElementById('mic-btn'),
+ringProgress:document.getElementById('ring-progress'),
+ringLogo:document.getElementById('ring-logo'),
+capsuleCore:document.getElementById('capsule-core'),
+plView:document.getElementById('playlist-view'),
+aiBtn:document.getElementById('ai-btn'),
+aiMessages:document.getElementById('ai-messages'),
+aiInput:document.getElementById('ai-input'),
+brand:document.getElementById('brand'),
+fileBtn:document.getElementById('file-btn'),
+fileInput:document.getElementById('file-input')
+};
+
+// ============================================================
+// Audio Engine
+// ============================================================
+class AudioEngine{
+initContext(){
+if(!S.ctx){
+S.ctx=new(window.AudioContext||window.webkitAudioContext)();
+S.analyser=S.ctx.createAnalyser();
+S.analyser.fftSize=2048;
+S.analyser.smoothingTimeConstant=.8;
+}
+if(S.ctx.state==='suspended')S.ctx.resume();
+}
+
+async playUrl(url){
+if(!url)return;
+this.stop(false);this.initContext();
+showToast(t('requestingStream'));
+try{
+const fileName=decodeURIComponent(url.split('/').pop().split('?')[0])||t('networkAudio');
+S.playlist.push({name:fileName,src:url,isUrl:true});
+S.trackIdx=S.playlist.length-1;
+this.renderPlaylist();
+S.audioEl=new Audio();S.audioEl.crossOrigin='anonymous';S.audioEl.src=url;
+this.setupAudioListeners(S.audioEl,fileName);
+await S.audioEl.play();
+this.startUI();
+try{S.src=S.ctx.createMediaElementSource(S.audioEl);S.src.connect(S.analyser);S.analyser.connect(S.ctx.destination);
+showToast(t('streamSuccess'),'success');
+}catch(e){console.warn('CORS',e);showToast(t('corsWarning'),'error')}
+}catch(e){console.error(e);showToast(t('loadFailed',{msg:e.message}),'error');S.playlist.pop();this.renderPlaylist();this.stopUI()}
+document.getElementById('input-drawer').classList.remove('open');
+document.getElementById('url-input').value='';
+}
+
+setupAudioListeners(el,title){
+el.onended=()=>this.playNext();
+this.bindEvents(el);
+this.updateMeta(title,t('networkAudio'));
+el.onerror=()=>{showToast(t('playbackFailed',{msg:'load error'}),'error');this.stopUI()};
+}
+
+handleFiles(files){
+if(!files||files.length===0){showToast(t('noFiles'),'error');return}
+showToast(t('processingFiles',{n:files.length}));
+const valid=Array.from(files).filter(f=>{
+const ext=f.name.split('.').pop().toLowerCase();
+const okExt=['mp3','wav','m4a','ogg','flac','aac','wma','webm'];
+if(!okExt.includes(ext)&&!f.type.startsWith('audio/')){showToast(t('unsupportedFormat',{name:f.name}),'error');return false}
+if(f.size>100*1024*1024){showToast(t('fileTooLarge',{name:f.name}),'error');return false}
+return true;
+});
+if(valid.length===0){showToast(t('noValidFiles'),'error');return}
+const tracks=valid.map(f=>({name:f.name.replace(/\.[^/.]+$/,''),src:URL.createObjectURL(f)}));
+if(S.playlist.length===0){S.playlist=tracks;this.playTrack(0)}
+else{S.playlist.push(...tracks);showToast(t('addedTracks',{n:tracks.length}),'success')}
+this.renderPlaylist();
+if(document.getElementById('input-drawer').classList.contains('open'))toggleDrawer('input-drawer');
+}
+
+playTrack(idx){
+if(idx<0||idx>=S.playlist.length)return;
+S.trackIdx=idx;const track=S.playlist[idx];
+this.stop(false);this.initContext();
+S.audioEl=new Audio(track.src);S.audioEl.crossOrigin='anonymous';
+S.audioEl.onended=()=>this.playNext();
+S.audioEl.play().then(()=>{
+try{S.src=S.ctx.createMediaElementSource(S.audioEl);S.src.connect(S.analyser);S.analyser.connect(S.ctx.destination)}catch(e){console.warn('Viz connect fail')}
+this.bindEvents(S.audioEl);
+this.updateMeta(track.name,t('trackOf',{n:idx+1,total:S.playlist.length}));
+this.startUI();this.renderPlaylist();
+showToast(t('nowPlaying',{name:track.name}),'success');
+}).catch(e=>showToast(t('playbackFailed',{msg:e.message}),'error'));
+}
+
+playNext(){if(!S.playlist.length)return;this.playTrack((S.trackIdx+1)%S.playlist.length)}
+playPrev(){if(!S.playlist.length)return;this.playTrack((S.trackIdx-1+S.playlist.length)%S.playlist.length)}
+
+async toggleMic(){
+if(S.mic){this.stop();showToast(t('micOff'));return}
+this.stop();this.initContext();
+try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+S.src=S.ctx.createMediaStreamSource(stream);S.src.connect(S.analyser);
+S.mic=true;this.updateMeta(t('airResonance'),t('listening'));
+ui.mic.classList.add('active');this.startUI();
+showToast(t('micOn'),'success');
+}catch(e){showToast(t('micDenied'),'error')}
+}
+
+togglePlay(){
+this.initContext();
+if(S.mic){this.toggleMic();return}
+if(!S.audioEl){
+if(S.playlist.length>0)this.playTrack(S.trackIdx);
+else{toggleDrawer('input-drawer');showToast(t('addMusicFirst'))}
+return;
+}
+S.playing?(S.audioEl.pause(),this.stopUI()):(S.audioEl.play(),this.startUI());
+}
+
+stop(clear=true){
+if(S.audioEl){S.audioEl.pause();S.audioEl=null}
+if(S.src){try{S.src.disconnect()}catch(e){}S.src=null}
+if(S.mic){S.mic=false;ui.mic.classList.remove('active')}
+if(clear)this.stopUI();
+}
+
+bindEvents(el){
+el.ontimeupdate=()=>{
+if(!S.playing)return;
+const pct=el.currentTime/el.duration||0;
+ui.pFill.style.width=`${pct*100}%`;
+ui.cTime.innerText=this.fmt(el.currentTime);
+ui.ringProgress.style.strokeDashoffset=100-(pct*100);
+};
+el.onloadedmetadata=()=>ui.tTime.innerText=this.fmt(el.duration);
+}
+
+renderPlaylist(){
+if(!S.playlist.length){ui.plView.innerHTML=`<div style="text-align:center;color:var(--text-sub);padding:10px">${t('plEmpty')}</div>`;return}
+ui.plView.innerHTML=S.playlist.map((t,i)=>`
+<div class="pl-item ${i===S.trackIdx?'active':''}" data-index="${i}">
+<i class="material-icons-round" style="font-size:16px">${i===S.trackIdx?'equalizer':'music_note'}</i>
+<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</span>
+</div>`).join('');
+// 绑定事件修复按钮响应问题
+ui.plView.querySelectorAll('.pl-item').forEach(item => {
+	const idx = parseInt(item.dataset.index);
+	item.addEventListener('click', (e) => {
+		e.stopPropagation();
+		engine.playTrack(idx);
+	});
+});
+}
+
+updateMeta(title,artist){ui.title.innerText=title;ui.cText.innerText=title;ui.artist.innerText=artist}
+
+startUI(){
+S.playing=true;
+ui.playBtns.forEach(b=>b.innerHTML='<i class="material-icons-round">pause</i>');
+startViz();resetZen();
+}
+stopUI(){
+S.playing=false;
+ui.playBtns.forEach(b=>b.innerHTML='<i class="material-icons-round">play_arrow</i>');
+ui.shell.classList.remove('zen');
+}
+fmt(s){if(!s||isNaN(s))return'0:00';const m=Math.floor(s/60),sec=Math.floor(s%60);return`${m}:${sec<10?'0':''}${sec}`}
+}
+const engine=new AudioEngine();
+
+// ============================================================
+// Zen Mode (4s auto)
+// ============================================================
+function resetZen(){
+clearTimeout(S.zenTimer);
+if(ui.shell.classList.contains('zen'))return;
+if(S.playing)S.zenTimer=setTimeout(enterZenMode,4000);
+}
+function enterZenMode(){ui.shell.classList.add('zen')}
+
+// ============================================================
+// Drawers
+// ============================================================
+function toggleDrawer(id){
+const el=document.getElementById(id);
+const isOpen=el.classList.contains('open');
+document.querySelectorAll('.drawer').forEach(d=>d.classList.remove('open'));
+if(!isOpen){
+el.classList.add('open');
+if(id==='ai-drawer'){
+S.aiActive=true;ui.aiBtn.classList.add('active');ui.brand.classList.add('ai');ui.brand.innerText='SONORIA AI';
+setTimeout(()=>ui.aiInput.focus(),100);
+}
+}else{
+if(id==='ai-drawer'){S.aiActive=false;ui.aiBtn.classList.remove('active');ui.brand.classList.remove('ai');ui.brand.innerText='SONORIA'}
+}
+}
+
+// ============================================================
+// Toast (4 types: default/ai/error/success)
+// ============================================================
+let toastTimer=null;
+function showToast(msg,type='default'){
+document.getElementById('toast-msg').innerText=msg;
+const el=document.getElementById('toast');
+el.className='toast';
+if(type==='ai')el.classList.add('ai');
+if(type==='error')el.classList.add('error');
+if(type==='success')el.classList.add('success');
+el.classList.add('show');
+clearTimeout(toastTimer);
+toastTimer=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ============================================================
+// Magic Button (random mode)
+// ============================================================
+function randomTheme(){
+const modeKeys=Object.keys(MODES).filter(k=>k!==S.currentMode);
+const next=modeKeys[Math.floor(Math.random()*modeKeys.length)];
+switchMode(next);
+const btn=document.getElementById('magic-btn');
+btn.style.transform='rotate(180deg) scale(0.8)';
+setTimeout(()=>btn.style.transform='none',400);
+showToast(t('themeName',{name:MODES[next].name()}));
+}
+
+// ============================================================
+// Puter AI Engine
+// ============================================================
+class PuterAIEngine{
+constructor(){this.isAvailable=false;this.checkAvailability()}
+checkAvailability(){
+if(typeof puter!=='undefined'){this.isAvailable=true;S.puterAvailable=true;showToast(t('puterConnected'),'ai')}
+else{this.isAvailable=false;S.puterAvailable=false;showToast(t('puterOffline'),'error')}
+}
+getSystemPrompt(){
+const track=S.playlist[S.trackIdx];
+const trackInfo=track?`${t('nowPlaying',{name:track.name})}`:'No track playing';
+const audioStats=`Realtime: energy=${S.energy.toFixed(2)}, bass=${S.bassEnergy.toFixed(2)}, mid=${S.midEnergy.toFixed(2)}, treble=${S.trebleEnergy.toFixed(2)}, BPM≈${audioAnalyzer.features.bpm}`;
+const modes=Object.values(MODES).map(m=>m.name()).join(' / ');
+const langInstruction=lang==='zh'?'Respond in Chinese, concise <80 chars.':'Respond in English, concise <80 chars.';
+return`You are Sonoria AI, a music visualization assistant.\n${trackInfo}\n${audioStats}\nAvailable modes: ${modes}\n${langInstruction}\nSupport commands: switch [mode], analyze mood, pause/play, next/prev, zen mode.`;
+}
+async chat(message){
+if(!this.isAvailable)return this.offlineFallback(message);
+try{
+const messages=[{role:'system',content:this.getSystemPrompt()},...S.aiConversation,{role:'user',content:message}];
+const response=await puter.ai.chat(messages);
+S.aiConversation.push({role:'user',content:message});
+S.aiConversation.push({role:'assistant',content:response.content||response.message?.content||''});
+const text=response.content||response.message?.content||'';
+await this.executeCommand(text);
+return text;
+}catch(e){console.error('Puter AI error:',e);return t('aiCallFailed')+'\n'+this.offlineFallback(message)}
+}
+async executeCommand(resp){
+const l=resp.toLowerCase();
+// Mode switching commands (bilingual)
+const modeMap={abyss:['abyss','深海'],cyber:['cyber','赛博'],aurora:['aurora','极光'],quantum:['quantum','量子'],magma:['magma','岩浆'],zen:['zen','禅']};
+for(let[id,keys]of Object.entries(modeMap)){if(keys.some(k=>l.includes(k))){switchMode(id);break}}
+if(l.includes('pause')||l.includes('暂停')||l.includes('stop')||l.includes('停止')){if(S.playing)engine.togglePlay()}
+if(l.includes('play')||l.includes('播放')){if(!S.playing)engine.togglePlay()}
+if(l.includes('next')||l.includes('下一首')||l.includes('skip'))engine.playNext();
+if(l.includes('prev')||l.includes('上一首'))engine.playPrev();
+if(l.includes('zen')||l.includes('禅')){if(!ui.shell.classList.contains('zen'))enterZenMode()}
+}
+offlineFallback(cmd){
+const l=cmd.toLowerCase();
+if(l.includes('mood')||l.includes('情绪')||l.includes('心情')||l.includes('feel')){
+const avgE=S.energy,bassR=S.bassEnergy/(S.energy+.01);
+if(avgE>.7&&bassR>.6)return t('moodIntense');
+if(avgE>.5)return t('moodBright');
+if(avgE<.3)return t('moodCalm');
+return t('moodNeutral');
+}
+const modeMap={abyss:['abyss','深海'],cyber:['cyber','赛博'],aurora:['aurora','极光'],quantum:['quantum','量子'],magma:['magma','岩浆'],zen:['zen','禅']};
+for(let[id,keys]of Object.entries(modeMap)){
+if(keys.some(k=>l.includes(k))){switchMode(id);return t('moodSwitched',{name:MODES[id].name()})}
+}
+if(l.includes('theme')||l.includes('主题')||l.includes('切换')){randomTheme();return t('themeName',{name:MODES[S.currentMode].name()})}
+return t('offlineHelp');
+}
+}
+const aiEngine=new PuterAIEngine();
+
+// ============================================================
+// AI Chat
+// ============================================================
+async function sendAIMessage(){
+const input=ui.aiInput.value.trim();if(!input)return;
+addAIMessage(input,'user');ui.aiInput.value='';
+addAIMessage('','loading');
+const response=await aiEngine.chat(input);
+const loading=document.querySelector('.ai-message.loading');
+if(loading)loading.remove();
+addAIMessage(response,'bot');
+}
+function addAIMessage(text,type){
+const d=document.createElement('div');d.className=`ai-message ${type}`;
+if(type==='loading')d.innerHTML='<div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div>';
+else d.innerText=text;
+ui.aiMessages.appendChild(d);ui.aiMessages.scrollTop=ui.aiMessages.scrollHeight;
+}
+
+// ============================================================
+// Progress bar seek
+// ============================================================
+document.getElementById('progress-container').addEventListener('click',function(e){
+if(!S.audioEl||!S.audioEl.duration)return;
+const rect=this.getBoundingClientRect();const pct=(e.clientX-rect.left)/rect.width;
+S.audioEl.currentTime=pct*S.audioEl.duration;
+});
+document.getElementById('progress-container').addEventListener('touchmove',function(e){
+if(!S.audioEl||!S.audioEl.duration)return;
+e.preventDefault();const rect=this.getBoundingClientRect();const touch=e.touches[0];
+const pct=Math.max(0,Math.min(1,(touch.clientX-rect.left)/rect.width));
+S.audioEl.currentTime=pct*S.audioEl.duration;
+},{passive:false});
+
+// ============================================================
+// Touch swipe (zen mode: switch mode)
+// ============================================================
+document.addEventListener('touchstart',e=>S.touchStartX=e.touches[0].clientX);
+document.addEventListener('touchend',e=>{
+if(!ui.shell.classList.contains('zen'))return;
+const diff=e.changedTouches[0].clientX-S.touchStartX;
+if(Math.abs(diff)>50)randomTheme();
+});
+
+// ============================================================
+// Mouse/Touch/Gyro interaction
+// ============================================================
+document.addEventListener('mousemove',e=>{S.mouseX=e.clientX;S.mouseY=e.clientY});
+document.addEventListener('touchmove',e=>{S.mouseX=e.touches[0].clientX;S.mouseY=e.touches[0].clientY},{passive:true});
+if(window.DeviceOrientationEvent){window.addEventListener('deviceorientation',e=>{S.gyroX=(e.gamma||0)/45;S.gyroY=((e.beta||0)-45)/45})}
+
+// ============================================================
+// Event bindings
+// ============================================================
+// Zen exit on shell click
+ui.shell.addEventListener('click',()=>{ui.shell.classList.remove('zen');resetZen()});
+ui.card.addEventListener('click',e=>e.stopPropagation());
+document.getElementById('capsule').addEventListener('click',e=>e.stopPropagation());
+document.getElementById('capsule-play').addEventListener('click',e=>{e.stopPropagation();engine.togglePlay()});
+document.getElementById('zen-btn').addEventListener('click',e=>{e.stopPropagation();enterZenMode()});
+document.getElementById('playlist-btn').addEventListener('click',()=>toggleDrawer('playlist-drawer'));
+document.getElementById('add-pill').addEventListener('click',()=>toggleDrawer('input-drawer'));
+ui.aiBtn.addEventListener('click',()=>toggleDrawer('ai-drawer'));
+document.getElementById('magic-btn').addEventListener('click',randomTheme);
+ui.mic.addEventListener('click',()=>engine.toggleMic());
+// File upload (Captain's binding)
+ui.fileBtn.addEventListener('click',()=>{ui.fileInput.click()});
+ui.fileInput.addEventListener('change',e=>{engine.handleFiles(e.target.files);e.target.value=''});
+// URL input
+document.getElementById('url-input').addEventListener('keypress',e=>{if(e.key==='Enter')engine.playUrl(e.target.value.trim())});
+// AI input
+ui.aiInput.addEventListener('keypress',e=>{if(e.key==='Enter')sendAIMessage()});
+document.getElementById('ai-send-btn').addEventListener('click',sendAIMessage);
+// Play controls
+document.getElementById('main-play').addEventListener('click',e=>{e.stopPropagation();engine.togglePlay()});
+document.getElementById('prev-btn').addEventListener('click',()=>engine.playPrev());
+document.getElementById('next-btn').addEventListener('click',()=>engine.playNext());
+
+// ============================================================
+// Init
+// ============================================================
+applyI18n();
+// Add initial AI welcome message
+addAIMessage(t('aiWelcome'),'bot');
+showToast(t('ready'),'success');
+// Start viz in idle mode
+startViz();
+</script>
 </body>
 </html>
