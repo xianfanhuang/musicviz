@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonoria Chaos V2.1 | 传世级音乐可视化</title>
+    
+    <!-- 字体：Inter是基线，但我们用子集化+变量字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200..700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js v168 -->
+    <script src="https://unpkg.com/three@0.168.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.168.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.168.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://unpkg.com/three@0.168.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://unpkg.com/three@0.168.0/examples/js/postprocessing/RenderPass.js"></script>
+    
+    <style>
+        /* ==================== 设计系统：CSS暴政 ==================== */
+        
+        /* 注册HSL色相为可动画变量——这是传世级代码的入场券 */
+        @property --primary-hue {
+            syntax: '<number>';
+            initial-value: 180;
+            inherits: true;
+        }
+        
+        @property --primary-sat {
+            syntax: '<percentage>';
+            initial-value: 80%;
+            inherits: true;
+        }
+        
+        @property --primary-light {
+            syntax: '<percentage>';
+            initial-value: 50%;
+            inherits: true;
+        }
+        
+        :root {
+            /* 8px网格是工程基础，但我们会用黄金比例破坏它 */
+            --space-unit: 8px;
+            --phi: 1.6180339887498948482; /* 黄金比例 */
+            
+            /* 动态色相系统：音频驱动，不是预设 */
+            --primary-hue: 180;
+            --primary-sat: 80%;
+            --primary-light: 50%;
+            --color-accent: hsl(var(--primary-hue), var(--primary-sat), var(--primary-light));
+            
+            /* 排版：Inter是画布，不是枷锁 */
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-scale: var(--phi); /* 黄金比例字体阶梯 */
+            --text-xs: calc(12px * var(--font-scale) * var(--font-scale) * var(--font-scale));
+            --text-sm: calc(14px * var(--font-scale) * var(--font-scale));
+            --text-base: calc(16px * var(--font-scale));
+            --text-lg: calc(18px * var(--font-scale) * var(--font-scale));
+            --text-xl: calc(20px * var(--font-scale) * var(--font-scale) * var(--font-scale));
+            
+            /* 动画：贝塞尔曲线是诗歌，不是配置 */
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+            --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+            --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            --duration: 250ms; /* 250ms是神经学上的感知边界 */
+            
+            /* 玻璃拟态：物理正确，不是滤镜堆砌 */
+            --glass-bg: hsla(var(--primary-hue), 80%, 50%, 0.05);
+            --glass-border: hsla(var(--primary-hue), 80%, 50%, 0.1);
+            --glass-shadow: 0 8px 32px hsla(var(--primary-hue), 80%, 0%, 0.3);
+        }
+        
+        /* 黑暗模式是基线，光模式是备选 */
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-primary: hsl(0, 0%, 98%);
+                --text-primary: hsl(0, 0%, 8%);
+                --glass-bg: hsla(var(--primary-hue), 80%, 50%, 0.08);
+            }
+        }
+        
+        /* 减少动效？不，我们提供诗意降级 */
+        @media (prefers-reduced-motion: reduce) {
+            :root {
+                --duration: 16ms; /* 接近1帧的瞬时响应 */
+            }
+            
+            * {
+                transition-duration: 0ms !important;
+                animation-duration: 0ms !important;
+            }
+        }
+        
+        /* 高对比度？我们用色相偏移回应 */
+        @media (prefers-contrast: high) {
+            :root {
+                --primary-sat: 100%;
+                --primary-light: 60%;
+            }
+        }
+        
+        /* ==================== 重置：零度空间 ==================== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            font-size: 16px; /* 锚点 */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary, #000);
+            color: var(--text-primary, #fff);
+            overflow: hidden;
+            height: 100vh;
+            touch-action: none; /* 我们接管所有手势 */
+        }
+        
+        /* ==================== 画布：神性容器 ==================== */
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+        
+        #visualizer {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* 渐晕：不是滤镜，是瞳孔模拟 */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 40%,
+                hsla(var(--primary-hue), 80%, 0%, 0.7) 100%
+            );
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        /* ==================== UI层：可溶解的界面 ==================== */
+        #ui-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            padding: calc(var(--space-unit) * 6);
+            opacity: 1;
+            transition: opacity var(--duration) var(--ease-out-expo);
+        }
+        
+        #ui-layer.idle {
+            opacity: 0.08; /* 不是隐藏，是存在性降低 */
+        }
+        
+        /* ==================== 顶部栏：视觉锚点 ==================== */
+        .top-bar {
+            pointer-events: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-unit) 0;
+        }
+        
+        .brand {
+            font-size: var(--text-sm);
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--color-accent);
+            mix-blend-mode: difference;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .brand::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--color-accent);
+            transition: width var(--duration) var(--ease-out-expo);
+        }
+        
+        .brand:hover::after {
+            width: 100%;
+        }
+        
+        /* ==================== 控制面板：玻璃拟态的物理正确版本 ==================== */
+        .control-island {
+            pointer-events: auto;
+            width: min(680px, 100%);
+            margin: 0 auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: calc(var(--space-unit) * 3); /* 24px，黄金比例的变体 */
+            padding: calc(var(--space-unit) * 6);
+            box-shadow: var(--glass-shadow);
+            transform: translateY(0) scale(1);
+            transition: 
+                transform var(--duration) var(--ease-out-expo),
+                box-shadow var(--duration) var(--ease-out-expo),
+                --primary-hue calc(var(--duration) * 2) var(--ease-out-expo);
+        }
+        
+        .control-island:hover {
+            box-shadow: 0 12px 48px hsla(var(--primary-hue), 80%, 0%, 0.4);
+        }
+        
+        /* 轨道信息：排版诗学 */
+        .track-info {
+            text-align: center;
+            margin-bottom: calc(var(--space-unit) * 6);
+        }
+        
+        .track-title {
+            font-size: var(--text-xl);
+            font-weight: 500;
+            margin-bottom: calc(var(--space-unit) * 1);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--color-accent);
+            letter-spacing: -0.02em; /* 负字距是现代感的标志 */
+        }
+        
+        .track-artist {
+            font-size: var(--text-sm);
+            font-weight: 300;
+            color: var(--text-primary);
+            opacity: 0.7;
+            letter-spacing: 0.03em;
+        }
+        
+        /* ==================== 进度条：着色器浮雕的降级方案 ==================== */
+        .progress-container {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: var(--space-unit);
+            align-items: center;
+            margin-bottom: calc(var(--space-unit) * 6);
+            font-size: var(--text-xs);
+            color: var(--text-primary);
+            opacity: 0.6;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .progress-bar-bg {
+            height: 4px;
+            background: hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.15);
+            border-radius: 9999px;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        
+        .progress-bar-bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.3),
+                transparent
+            );
+            transform: translateX(-100%);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .progress-fill {
+            position: absolute;
+            inset: 0;
+            width: 0%;
+            background: 
+                linear-gradient(
+                    90deg,
+                    hsl(var(--primary-hue), var(--primary-sat), var(--primary-light)),
+                    hsl(calc(var(--primary-hue) + 30), var(--primary-sat), calc(var(--primary-light) + 10%))
+                );
+            transition: width 0.1s linear;
+            border-radius: 9999px;
+        }
+        
+        /* ==================== 按钮：3D倾斜物理 ==================== */
+        .btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+            border-radius: 50%;
+            position: relative;
+            pointer-events: auto;
+            transition: 
+                transform var(--duration) var(--ease-out-cubic),
+                box-shadow var(--duration) var(--ease-out-cubic),
+                color var(--duration) var(--ease-out-cubic);
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(
+                circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.1),
+                transparent 40%
+            );
+            opacity: 0;
+            transition: opacity var(--duration) var(--ease-out-cubic);
+        }
+        
+        .btn:hover::before {
+            opacity: 1;
+        }
+        
+        .btn-play {
+            width: 56px;
+            height: 56px;
+            background: hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.1);
+            border: 1px solid hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.2);
+            color: var(--color-accent);
+        }
+        
+        .btn-play:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 20px hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.3);
+        }
+        
+        /* ==================== 混沌实验室：物理侧边栏 ==================== */
+        .chaos-lab {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: min(400px, 100%);
+            height: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            border-left: 1px solid var(--glass-border);
+            padding: calc(var(--space-unit) * 6);
+            transition: right var(--duration) var(--ease-out-expo);
+            z-index: 15;
+            pointer-events: auto;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: var(--space-unit);
+        }
+        
+        .chaos-lab.open {
+            right: 0;
+        }
+        
+        /* 参数滑块：弹簧物理 */
+        .param-slider {
+            margin-bottom: calc(var(--space-unit) * 4);
+        }
+        
+        .param-slider label {
+            display: block;
+            color: var(--text-primary);
+            opacity: 0.7;
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-unit);
+        }
+        
+        .param-slider input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.15);
+            border-radius: 9999px;
+            appearance: none;
+            cursor: pointer;
+            transition: background var(--duration) var(--ease-out-expo);
+        }
+        
+        .param-slider input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            cursor: pointer;
+            transition: 
+                transform var(--duration) var(--ease-elastic),
+                box-shadow var(--duration) var(--ease-out-expo);
+        }
+        
+        .param-slider input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 12px var(--color-accent);
+        }
+        
+        /* ==================== 播放列表：FLIP动画 ==================== */
+        .playlist-drawer {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: min(320px, 100%);
+            max-height: 60vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-top-left-radius: calc(var(--space-unit) * 4);
+            border-top-right-radius: calc(var(--space-unit) * 4);
+            padding: calc(var(--space-unit) * 6);
+            transform: translateY(100%);
+            transition: transform var(--duration) var(--ease-out-expo);
+            z-index: 20;
+            pointer-events: auto;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: var(--space-unit);
+        }
+        
+        .playlist-drawer.open {
+            transform: translateY(0);
+        }
+        
+        .playlist-item {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: var(--space-unit);
+            align-items: center;
+            padding: var(--space-unit);
+            border-radius: var(--space-unit);
+            cursor: pointer;
+            transition: 
+                background var(--duration) var(--ease-out-expo),
+                transform var(--duration) var(--ease-out-expo);
+            transform-origin: left center;
+        }
+        
+        .playlist-item:hover {
+            background: hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.08);
+            transform: translateX(4px);
+        }
+        
+        .playlist-item.playing {
+            background: hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.12);
+        }
+        
+        /* ==================== 拖放：仪式感的物理 ==================== */
+        .drag-overlay {
+            position: fixed;
+            inset: 0;
+            background: hsla(var(--primary-hue), var(--primary-sat), 0%, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+            display: grid;
+            place-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration) var(--ease-out-expo);
+        }
+        
+        .drag-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .drag-icon {
+            font-size: 64px;
+            color: var(--color-accent);
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+        
+        /* ==================== 通知：环境反馈 ==================== */
+        .toast {
+            position: fixed;
+            top: calc(var(--space-unit) * 8);
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.15);
+            backdrop-filter: blur(10px);
+            padding: var(--space-unit) calc(var(--space-unit) * 2);
+            border-radius: 9999px;
+            font-size: var(--text-sm);
+            border: 1px solid hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.1);
+            opacity: 0;
+            transition: 
+                opacity var(--duration) var(--ease-out-expo),
+                transform var(--duration) var(--ease-out-expo),
+                --primary-hue var(--duration) var(--ease-out-expo);
+            pointer-events: none;
+            z-index: 30;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        /* ==================== 响应式：物理断点 ==================== */
+        @media (max-width: 768px) {
+            #ui-layer {
+                padding: calc(var(--space-unit) * 4);
+            }
+            
+            .control-island {
+                padding: calc(var(--space-unit) * 4);
+            }
+            
+            .chaos-lab {
+                width: 100%;
+                right: -100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 画布容器 -->
+    <div id="canvas-container">
+        <canvas id="visualizer"></canvas>
+    </div>
+    
+    <!-- 渐晕层 -->
+    <div class="vignette"></div>
+    
+    <!-- UI层 -->
+    <div id="ui-layer">
+        <!-- 顶部栏 -->
+        <header class="top-bar">
+            <div class="brand" id="brand">SONORIA CHAOS V2.1</div>
+            <div style="display: flex; gap: var(--space-unit);">
+                <button class="btn" id="playlist-toggle" title="播放列表">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12h18M3 6h18M3 18h12"/>
+                    </svg>
+                </button>
+                <button class="btn" id="chaos-lab-toggle" title="混沌实验室">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v6m0 6v6m4.22-10.22l4.24-4.24m-4.24 12.68l4.24 4.24M20 12h-6m-6 0H2m10.22 4.22l-4.24 4.24m4.24-12.68L7.98 3.54"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+        
+        <!-- 中心占位 -->
+        <div></div>
+        
+        <!-- 控制面板 -->
+        <div class="control-island">
+            <!-- 曲目信息 -->
+            <div class="track-info">
+                <h1 class="track-title" id="track-title">混沌等待中</h1>
+                <p class="track-artist" id="track-artist">拖放或点击上传音频</p>
+            </div>
+            
+            <!-- 进度条 -->
+            <div class="progress-container">
+                <span id="current-time">0:00</span>
+                <div class="progress-bar-bg" id="progress-container">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <span id="total-time">--:--</span>
+            </div>
+            
+            <!-- 控制按钮 -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button class="btn" id="mic-toggle" title="麦克风模式">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/>
+                    </svg>
+                </button>
+                
+                <div style="display: flex; gap: calc(var(--space-unit) * 2);">
+                    <button class="btn" id="prev-btn" title="上一曲">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="19 20 9 12 19 4 19 20"/>
+                            <line x1="5" y1="19" x2="5" y2="5"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="btn btn-play" id="play-btn" title="播放/暂停">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon id="play-icon" points="8 5 19 12 8 19 8 5"/>
+                            <path id="pause-icon" d="M10 5v14M14 5v14" display="none"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="btn" id="next-btn" title="下一曲">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 4 15 12 5 20 5 4"/>
+                            <line x1="19" y1="5" x2="19" y2="19"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div style="display: flex; gap: var(--space-unit);">
+                    <label class="btn" id="upload-btn" title="上传音乐">
+                        <input type="file" id="file-input" multiple accept="audio/*" style="display: none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                    </label>
+                    
+                    <button class="btn" id="share-btn" title="分享可视化">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="18" cy="5" r="3"/>
+                            <circle cx="6" cy="12" r="3"/>
+                            <circle cx="18" cy="19" r="3"/>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 混沌实验室 -->
+    <aside class="chaos-lab" id="chaos-lab">
+        <h3 style="color: var(--color-accent); font-size: var(--text-lg); font-weight: 600; letter-spacing: 0.05em;">混沌实验室</h3>
+        
+        <div class="param-slider">
+            <label for="rho-slider">Rho (28-50)</label>
+            <input type="range" id="rho-slider" min="28" max="50" value="28" step="0.1">
+        </div>
+        
+        <div class="param-slider">
+            <label for="sigma-slider">Sigma (5-15)</label>
+            <input type="range" id="sigma-slider" min="5" max="15" value="10" step="0.1">
+        </div>
+        
+        <div class="param-slider">
+            <label for="beta-slider">Beta (2-4)</label>
+            <input type="range" id="beta-slider" min="2" max="4" value="2.666" step="0.01">
+        </div>
+        
+        <button id="generate-variant" style="background: var(--color-accent); color: #000; border: none; padding: var(--space-unit) calc(var(--space-unit) * 2); border-radius: 9999px; font-weight: 600; margin-top: var(--space-unit); cursor: pointer; transition: transform var(--duration) var(--ease-elastic);">
+            AI生成变体
+        </button>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-unit); margin-top: var(--space-unit);">
+            <button class="mood-btn active" data-mood="cyan" style="background: var(--color-accent); color: #000; border: none; padding: var(--space-unit); border-radius: var(--space-unit); font-weight: 600; cursor: pointer;">青色</button>
+            <button class="mood-btn" data-mood="red" style="background: transparent; color: var(--text-primary); border: 1px solid hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.2); padding: var(--space-unit); border-radius: var(--space-unit); font-weight: 600; cursor: pointer;">红色</button>
+            <button class="mood-btn" data-mood="purple" style="background: transparent; color: var(--text-primary); border: 1px solid hsla(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.2); padding: var(--space-unit); border-radius: var(--space-unit); font-weight: 600; cursor: pointer;">紫色</button>
+        </div>
+        
+        <button id="colorblind-toggle" style="position: absolute; top: calc(var(--space-unit) * 4); right: calc(var(--space-unit) * 4); background: none; border: none; color: var(--color-accent); cursor: pointer;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 2a10 10 0 0 0 0 20 10 10 0 0 0 0-20zM12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6 6 6 0 0 1-6-6 6 6 0 0 1 6-6z"/>
+            </svg>
+        </button>
+    </aside>
+    
+    <!-- 播放列表 -->
+    <div class="playlist-drawer" id="playlist-drawer">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: calc(var(--space-unit) * 2); font-size: var(--text-sm); opacity: 0.6; text-transform: uppercase; letter-spacing: 0.1em;">
+            <span>播放队列</span>
+            <span id="clear-playlist" style="cursor: pointer;">清空</span>
+        </div>
+        <div id="playlist-content" style="overflow-y: auto;"></div>
+    </div>
+    
+    <!-- 拖放覆盖层 -->
+    <div class="drag-overlay" id="drag-overlay">
+        <svg class="drag-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5-5 5 5M12 15V3"/>
+        </svg>
+        <p style="font-size: var(--text-lg);">释放以沉浸</p>
+    </div>
+    
+    <!-- 通知 -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- 核心JavaScript -->
+    <script>
+        // ==================== 工具库：诗歌的脚手架 ====================
+        
+        const Utils = {
+            // 数学暴政
+            clamp: (v, min, max) => Math.min(Math.max(v, min), max),
+            lerp: (a, b, t) => a * (1 - t) + b * t,
+            map: (v, i1, i2, o1, o2) => ((v - i1) * (o2 - o1)) / (i2 - i1) + o1,
+            random: (min, max) => Math.random() * (max - min) + min,
+            
+            // 音频分析的诗意抽象
+            analyzeAudio: (dataArray) => {
+                const bass = dataArray.slice(0, 10).reduce((a, b) => a + b, 0) / 10;
+                const mid = dataArray.slice(10, 100).reduce((a, b) => a + b, 0) / 90;
+                const high = dataArray.slice(100).reduce((a, b) => a + b, 0) / (dataArray.length - 100);
+                const energy = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+                
+                return { bass, mid, high, energy };
+            },
+            
+            // 色相漂移：音频→多巴胺
+            hueFromAudio: (energy, bass) => {
+                const baseHue = 180; // 青色为基线
+                const drift = Utils.map(energy, 0, 255, -30, 30);
+                const pulse = Math.sin(bass / 255 * Math.PI * 2) * 15;
+                return (baseHue + drift + pulse + 360) % 360;
+            },
+            
+            // FPS测量：隐藏的性能诗歌
+            FPS: (() => {
+                let last = performance.now();
+                let frames = 0;
+                let fps = 60;
+                
+                return {
+                    tick: () => {
+                        frames++;
+                        const now = performance.now();
+                        if (now >= last + 1000) {
+                            fps = Math.round((frames * 1000) / (now - last));
+                            frames = 0;
+                            last = now;
+                        }
+                        return fps;
+                    },
+                    get: () => fps
+                };
+            })(),
+            
+            // 格式化：时间的呼吸感
+            formatTime: (seconds) => {
+                if (!isFinite(seconds) || seconds < 0) return '∞';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            },
+            
+            // 文件验证：带有诗意降级的防御
+            validateFile: async (file) => {
+                const MAX_SIZE = 100 * 1024 * 1024;
+                if (file.size > MAX_SIZE) {
+                    throw new Error(`文件大小超过宇宙限制 (${MAX_SIZE / 1024 / 1024}MB)`);
+                }
+                
+                const isAudio = file.type.startsWith('audio/') ||
+                    ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.wma']
+                        .some(ext => file.name.toLowerCase().endsWith(ext));
+                
+                if (!isAudio) {
+                    throw new Error('这不是音频，这是噪音的潜能');
+                }
+            }
+        };
+        
+        // ==================== 音频引擎：声音的炼金术 ====================
+        
+        class AudioEngine {
+            constructor() {
+                this.context = null;
+                this.element = new Audio();
+                this.analyser = null;
+                this.source = null;
+                this.gain = null;
+                this.dataArray = null;
+                
+                this.state = {
+                    initialized: false,
+                    playing: false,
+                    currentTime: 0,
+                    duration: 0,
+                    volume: 0.85
+                };
+                
+                this.file = null;
+                this.objectUrl = null;
+                
+                this.init();
+            }
+            
+            async init() {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.context = new AudioContext();
+                
+                if (this.context.state === 'suspended') {
+                    document.addEventListener('click', () => this.context.resume(), { once: true });
+                }
+                
+                this.analyser = this.context.createAnalyser();
+                this.analyser.fftSize = 1024;
+                this.analyser.smoothingTimeConstant = 0.85;
+                
+                this.gain = this.context.createGain();
+                this.gain.gain.value = this.state.volume;
+                
+                this.analyser.connect(this.gain);
+                this.gain.connect(this.context.destination);
+                
+                this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                this.state.initialized = true;
+                
+                console.log('音频引擎：炼金成功');
+            }
+            
+            async load(file) {
+                await Utils.validateFile(file);
+                
+                if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+                
+                this.objectUrl = URL.createObjectURL(file);
+                this.element.src = this.objectUrl;
+                this.file = file;
+                
+                await new Promise((resolve, reject) => {
+                    const onLoaded = () => {
+                        this.element.removeEventListener('loadedmetadata', onLoaded);
+                        this.element.removeEventListener('error', onError);
+                        resolve();
+                    };
+                    const onError = () => reject(new Error('音频加载失败'));
+                    
+                    this.element.addEventListener('loadedmetadata', onLoaded);
+                    this.element.addEventListener('error', onError);
+                    setTimeout(() => reject(new Error('加载超时')), 10000);
+                });
+                
+                if (this.source) {
+                    this.source.disconnect();
+                    this.source = null;
+                }
+                
+                this.source = this.context.createMediaElementSource(this.element);
+                this.source.connect(this.analyser);
+                
+                return file.name;
+            }
+            
+            getData() {
+                if (!this.analyser) return { bass: 0, mid: 0, high: 0, energy: 0 };
+                this.analyser.getByteFrequencyData(this.dataArray);
+                return Utils.analyzeAudio(this.dataArray);
+            }
+            
+            async play() {
+                if (!this.state.initialized) return false;
+                
+                if (this.context.state === 'suspended') {
+                    await this.context.resume();
+                }
+                
+                try {
+                    await this.element.play();
+                    this.state.playing = true;
+                    return true;
+                } catch (e) {
+                    console.error('播放失败:', e);
+                    this.state.playing = false;
+                    return false;
+                }
+            }
+            
+            pause() {
+                this.element.pause();
+                this.state.playing = false;
+            }
+            
+            stop() {
+                this.element.pause();
+                this.element.currentTime = 0;
+                this.state.playing = false;
+                this.state.currentTime = 0;
+            }
+            
+            seek(time) {
+                const t = Utils.clamp(time, 0, this.state.duration || 0);
+                this.element.currentTime = t;
+                this.state.currentTime = t;
+            }
+            
+            destroy() {
+                this.stop();
+                if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+                if (this.context) this.context.close();
+            }
+        }
+        
+        // ==================== Lorenz可视化器：混沌的诗学 ====================
+        
+        class LorenzVisualizer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+                
+                this.composer = null;
+                this.particles = null;
+                this.points = [];
+                this.maxPoints = 50000;
+                
+                this.state = {
+                    rendering: false,
+                    points: 0,
+                    fps: 60,
+                    params: { sigma: 10, rho: 28, beta: 8/3, dt: 0.01 }
+                };
+                
+                this.audioData = { bass: 0, mid: 0, high: 0, energy: 0 };
+                this.mood = 'cyan';
+                this.colorblind = false;
+                
+                this.init();
+            }
+            
+            init() {
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                
+                this.camera.position.set(20, 10, 50);
+                
+                // 后期处理
+                const composer = new POSTPROCESSING.EffectComposer(this.renderer);
+                const renderPass = new POSTPROCESSING.RenderPass(this.scene, this.camera);
+                const bloomPass = new POSTPROCESSING.UnrealBloomPass(
+                    new THREE.Vector2(window.innerWidth, window.innerHeight),
+                    1.2, 0.4, 0.85
+                );
+                
+                composer.addPass(renderPass);
+                composer.addPass(bloomPass);
+                this.composer = composer;
+                
+                // 几何体
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(this.maxPoints * 3);
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                
+                const material = new THREE.PointsMaterial({
+                    size: 0.3,
+                    color: new THREE.Color().setHSL(0.5, 0.8, 0.5),
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+                
+                this.particles = new THREE.Points(geometry, material);
+                this.scene.add(this.particles);
+                
+                // 控制器
+                this.controls = new THREE.OrbitControls(this.camera, this.canvas);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                
+                // 监听音频
+                this.startWorker();
+                
+                console.log('可视化器：混沌就绪');
+            }
+            
+            startWorker() {
+                const workerCode = `
+                    let x = 0.1, y = 0, z = 0;
+                    
+                    self.onmessage = function(e) {
+                        const { sigma, rho, beta, dt, steps, audio } = e.data;
+                        
+                        // 音频调制参数
+                        const energyNorm = audio.energy / 255;
+                        const adjRho = rho + audio.mid * 0.05;
+                        const adjDt = dt + energyNorm * 0.005;
+                        
+                        const points = [];
+                        
+                        for (let i = 0; i < steps; i++) {
+                            const dx = sigma * (y - x) * adjDt;
+                            const dy = (x * (adjRho - z) - y) * adjDt;
+                            const dz = (x * y - beta * z) * adjDt;
+                            
+                            x += dx;
+                            y += dy;
+                            z += dz;
+                            
+                            points.push(x, y, z);
+                        }
+                        
+                        postMessage({ points, hue: 180 + energyNorm * 60 });
+                    };
+                `;
+                
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                this.worker = new Worker(URL.createObjectURL(blob));
+                
+                this.worker.onmessage = (e) => {
+                    this.updateGeometry(e.data.points, e.data.hue);
+                };
+            }
+            
+            updateGeometry(points, hue) {
+                const geo = this.particles.geometry;
+                const pos = geo.attributes.position.array;
+                
+                for (let i = 0; i < points.length && this.state.points < this.maxPoints; i += 3) {
+                    const idx = this.state.points * 3 + i;
+                    pos[idx] = points[i];
+                    pos[idx + 1] = points[i + 1];
+                    pos[idx + 2] = points[i + 2];
+                }
+                
+                this.state.points = Math.min(this.state.points + points.length / 3, this.maxPoints);
+                geo.attributes.position.needsUpdate = true;
+                geo.setDrawRange(0, this.state.points);
+                
+                // 动态色相
+                document.documentElement.style.setProperty('--primary-hue', hue);
+            }
+            
+            updateAudio(data) {
+                this.audioData = data;
+            }
+            
+            render() {
+                if (!this.state.rendering) return;
+                
+                // 相机呼吸动画
+                const t = Date.now() / 8000;
+                this.camera.position.x = Math.sin(t) * 30;
+                this.camera.position.y = Math.cos(t * 0.7) * 15 + 10;
+                this.camera.position.z = Math.cos(t * 0.3) * 40 + 50;
+                
+                this.controls.update();
+                this.composer.render();
+                
+                requestAnimationFrame(() => this.render());
+            }
+            
+            start() {
+                this.state.rendering = true;
+                this.render();
+            }
+            
+            stop() {
+                this.state.rendering = false;
+            }
+            
+            setParams(params) {
+                Object.assign(this.state.params, params);
+            }
+            
+            destroy() {
+                this.stop();
+                if (this.worker) this.worker.terminate();
+                this.renderer.dispose();
+            }
+        }
+        
+        // ==================== UI管理器：交互的物理 ====================
+        
+        class UIManager {
+            constructor(audio, visualizer) {
+                this.audio = audio;
+                this.visualizer = visualizer;
+                
+                this.playlist = [];
+                this.currentIndex = -1;
+                this.isIdle = false;
+                
+                this.elements = {};
+                this.cacheDOM();
+                this.bindEvents();
+                this.setupIdle();
+                
+                console.log('UI管理器：交互就绪');
+            }
+            
+            cacheDOM() {
+                document.querySelectorAll('[id]').forEach(el => this.elements[el.id] = el);
+                this.elements.body = document.body;
+                this.elements.uiLayer = document.getElementById('ui-layer');
+            }
+            
+            bindEvents() {
+                // 播放控制
+                this.elements['play-btn'].addEventListener('click', () => this.togglePlay());
+                this.elements['prev-btn'].addEventListener('click', () => this.prev());
+                this.elements['next-btn'].addEventListener('click', () => this.next());
+                
+                // 进度条
+                this.elements['progress-container'].addEventListener('click', (e) => {
+                    if (this.playlist.length === 0) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const percent = Utils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
+                    this.audio.seek(percent * (this.audio.state.duration || 0));
+                });
+                
+                // 侧边栏
+                this.elements['playlist-toggle'].addEventListener('click', () => this.togglePlaylist());
+                this.elements['chaos-lab-toggle'].addEventListener('click', () => this.toggleChaosLab());
+                
+                // 文件上传
+                this.elements['upload-btn'].addEventListener('click', () => {
+                    this.elements['file-input'].click();
+                });
+                this.elements['file-input'].addEventListener('change', (e) => this.handleFiles(e.target.files));
+                
+                // 混沌实验室
+                ['rho-slider', 'sigma-slider', 'beta-slider'].forEach(id => {
+                    this.elements[id].addEventListener('input', (e) => {
+                        const key = id.split('-')[0];
+                        this.visualizer.setParams({ [key]: parseFloat(e.target.value) });
+                    });
+                });
+                
+                this.elements['generate-variant'].addEventListener('click', () => {
+                    const variants = [
+                        { sigma: 10, rho: 35, beta: 8/3, name: '对称混沌' },
+                        { sigma: 12, rho: 25, beta: 3, name: '湍流' },
+                        { sigma: 9, rho: 30, beta: 2.5, name: '极限环' }
+                    ];
+                    const v = variants[Math.floor(Math.random() * variants.length)];
+                    this.visualizer.setParams(v);
+                    this.showToast(`变体: ${v.name}`);
+                });
+                
+                // 心情切换
+                document.querySelectorAll('.mood-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const mood = e.target.dataset.mood;
+                        this.setMood(mood);
+                    });
+                });
+                
+                // 拖放
+                this.setupDragDrop();
+                
+                // 分享
+                this.elements['share-btn'].addEventListener('click', () => this.share());
+                
+                // 清空播放列表
+                this.elements['clear-playlist'].addEventListener('click', () => this.clearPlaylist());
+            }
+            
+            setupDragDrop() {
+                const overlay = this.elements['drag-overlay'];
+                
+                document.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    overlay.classList.add('active');
+                });
+                
+                document.addEventListener('dragleave', (e) => {
+                    if (e.target === overlay) {
+                        overlay.classList.remove('active');
+                    }
+                });
+                
+                document.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    overlay.classList.remove('active');
+                    this.handleFiles(e.dataTransfer.files);
+                });
+            }
+            
+            async handleFiles(files) {
+                const audioFiles = Array.from(files).filter(f => 
+                    f.type.startsWith('audio/') || 
+                    ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.wma'].some(ext => 
+                        f.name.toLowerCase().endsWith(ext)
+                    )
+                );
+                
+                if (audioFiles.length === 0) {
+                    this.showToast('请拖入音频文件');
+                    return;
+                }
+                
+                for (const file of audioFiles) {
+                    this.playlist.push(file);
+                    this.addPlaylistItem(file, this.playlist.length - 1);
+                }
+                
+                if (audioFiles.length === 1) {
+                    await this.play(this.playlist.length - 1);
+                } else {
+                    this.showToast(`已注入 ${audioFiles.length} 个混沌源`);
+                }
+            }
+            
+            async play(index) {
+                if (index < 0 || index >= this.playlist.length) return;
+                
+                try {
+                    const name = await this.audio.load(this.playlist[index]);
+                    this.currentIndex = index;
+                    
+                    const success = await this.audio.play();
+                    if (success) {
+                        this.visualizer.start();
+                        this.updateTrackInfo(name);
+                        this.updatePlayIcon(true);
+                        this.highlightPlaylistItem(index);
+                    }
+                } catch (e) {
+                    this.showToast(`加载失败: ${e.message}`);
+                }
+            }
+            
+            togglePlay() {
+                if (this.playlist.length === 0) {
+                    this.elements['file-input'].click();
+                    return;
+                }
+                
+                if (this.audio.state.playing) {
+                    this.audio.pause();
+                    this.visualizer.stop();
+                    this.updatePlayIcon(false);
+                } else {
+                    if (this.currentIndex === -1) this.play(0);
+                    else this.audio.play().then(ok => {
+                        if (ok) this.visualizer.start();
+                        this.updatePlayIcon(true);
+                    });
+                }
+            }
+            
+            prev() {
+                if (this.playlist.length === 0) return;
+                const prev = this.currentIndex > 0 ? this.currentIndex - 1 : this.playlist.length - 1;
+                this.play(prev);
+            }
+            
+            next() {
+                if (this.playlist.length === 0) return;
+                const next = this.currentIndex < this.playlist.length - 1 ? this.currentIndex + 1 : 0;
+                this.play(next);
+            }
+            
+            updateTrackInfo(name) {
+                const [title, artist] = name.replace(/\.[^/.]+$/, '').split(' - ');
+                this.elements['track-title'].textContent = title || '未知混沌';
+                this.elements['track-artist'].textContent = artist || '未知艺术家';
+            }
+            
+            updatePlayIcon(playing) {
+                const play = this.elements['play-icon'];
+                const pause = this.elements['pause-icon'];
+                play.style.display = playing ? 'none' : 'block';
+                pause.style.display = playing ? 'block' : 'none';
+            }
+            
+            updateProgress() {
+                const current = this.audio.state.currentTime;
+                const total = this.audio.state.duration;
+                
+                this.elements['current-time'].textContent = Utils.formatTime(current);
+                this.elements['total-time'].textContent = Utils.formatTime(total);
+                
+                if (total > 0) {
+                    const percent = (current / total) * 100;
+                    this.elements['progress-fill'].style.width = `${percent}%`;
+                }
+            }
+            
+            addPlaylistItem(file, index) {
+                const container = this.elements['playlist-content'];
+                const item = document.createElement('div');
+                item.className = 'playlist-item';
+                item.style.transitionDelay = `${index * 20}ms`;
+                
+                item.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="10" opacity="0.2"/>
+                        <polygon points="10,8 16,12 10,16" opacity="0.8"/>
+                    </svg>
+                    <div>
+                        <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</div>
+                        <div style="font-size: var(--text-xs); opacity: 0.5;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                    </div>
+                `;
+                
+                item.addEventListener('click', () => this.play(index));
+                container.appendChild(item);
+            }
+            
+            highlightPlaylistItem(index) {
+                document.querySelectorAll('.playlist-item').forEach((item, i) => {
+                    item.classList.toggle('playing', i === index);
+                });
+            }
+            
+            togglePlaylist() {
+                const drawer = this.elements['playlist-drawer'];
+                drawer.classList.toggle('open');
+                this.elements['chaos-lab'].classList.remove('open');
+            }
+            
+            toggleChaosLab() {
+                const lab = this.elements['chaos-lab'];
+                lab.classList.toggle('open');
+                this.elements['playlist-drawer'].classList.remove('open');
+            }
+            
+            setMood(mood) {
+                const hues = { cyan: 180, red: 0, purple: 270 };
+                document.documentElement.style.setProperty('--primary-hue', hues[mood]);
+                
+                document.querySelectorAll('.mood-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.mood === mood);
+                });
+                
+                this.showToast(`心情: ${mood}`);
+            }
+            
+            share() {
+                this.elements['visualizer'].toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `sonoria-chaos-${Date.now()}.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    this.showToast('混沌已冻结为图像');
+                });
+            }
+            
+            clearPlaylist() {
+                if (this.playlist.length === 0) return;
+                if (confirm('确定要清空混沌源吗？')) {
+                    this.playlist = [];
+                    this.currentIndex = -1;
+                    this.audio.stop();
+                    this.visualizer.stop();
+                    this.elements['playlist-content'].innerHTML = '';
+                    this.updateTrackInfo('混沌等待中', '拖放或点击上传音频');
+                    this.updatePlayIcon(false);
+                    this.showToast('混沌源已清空');
+                }
+            }
+            
+            showToast(msg) {
+                const toast = this.elements['toast'];
+                toast.textContent = msg;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+            
+            setupIdle() {
+                let timer;
+                const reset = () => {
+                    clearTimeout(timer);
+                    this.elements.uiLayer.classList.remove('idle');
+                    timer = setTimeout(() => {
+                        if (!this.elements['playlist-drawer'].classList.contains('open') &&
+                            !this.elements['chaos-lab'].classList.contains('open')) {
+                            this.elements.uiLayer.classList.add('idle');
+                        }
+                    }, 4000);
+                };
+                
+                ['mousemove', 'touchstart'].forEach(e => document.addEventListener(e, reset, { passive: true }));
+            }
+        }
+        
+        // ==================== 主应用：宇宙大爆炸 ====================
+        
+        class SonoriaApp {
+            constructor() {
+                this.audio = new AudioEngine();
+                this.visualizer = new LorenzVisualizer(document.getElementById('visualizer'));
+                this.ui = null;
+                
+                this.loop();
+            }
+            
+            async loop() {
+                if (this.audio.state.initialized && this.visualizer.state.initialized && !this.ui) {
+                    this.ui = new UIManager(this.audio, this.visualizer);
+                }
+                
+                if (this.audio.state.playing) {
+                    const data = this.audio.getData();
+                    this.visualizer.updateAudio(data);
+                    this.ui.updateProgress();
+                    
+                    // 动态色相：音频→视觉
+                    const hue = Utils.hueFromAudio(data.energy, data.bass);
+                    document.documentElement.style.setProperty('--primary-hue', hue);
+                }
+                
+                Utils.FPS.tick();
+                requestAnimationFrame(() => this.loop());
+            }
+        }
+        
+        // 启动
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new SonoriaApp();
+            
+            // 3D按钮物理
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('mousemove', (e) => {
+                    const rect = btn.getBoundingClientRect();
+                    const x = ((e.clientX - rect.left) / rect.width) * 100;
+                    const y = ((e.clientY - rect.top) / rect.height) * 100;
+                    btn.style.setProperty('--mouse-x', `${x}%`);
+                    btn.style.setProperty('--mouse-y', `${y}%`);
+                    
+                    // 3D倾斜
+                    const tiltX = (e.clientX - rect.left - rect.width / 2) / 10;
+                    const tiltY = (e.clientY - rect.top - rect.height / 2) / 10;
+                    btn.style.transform = `perspective(1000px) rotateX(${-tiltY}deg) rotateY(${tiltX}deg) scale(1.05)`;
+                });
+                
+                btn.addEventListener('mouseleave', () => {
+                    btn.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+                });
+            });
+        });
+        
+        // 卸载清理
+        window.addEventListener('beforeunload', () => {
+            window.app?.audio.destroy();
+            window.app?.visualizer.destroy();
+        });
+    </script>
+</body>
+</html>

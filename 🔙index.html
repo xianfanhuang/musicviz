@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soundscape Refined</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <canvas id="visualizerCanvas"></canvas>
+    <div class="background-overlay"></div>
+
+    <div class="player-container">
+        <div class="album-art-container">
+            <img id="albumArt" src="https://via.placeholder.com/200/111/fff?text=Soundscape" alt="Album Art" class="album-art"/>
+            <div class="album-art-shadow"></div>
+        </div>
+
+        <div class="track-info">
+            <div class="track-title" id="trackTitle">Select a song to play</div>
+            <div class="track-artist" id="trackArtist"></div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="time-display">
+                <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+            </div>
+        </div>
+
+        <div class="main-controls">
+            <button class="control-btn" id="prevBtn" title="Previous">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+            </button>
+            <button class="control-btn play-btn" id="playBtn" title="Play/Pause">
+                <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="pause-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <button class="control-btn" id="nextBtn" title="Next">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zm-4.5 6l-8.5 6V6z"/></svg>
+            </button>
+        </div>
+
+        <div class="secondary-controls">
+             <button class="control-btn" id="addMusicBtn" title="Add Music">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </button>
+            <div class="volume-control">
+                <button class="control-btn" id="muteBtn" title="Mute">
+                    <svg class="volume-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                </button>
+                <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="80">
+            </div>
+            <button class="control-btn" id="togglePlaylistBtn" title="Playlist">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="playlist-container">
+        <div class="playlist-header">
+            <h3>Playlist</h3>
+            <button class="control-btn" id="closePlaylistBtn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+        </div>
+        <div class="playlist" id="playlist"></div>
+    </div>
+    
+    <div class="upload-modal">
+        <div class="upload-content">
+             <button class="control-btn close-upload-btn" id="closeUploadBtn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+            <h3>Add Music</h3>
+            <div class="upload-area" id="uploadArea">
+                <p>Drag & drop files or click to select</p>
+                <input type="file" id="fileInput" accept=".mp3,.flac,.wav,.ogg,.m4a,.aac" multiple style="display: none;">
+            </div>
+            <div class="url-input-container">
+                <input type="text" id="urlInput" placeholder="Or paste audio/page URL..." />
+                <button id="sniffBtn" class="sniff-btn">Sniff</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioPlayer" preload="auto"></audio>
+    <script src="https://cdn.jsdelivr.net/npm/three-full@28.0.2/builds/Three.iife.min.js"></script>
+    <script src="audio-decoder.js"></script>
+    <script src="network-sniffer.js"></script>
+    <script src="visualizer-three.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

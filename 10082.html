@@ -1,0 +1,2169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sonoria Revolution - 沉浸音境</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+/* ================ 极简设计系统 ================ */
+:root {
+    /* 纯粹敦煌色彩 - 只保留两种核心颜色 */
+    --dunhuang-cyan: hsl(195, 65%, 55%);        /* 石青 */
+    --dunhuang-vermilion: hsl(12, 78%, 52%);    /* 朱砂红 */
+    
+    --bg: #0a0a16;
+    --glass: rgba(255, 255, 255, 0.045);
+    --glass-border: rgba(255, 255, 255, 0.14);
+    --text: #fafaff;
+    --text-dim: rgba(255, 255, 255, 0.68);
+    --glow: 0 0 40px rgba(195, 65%, 55%, 0.35);
+    --transition: all 0.44s cubic-bezier(0.23, 1, 0.32, 1);
+    
+    /* 情感色彩状态 */
+    --emotion-color: var(--dunhuang-cyan);
+    --emotion-intensity: 0.5;
+    
+    /* 音频维度感知变量 */
+    --rhythm-intensity: 0.5;
+    --melody-intensity: 0.5;
+    --ambience-intensity: 0.5;
+}
+
+/* 动态情感色彩 */
+@keyframes emotionShift {
+    0% { --emotion-color: var(--dunhuang-cyan); }
+    50% { --emotion-color: var(--dunhuang-vermilion); }
+    100% { --emotion-color: var(--dunhuang-cyan); }
+}
+body.emotion-active { animation: emotionShift 8s infinite ease-in-out; }
+
+/* ================ 全局 ================ */
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100dvh; overflow:hidden; }
+body {
+    font-family: 'Inter', -apple-system, system-ui;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 2s ease;
+}
+
+/* ================ 画布 ================ */
+#visualizer { 
+    position:fixed; 
+    inset:0; 
+    z-index:1; 
+    background: radial-gradient(ellipse at center, rgba(10,10,22,0.8) 0%, rgba(10,10,22,0.95) 70%);
+}
+
+.canvas-overlay {
+    position:fixed; inset:0; z-index:2;
+    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), transparent 30%, rgba(10,10,22,0.85));
+    pointer-events:none; transition:background .6s;
+    mix-blend-mode: overlay;
+}
+
+/* ================ 极简控制界面 ================ */
+.control-center {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* 主播放按钮 */
+.play-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--emotion-color), color-mix(in srgb, var(--emotion-color) 70%, transparent));
+    border: 2px solid rgba(255,255,255,0.2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    backdrop-filter: blur(20px);
+    box-shadow: 
+        0 8px 32px rgba(0,0,0,0.3),
+        0 0 0 1px rgba(255,255,255,0.1),
+        0 0 40px color-mix(in srgb, var(--emotion-color) 30%, transparent);
+    position: relative;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.play-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.play-btn:hover::before {
+    opacity: 1;
+}
+
+.play-btn i {
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+    transition: transform 0.3s;
+}
+
+.play-btn.playing i {
+    transform: scale(0.9);
+}
+
+/* 状态指示器 */
+.status-indicator {
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(20px);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.5s ease;
+    border: 1px solid rgba(255,255,255,0.1);
+    white-space: nowrap;
+}
+
+.status-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 敦煌纹理背景 */
+.dunhuang-texture {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 20% 80%, color-mix(in srgb, var(--emotion-color) 10%, transparent) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, color-mix(in srgb, var(--dunhuang-vermilion) 10%, transparent) 0%, transparent 50%);
+    z-index: 0;
+    pointer-events: none;
+    opacity: calc(0.3 + var(--emotion-intensity) * 0.4);
+    transition: opacity 2s ease;
+}
+
+/* 情感粒子系统 */
+.emotion-particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* 手势提示 */
+.gesture-hint {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(20px);
+    color: var(--text-dim);
+    padding: 8px 16px;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 100;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.gesture-hint.show {
+    opacity: 1;
+}
+
+/* 加载状态 */
+.loading-state {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: opacity 0.8s ease;
+}
+
+.loading-logo {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.loading-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--dunhuang-cyan), var(--dunhuang-vermilion), var(--dunhuang-cyan));
+    animation: spin 2s linear infinite;
+    filter: blur(1px);
+}
+
+.loading-core {
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, white, var(--dunhuang-cyan));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-text {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    font-weight: 500;
+}
+
+/* 音频输入面板 */
+.audio-input-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    background: rgba(10, 10, 22, 0.95);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.audio-input-panel.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.audio-input-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.audio-input-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.close-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.input-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, var(--dunhuang-cyan), var(--dunhuang-vermilion));
+    color: white;
+    border-color: transparent;
+}
+
+.url-input-section, .file-input-section, .search-input-section, .library-input-section {
+    display: none;
+}
+
+.url-input-section.active, .file-input-section.active, .search-input-section.active, .library-input-section.active {
+    display: block;
+}
+
+.url-input, .search-input {
+    width: 100%;
+    padding: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 1rem;
+    margin-bottom: 16px;
+    transition: var(--transition);
+    -webkit-appearance: none;
+}
+
+.url-input:focus, .search-input:focus {
+    outline: none;
+    border-color: var(--dunhuang-cyan);
+}
+
+.url-input::placeholder, .search-input::placeholder {
+    color: var(--text-dim);
+}
+
+.url-hints, .search-results, .library-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.url-hint, .search-result, .library-item {
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
+    flex: 1 0 calc(50% - 8px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.url-hint:hover, .search-result:hover, .library-item:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.search-result.active, .library-item.active {
+    background: rgba(195, 65%, 55%, 0.2);
+    border-left: 3px solid var(--dunhuang-vermilion);
+}
+
+.file-drop-area {
+    border: 2px dashed rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-bottom: 20px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.file-drop-area:hover, .file-drop-area.drag-over {
+    border-color: var(--dunhuang-cyan);
+    background: rgba(195, 65%, 55%, 0.05);
+}
+
+.file-drop-icon {
+    font-size: 3rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+}
+
+.file-drop-text {
+    color: var(--text-dim);
+    margin-bottom: 8px;
+}
+
+.file-drop-subtext {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    opacity: 0.7;
+}
+
+.confirm-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--dunhuang-cyan), var(--dunhuang-vermilion));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--dunhuang-cyan) 30%, transparent);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.confirm-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px color-mix(in srgb, var(--dunhuang-cyan) 40%, transparent);
+}
+
+.confirm-btn:active {
+    transform: translateY(0);
+}
+
+/* 音频输入提示 */
+.audio-input-hint {
+    position: fixed;
+    top: 40px;
+    right: 40px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(20px);
+    color: var(--text-dim);
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 100;
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.audio-input-hint.show {
+    opacity: 1;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .play-btn {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .play-btn i {
+        font-size: 1.8rem;
+    }
+    
+    .control-center {
+        bottom: 30px;
+    }
+    
+    .audio-input-hint {
+        top: 20px;
+        right: 20px;
+    }
+    
+    .audio-input-panel {
+        width: 95%;
+        padding: 20px;
+    }
+    
+    /* 移动端优化 */
+    .play-btn, .close-btn, .tab-btn, .url-hint, .file-drop-area, .confirm-btn {
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 情感强度指示器 */
+.emotion-intensity {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.emotion-intensity.show {
+    opacity: 1;
+}
+
+.emotion-intensity-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--dunhuang-cyan), var(--dunhuang-vermilion));
+    border-radius: 2px;
+    transition: width 1s ease;
+}
+
+/* 音频信息显示 */
+.audio-info {
+    position: fixed;
+    top: 40px;
+    left: 40px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(20px);
+    padding: 12px 16px;
+    border-radius: 16px;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 100;
+    border: 1px solid rgba(255,255,255,0.1);
+    max-width: 300px;
+}
+
+.audio-info.show {
+    opacity: 1;
+}
+
+.audio-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.audio-source {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+}
+
+/* 音频维度指示器 */
+.audio-dimensions {
+    position: fixed;
+    top: 120px;
+    left: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 100;
+}
+
+.audio-dimensions.show {
+    opacity: 1;
+}
+
+.dimension-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(20px);
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    min-width: 140px;
+}
+
+.dimension-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    width: 40px;
+}
+
+.dimension-bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.dimension-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+.dimension-rhythm .dimension-fill {
+    background: var(--dunhuang-vermilion);
+}
+
+.dimension-melody .dimension-fill {
+    background: var(--dunhuang-cyan);
+}
+
+.dimension-ambience .dimension-fill {
+    background: linear-gradient(90deg, var(--dunhuang-cyan), var(--dunhuang-vermilion));
+}
+
+/* 隐藏状态 */
+.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(5px);
+    z-index: 150;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+}
+
+.overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 触觉反馈模拟 */
+@keyframes hapticPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+.haptic-feedback {
+    animation: hapticPulse 0.1s ease;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .audio-info {
+        top: 20px;
+        left: 20px;
+        max-width: 200px;
+    }
+    
+    .audio-dimensions {
+        top: 100px;
+        left: 20px;
+    }
+    
+    .dimension-indicator {
+        min-width: 120px;
+    }
+    
+    .url-hint, .search-result, .library-item {
+        flex: 1 0 100%;
+    }
+}
+
+/* 搜索加载状态 */
+.search-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--text-dim);
+}
+
+.search-loading .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: var(--dunhuang-cyan);
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+/* 空状态提示 */
+.empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--text-dim);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+/* 音乐库扫描进度 */
+.library-scan-progress {
+    margin-top: 12px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    height: 6px;
+    overflow: hidden;
+}
+
+.library-scan-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--dunhuang-cyan), var(--dunhuang-vermilion));
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+</style>
+</head>
+<body>
+
+<canvas id="visualizer"></canvas>
+<div class="canvas-overlay"></div>
+<div class="dunhuang-texture"></div>
+<div class="emotion-particles"></div>
+<div class="overlay" id="overlay"></div>
+
+<div class="loading-state" id="loading-state">
+    <div class="loading-logo">
+        <div class="loading-ring"></div>
+        <div class="loading-core"></div>
+    </div>
+    <div class="loading-text">准备沉浸体验</div>
+</div>
+
+<div class="control-center">
+    <div class="emotion-intensity" id="emotion-intensity">
+        <div class="emotion-intensity-fill" id="emotion-intensity-fill"></div>
+    </div>
+    <button class="play-btn" id="play-btn">
+        <i class="material-icons">play_arrow</i>
+    </button>
+    <div class="status-indicator" id="status-indicator">点击开始体验</div>
+</div>
+
+<div class="audio-info" id="audio-info">
+    <div class="audio-title" id="audio-title">欢迎进入音境</div>
+    <div class="audio-source" id="audio-source">准备播放音频</div>
+</div>
+
+<div class="audio-dimensions" id="audio-dimensions">
+    <div class="dimension-indicator dimension-rhythm">
+        <div class="dimension-label">节奏</div>
+        <div class="dimension-bar">
+            <div class="dimension-fill" id="rhythm-fill"></div>
+        </div>
+    </div>
+    <div class="dimension-indicator dimension-melody">
+        <div class="dimension-label">旋律</div>
+        <div class="dimension-bar">
+            <div class="dimension-fill" id="melody-fill"></div>
+        </div>
+    </div>
+    <div class="dimension-indicator dimension-ambience">
+        <div class="dimension-label">氛围</div>
+        <div class="dimension-bar">
+            <div class="dimension-fill" id="ambience-fill"></div>
+        </div>
+    </div>
+</div>
+
+<div class="gesture-hint" id="gesture-hint">长按播放按钮选择音频源</div>
+<div class="audio-input-hint" id="audio-input-hint">
+    <i class="material-icons" style="font-size: 1.1rem;">input</i>
+    <span>音频源</span>
+</div>
+
+<!-- 音频输入面板 -->
+<div class="audio-input-panel" id="audio-input-panel">
+    <div class="audio-input-header">
+        <div class="audio-input-title">选择音频源</div>
+        <button class="close-btn" id="close-panel">
+            <i class="material-icons">close</i>
+        </button>
+    </div>
+    
+    <div class="input-tabs">
+        <button class="tab-btn active" data-tab="search">搜索</button>
+        <button class="tab-btn" data-tab="library">音乐库</button>
+        <button class="tab-btn" data-tab="file">本地文件</button>
+        <button class="tab-btn" data-tab="url">URL链接</button>
+        <button class="tab-btn" data-tab="mic">麦克风</button>
+    </div>
+    
+    <div class="search-input-section active">
+        <input type="text" class="search-input" id="search-input" placeholder="搜索歌曲、艺术家或专辑...">
+        <div class="search-results" id="search-results">
+            <div class="empty-state">
+                <i class="material-icons">search</i>
+                <div>输入歌曲名开始搜索</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="library-input-section">
+        <div class="library-list" id="library-list">
+            <div class="empty-state">
+                <i class="material-icons">library_music</i>
+                <div>正在检测本地音乐库...</div>
+                <div class="library-scan-progress">
+                    <div class="library-scan-fill" id="library-scan-fill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="url-input-section">
+        <input type="text" class="url-input" id="url-input" placeholder="输入音频URL链接 (MP3, WAV, OGG等)">
+        
+        <div class="url-hints">
+            <div class="url-hint" data-url="https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3">电子音乐</div>
+            <div class="url-hint" data-url="https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3">氛围音乐</div>
+            <div class="url-hint" data-url="https://assets.mixkit.co/music/preview/mixkit-deep-urban-623.mp3">城市节拍</div>
+        </div>
+    </div>
+    
+    <div class="file-input-section">
+        <div class="file-drop-area" id="file-drop-area">
+            <div class="file-drop-icon">
+                <i class="material-icons">cloud_upload</i>
+            </div>
+            <div class="file-drop-text">拖放音频文件到这里</div>
+            <div class="file-drop-subtext">或点击选择文件</div>
+        </div>
+        <!-- iPhone/iPad兼容的文件类型指定 -->
+        <input type="file" id="file-input" accept="audio/mp3,audio/wav,audio/ogg,audio/aac,audio/m4a,audio/x-m4a,audio/flac,audio/webm" hidden>
+    </div>
+    
+    <div class="mic-input-section" style="display: none;">
+        <div style="text-align: center; padding: 40px 20px;">
+            <div style="font-size: 3rem; margin-bottom: 16px;">🎤</div>
+            <div style="color: var(--text); margin-bottom: 8px;">麦克风输入</div>
+            <div style="color: var(--text-dim); font-size: 0.9rem;">使用设备麦克风实时输入音频</div>
+        </div>
+    </div>
+    
+    <button class="confirm-btn" id="confirm-input">确认选择</button>
+</div>
+
+<script>
+/* ================ Sonoria Revolution 核心引擎 ================ */
+class SonoriaRevolution {
+    constructor() {
+        this.audio = null;
+        this.visualizer = null;
+        this.isPlaying = false;
+        this.currentSource = null; // 'mic', 'url', 'file', 'search', 'library'
+        this.emotionIntensity = 0.5;
+        this.visualizationMode = 'dunhuang';
+        this.audioContext = null;
+        this.analyser = null;
+        this.currentAudioUrl = null;
+        this.currentAudioTitle = '欢迎进入音境';
+        
+        // 音频维度感知
+        this.audioDimensions = {
+            rhythm: 0.5,    // 节奏强度
+            melody: 0.5,    // 旋律强度
+            ambience: 0.5   // 氛围强度
+        };
+        
+        // 音乐库和搜索
+        this.musicLibrary = [];
+        this.searchResults = [];
+        this.selectedTrack = null;
+        
+        this.init();
+    }
+
+    async init() {
+        this.bindElements();
+        this.initVisualizer();
+        this.initParticles();
+        this.bindEvents();
+        
+        // 检测设备类型
+        this.detectDeviceType();
+        
+        // 模拟加载过程
+        setTimeout(() => {
+            this.hideLoading();
+            this.showStatus('点击播放按钮开始体验', 3000);
+            this.showGestureHint('长按播放按钮选择音频源', 2000);
+            this.showAudioInfo();
+            this.showAudioDimensions();
+            
+            // 初始化音乐库检测
+            this.initMusicLibrary();
+        }, 1500);
+        
+        // 自动尝试麦克风输入
+        this.tryMicrophoneInput();
+    }
+
+    detectDeviceType() {
+        this.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        this.isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        
+        if (this.isIOS) {
+            document.body.classList.add('ios-device');
+        }
+        
+        console.log(`设备检测: ${this.isMobile ? '移动端' : '桌面端'} ${this.isIOS ? '(iOS)' : ''}`);
+    }
+
+    bindElements() {
+        this.el = {
+            playBtn: document.getElementById('play-btn'),
+            statusIndicator: document.getElementById('status-indicator'),
+            gestureHint: document.getElementById('gesture-hint'),
+            audioInputHint: document.getElementById('audio-input-hint'),
+            loadingState: document.getElementById('loading-state'),
+            emotionIntensity: document.getElementById('emotion-intensity'),
+            emotionIntensityFill: document.getElementById('emotion-intensity-fill'),
+            audioInputPanel: document.getElementById('audio-input-panel'),
+            closePanel: document.getElementById('close-panel'),
+            urlInput: document.getElementById('url-input'),
+            searchInput: document.getElementById('search-input'),
+            searchResults: document.getElementById('search-results'),
+            libraryList: document.getElementById('library-list'),
+            libraryScanFill: document.getElementById('library-scan-fill'),
+            fileDropArea: document.getElementById('file-drop-area'),
+            fileInput: document.getElementById('file-input'),
+            confirmInput: document.getElementById('confirm-input'),
+            overlay: document.getElementById('overlay'),
+            tabBtns: document.querySelectorAll('.tab-btn'),
+            urlHints: document.querySelectorAll('.url-hint'),
+            audioInfo: document.getElementById('audio-info'),
+            audioTitle: document.getElementById('audio-title'),
+            audioSource: document.getElementById('audio-source'),
+            audioDimensions: document.getElementById('audio-dimensions'),
+            rhythmFill: document.getElementById('rhythm-fill'),
+            melodyFill: document.getElementById('melody-fill'),
+            ambienceFill: document.getElementById('ambience-fill')
+        };
+    }
+
+    initVisualizer() {
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        this.visualizer = new EmotionVisualizer(canvas, ctx);
+        this.visualizer.start();
+    }
+
+    initParticles() {
+        const container = document.querySelector('.emotion-particles');
+        const particleCount = this.isMobile ? 20 : 30; // 移动端减少粒子数量
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.style.position = 'absolute';
+            particle.style.width = Math.random() * 4 + 1 + 'px';
+            particle.style.height = particle.style.width;
+            particle.style.background = `var(--emotion-color)`;
+            particle.style.borderRadius = '50%';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.opacity = Math.random() * 0.3 + 0.1;
+            particle.style.boxShadow = '0 0 10px currentColor';
+            particle.style.animation = `floatParticle ${Math.random() * 20 + 10}s infinite linear`;
+            particle.style.willChange = 'transform, opacity';
+            container.appendChild(particle);
+        }
+        
+        // 添加粒子浮动动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes floatParticle {
+                0% { 
+                    transform: translate(0, 0) rotate(0deg) scale(1);
+                    opacity: ${Math.random() * 0.3 + 0.1};
+                }
+                25% { 
+                    transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(90deg) scale(${Math.random() * 0.5 + 0.8});
+                }
+                50% { 
+                    transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(180deg) scale(${Math.random() * 0.5 + 1.2});
+                    opacity: ${Math.random() * 0.5 + 0.3};
+                }
+                75% { 
+                    transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(270deg) scale(${Math.random() * 0.5 + 0.8});
+                }
+                100% { 
+                    transform: translate(0, 0) rotate(360deg) scale(1);
+                    opacity: ${Math.random() * 0.3 + 0.1};
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    async initMusicLibrary() {
+        // 模拟检测本地音乐库
+        this.showLibraryScanProgress(0);
+        
+        // 模拟扫描过程
+        for (let i = 0; i <= 100; i += 10) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            this.showLibraryScanProgress(i);
+            
+            // 模拟找到音乐文件
+            if (i === 30 || i === 60 || i === 90) {
+                this.addMockLibraryItems();
+            }
+        }
+        
+        // 完成扫描
+        this.showLibraryScanProgress(100);
+        setTimeout(() => {
+            this.renderLibraryList();
+        }, 500);
+    }
+
+    addMockLibraryItems() {
+        // 添加模拟音乐库项目
+        const mockTracks = [
+            {
+                id: 'lib-1',
+                title: '月光奏鸣曲',
+                artist: '贝多芬',
+                album: '古典名曲',
+                duration: '5:24',
+                source: 'library'
+            },
+            {
+                id: 'lib-2', 
+                title: '四季-春',
+                artist: '维瓦尔第',
+                album: '巴洛克经典',
+                duration: '3:45',
+                source: 'library'
+            },
+            {
+                id: 'lib-3',
+                title: 'G弦上的咏叹调',
+                artist: '巴赫',
+                album: '巴洛克杰作',
+                duration: '4:12',
+                source: 'library'
+            }
+        ];
+        
+        this.musicLibrary.push(...mockTracks);
+    }
+
+    showLibraryScanProgress(percent) {
+        this.el.libraryScanFill.style.width = `${percent}%`;
+    }
+
+    renderLibraryList() {
+        if (this.musicLibrary.length === 0) {
+            this.el.libraryList.innerHTML = `
+                <div class="empty-state">
+                    <i class="material-icons">library_music</i>
+                    <div>未找到本地音乐</div>
+                    <div style="font-size: 0.8rem; margin-top: 8px;">请使用其他音频源</div>
+                </div>
+            `;
+            return;
+        }
+        
+        this.el.libraryList.innerHTML = this.musicLibrary.map(track => `
+            <div class="library-item ${this.selectedTrack?.id === track.id ? 'active' : ''}" data-id="${track.id}">
+                <i class="material-icons" style="font-size: 1.2rem;">music_note</i>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.title}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-dim);">${track.artist} • ${track.album}</div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-dim);">${track.duration}</div>
+            </div>
+        `).join('');
+        
+        // 添加点击事件
+        this.el.libraryList.querySelectorAll('.library-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const trackId = item.dataset.id;
+                this.selectedTrack = this.musicLibrary.find(t => t.id === trackId);
+                
+                // 更新选中状态
+                this.el.libraryList.querySelectorAll('.library-item').forEach(i => {
+                    i.classList.remove('active');
+                });
+                item.classList.add('active');
+                
+                this.triggerHapticFeedback();
+            });
+        });
+    }
+
+    async searchMusic(query) {
+        if (!query.trim()) {
+            this.el.searchResults.innerHTML = `
+                <div class="empty-state">
+                    <i class="material-icons">search</i>
+                    <div>输入歌曲名开始搜索</div>
+                </div>
+            `;
+            return;
+        }
+        
+        // 显示加载状态
+        this.el.searchResults.innerHTML = `
+            <div class="search-loading">
+                <div class="spinner"></div>
+                <div>搜索中...</div>
+            </div>
+        `;
+        
+        // 模拟网络请求延迟
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1000));
+        
+        // 模拟搜索结果
+        const mockResults = [
+            {
+                id: 'search-1',
+                title: `${query} - 混音版`,
+                artist: 'Various Artists',
+                album: '热门混音',
+                duration: '3:45',
+                source: 'search',
+                url: 'https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3',
+                quality: 'high'
+            },
+            {
+                id: 'search-2',
+                title: `${query} - 原声版`,
+                artist: 'Original Artist',
+                album: '经典收藏',
+                duration: '4:20',
+                source: 'search', 
+                url: 'https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3',
+                quality: 'high'
+            },
+            {
+                id: 'search-3',
+                title: `${query} - 器乐版`,
+                artist: 'Instrumental Group',
+                album: '纯音乐精选',
+                duration: '3:15',
+                source: 'search',
+                url: 'https://assets.mixkit.co/music/preview/mixkit-deep-urban-623.mp3',
+                quality: 'medium'
+            }
+        ];
+        
+        this.searchResults = mockResults;
+        this.renderSearchResults();
+    }
+
+    renderSearchResults() {
+        if (this.searchResults.length === 0) {
+            this.el.searchResults.innerHTML = `
+                <div class="empty-state">
+                    <i class="material-icons">search_off</i>
+                    <div>未找到相关结果</div>
+                    <div style="font-size: 0.8rem; margin-top: 8px;">请尝试其他搜索词</div>
+                </div>
+            `;
+            return;
+        }
+        
+        this.el.searchResults.innerHTML = this.searchResults.map(track => `
+            <div class="search-result ${this.selectedTrack?.id === track.id ? 'active' : ''}" data-id="${track.id}">
+                <i class="material-icons" style="font-size: 1.2rem;">${track.quality === 'high' ? 'hd' : 'music_note'}</i>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.title}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-dim);">${track.artist} • ${track.album}</div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px;">
+                    ${track.quality === 'high' ? '<i class="material-icons" style="font-size: 0.9rem;">hd</i>' : ''}
+                    ${track.duration}
+                </div>
+            </div>
+        `).join('');
+        
+        // 添加点击事件
+        this.el.searchResults.querySelectorAll('.search-result').forEach(item => {
+            item.addEventListener('click', () => {
+                const trackId = item.dataset.id;
+                this.selectedTrack = this.searchResults.find(t => t.id === trackId);
+                
+                // 更新选中状态
+                this.el.searchResults.querySelectorAll('.search-result').forEach(i => {
+                    i.classList.remove('active');
+                });
+                item.classList.add('active');
+                
+                this.triggerHapticFeedback();
+            });
+        });
+    }
+
+    bindEvents() {
+        // 主播放按钮
+        this.el.playBtn.addEventListener('click', () => {
+            this.togglePlayback();
+            this.triggerHapticFeedback();
+        });
+        
+        // 长按打开音频输入面板
+        let pressTimer;
+        const startPress = () => {
+            pressTimer = setTimeout(() => {
+                this.openAudioInputPanel();
+                this.triggerHapticFeedback();
+            }, 800);
+        };
+        
+        const cancelPress = () => clearTimeout(pressTimer);
+        
+        // 移动端和桌面端分别处理
+        this.el.playBtn.addEventListener('mousedown', startPress);
+        this.el.playBtn.addEventListener('mouseup', cancelPress);
+        this.el.playBtn.addEventListener('mouseleave', cancelPress);
+        
+        this.el.playBtn.addEventListener('touchstart', startPress);
+        this.el.playBtn.addEventListener('touchend', cancelPress);
+        this.el.playBtn.addEventListener('touchcancel', cancelPress);
+        
+        // 搜索输入事件
+        let searchTimeout;
+        this.el.searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.searchMusic(e.target.value);
+            }, 500);
+        });
+        
+        // 双击切换可视化风格
+        let lastTap = 0;
+        document.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                this.switchVisualizationMode();
+                this.triggerHapticFeedback();
+                this.showGestureHint(`切换到${this.getModeName(this.visualizationMode)}模式`, 1500);
+            }
+            lastTap = currentTime;
+        });
+        
+        // 鼠标双击（桌面端）
+        document.addEventListener('dblclick', () => {
+            this.switchVisualizationMode();
+            this.showGestureHint(`切换到${this.getModeName(this.visualizationMode)}模式`, 1500);
+        });
+        
+        // 音频输入提示点击
+        this.el.audioInputHint.addEventListener('click', () => {
+            this.openAudioInputPanel();
+            this.triggerHapticFeedback();
+        });
+        
+        // 音频输入面板事件
+        this.el.closePanel.addEventListener('click', () => {
+            this.closeAudioInputPanel();
+            this.triggerHapticFeedback();
+        });
+        this.el.overlay.addEventListener('click', () => this.closeAudioInputPanel());
+        
+        // 标签切换
+        this.el.tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                this.switchTab(tab);
+                this.triggerHapticFeedback();
+                
+                // 切换到搜索标签时聚焦搜索框
+                if (tab === 'search') {
+                    setTimeout(() => {
+                        this.el.searchInput.focus();
+                    }, 300);
+                }
+            });
+        });
+        
+        // URL提示点击
+        this.el.urlHints.forEach(hint => {
+            hint.addEventListener('click', () => {
+                this.el.urlInput.value = hint.dataset.url;
+                this.triggerHapticFeedback();
+            });
+        });
+        
+        // 文件拖放
+        this.el.fileDropArea.addEventListener('click', () => {
+            this.el.fileInput.click();
+            this.triggerHapticFeedback();
+        });
+        
+        this.el.fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.handleFileSelect(e.target.files[0]);
+                this.triggerHapticFeedback();
+            }
+        });
+        
+        this.el.fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.el.fileDropArea.classList.add('drag-over');
+        });
+        
+        this.el.fileDropArea.addEventListener('dragleave', () => {
+            this.el.fileDropArea.classList.remove('drag-over');
+        });
+        
+        this.el.fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            this.el.fileDropArea.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                this.handleFileSelect(e.dataTransfer.files[0]);
+                this.triggerHapticFeedback();
+            }
+        });
+        
+        // 确认输入
+        this.el.confirmInput.addEventListener('click', () => {
+            this.handleConfirmInput();
+            this.triggerHapticFeedback();
+        });
+        
+        // URL输入回车确认
+        this.el.urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.handleConfirmInput();
+                this.triggerHapticFeedback();
+            }
+        });
+        
+        // 空间手势控制（陀螺仪）
+        if (window.DeviceOrientationEvent && this.isMobile) {
+            window.addEventListener('deviceorientation', (e) => {
+                if (!this.isPlaying) return;
+                
+                // 基于设备倾斜调整情感强度
+                const tilt = Math.abs(e.beta || 0) + Math.abs(e.gamma || 0);
+                const intensity = Math.min(1, tilt / 90);
+                this.setEmotionIntensity(intensity);
+                
+                // 传递陀螺仪数据给可视化器
+                this.visualizer.updateGyroData(e.beta, e.gamma, e.alpha);
+            });
+        }
+        
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                this.togglePlayback();
+            } else if (e.code === 'KeyI') {
+                e.preventDefault();
+                this.openAudioInputPanel();
+            } else if (e.code === 'KeyM') {
+                this.tryMicrophoneInput();
+            }
+        });
+        
+        // 防止移动端缩放
+        document.addEventListener('touchmove', (e) => {
+            if (e.scale !== 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // 防止移动端双击缩放
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    }
+
+    triggerHapticFeedback() {
+        if (this.isMobile) {
+            // 尝试使用振动API
+            if (navigator.vibrate) {
+                navigator.vibrate(10);
+            } else {
+                // 回退到视觉反馈
+                document.body.classList.add('haptic-feedback');
+                setTimeout(() => {
+                    document.body.classList.remove('haptic-feedback');
+                }, 100);
+            }
+        }
+    }
+
+    openAudioInputPanel() {
+        this.el.audioInputPanel.classList.add('show');
+        this.el.overlay.classList.add('show');
+        this.showGestureHint('', 0); // 隐藏手势提示
+    }
+
+    closeAudioInputPanel() {
+        this.el.audioInputPanel.classList.remove('show');
+        this.el.overlay.classList.remove('show');
+    }
+
+    switchTab(tab) {
+        // 更新激活的标签
+        this.el.tabBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tab);
+        });
+        
+        // 显示对应的内容区域
+        document.querySelectorAll('.url-input-section, .file-input-section, .search-input-section, .library-input-section, .mic-input-section')
+            .forEach(section => {
+                section.classList.remove('active');
+            });
+        
+        document.querySelector(`.${tab}-input-section`).classList.add('active');
+        
+        // 更新确认按钮文本
+        const buttonTexts = {
+            'search': '播放选中歌曲',
+            'library': '播放选中歌曲',
+            'url': '加载URL音频',
+            'file': '使用选中文件', 
+            'mic': '启用麦克风'
+        };
+        this.el.confirmInput.textContent = buttonTexts[tab] || '确认选择';
+    }
+
+    async handleConfirmInput() {
+        const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+        
+        switch(activeTab) {
+            case 'search':
+            case 'library':
+                if (this.selectedTrack) {
+                    await this.handleTrackSelection(this.selectedTrack);
+                } else {
+                    this.showStatus('请先选择一首歌曲', 2000);
+                    return;
+                }
+                break;
+            case 'url':
+                await this.handleUrlInput();
+                break;
+            case 'file':
+                if (this.el.fileInput.files.length > 0) {
+                    this.handleFileSelect(this.el.fileInput.files[0]);
+                } else {
+                    this.showStatus('请先选择音频文件', 2000);
+                    return;
+                }
+                break;
+            case 'mic':
+                await this.tryMicrophoneInput();
+                break;
+        }
+        
+        this.closeAudioInputPanel();
+    }
+
+    async handleTrackSelection(track) {
+        this.showStatus('加载歌曲中...', 2000);
+        
+        try {
+            if (track.source === 'search' && track.url) {
+                // 搜索结果的歌曲，使用URL加载
+                await this.loadAudioFromUrl(track.url);
+                this.currentAudioTitle = track.title;
+                this.currentAudioUrl = track.url;
+                this.currentSource = 'search';
+                this.showAudioInfo();
+                this.showStatus(`${track.title} 加载成功`, 2000);
+                
+                // 自动开始播放
+                if (!this.isPlaying) {
+                    this.startPlayback();
+                }
+            } else if (track.source === 'library') {
+                // 音乐库的歌曲 - 模拟加载
+                this.showStatus(`正在播放 ${track.title}`, 2000);
+                
+                // 使用示例音频模拟音乐库播放
+                this.useExampleAudio();
+                this.currentAudioTitle = track.title;
+                this.currentSource = 'library';
+                this.showAudioInfo();
+                
+                // 自动开始播放
+                if (!this.isPlaying) {
+                    this.startPlayback();
+                }
+            }
+        } catch (error) {
+            console.error('歌曲加载失败:', error);
+            this.showStatus('歌曲加载失败', 2000);
+        }
+    }
+
+    async handleUrlInput() {
+        const url = this.el.urlInput.value.trim();
+        if (!url) {
+            this.showStatus('请输入有效的音频URL', 2000);
+            return;
+        }
+        
+        this.showStatus('加载音频中...', 2000);
+        
+        try {
+            // 验证URL有效性
+            if (!this.isValidAudioUrl(url)) {
+                this.showStatus('不支持的音频格式', 2000);
+                return;
+            }
+            
+            await this.loadAudioFromUrl(url);
+            this.currentAudioTitle = this.extractTitleFromUrl(url);
+            this.currentAudioUrl = url;
+            this.showAudioInfo();
+            this.showStatus('URL音频加载成功', 2000);
+            
+            // 自动开始播放
+            if (!this.isPlaying) {
+                this.startPlayback();
+            }
+        } catch (error) {
+            console.error('URL音频加载失败:', error);
+            this.showStatus('音频加载失败，请检查URL', 2000);
+        }
+    }
+
+    handleFileSelect(file) {
+        // 验证文件类型
+        const validTypes = [
+            'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac', 
+            'audio/m4a', 'audio/x-m4a', 'audio/flac', 'audio/webm'
+        ];
+        
+        if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg|aac|m4a|flac|webm)$/i)) {
+            this.showStatus('不支持的音频格式', 2000);
+            return;
+        }
+        
+        this.showStatus('加载文件中...', 2000);
+        
+        const url = URL.createObjectURL(file);
+        this.loadAudioFromUrl(url);
+        this.currentAudioTitle = file.name.replace(/\.[^/.]+$/, "");
+        this.currentAudioUrl = url;
+        this.currentSource = 'file';
+        this.showAudioInfo();
+        this.showStatus('文件加载成功', 2000);
+        
+        // 自动开始播放
+        if (!this.isPlaying) {
+            this.startPlayback();
+        }
+    }
+
+    async loadAudioFromUrl(url) {
+        if (this.audio) {
+            this.audio.pause();
+            this.audio = null;
+        }
+        
+        this.audio = new Audio();
+        this.audio.crossOrigin = "anonymous";
+        this.audio.src = url;
+        
+        // 设置音频分析
+        if (!this.audioContext) {
+            this.audioContext = new AudioContext();
+            // 移动端性能优化：使用较小的FFT大小
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = this.isMobile ? 1024 : 2048;
+        }
+        
+        const source = this.audioContext.createMediaElementSource(this.audio);
+        source.connect(this.analyser);
+        this.analyser.connect(this.audioContext.destination);
+        
+        this.visualizer.connect(this.analyser);
+        this.currentSource = 'url';
+        
+        // 等待音频加载
+        await new Promise((resolve, reject) => {
+            this.audio.onloadedmetadata = resolve;
+            this.audio.onerror = reject;
+            // 设置超时
+            setTimeout(() => reject(new Error('音频加载超时')), 10000);
+        });
+    }
+
+    isValidAudioUrl(url) {
+        const audioExtensions = ['.mp3', '.wav', '.ogg', '.aac', '.m4a', '.flac', '.webm'];
+        return audioExtensions.some(ext => url.toLowerCase().includes(ext));
+    }
+
+    extractTitleFromUrl(url) {
+        try {
+            const urlObj = new URL(url);
+            const pathname = urlObj.pathname;
+            const filename = pathname.split('/').pop();
+            return filename.replace(/\.[^/.]+$/, "") || '网络音频';
+        } catch {
+            return '网络音频';
+        }
+    }
+
+    showAudioInfo() {
+        const sourceNames = {
+            'mic': '麦克风',
+            'url': 'URL音频',
+            'file': '本地文件',
+            'search': '在线搜索',
+            'library': '音乐库',
+            'example': '示例音频'
+        };
+        
+        this.el.audioTitle.textContent = this.currentAudioTitle;
+        this.el.audioSource.textContent = sourceNames[this.currentSource] || '未知来源';
+        this.el.audioInfo.classList.add('show');
+    }
+
+    showAudioDimensions() {
+        this.el.audioDimensions.classList.add('show');
+    }
+
+    updateAudioDimensions(dimensions) {
+        this.audioDimensions = dimensions;
+        
+        // 更新CSS变量
+        document.documentElement.style.setProperty('--rhythm-intensity', dimensions.rhythm);
+        document.documentElement.style.setProperty('--melody-intensity', dimensions.melody);
+        document.documentElement.style.setProperty('--ambience-intensity', dimensions.ambience);
+        
+        // 更新视觉指示器
+        this.el.rhythmFill.style.width = `${dimensions.rhythm * 100}%`;
+        this.el.melodyFill.style.width = `${dimensions.melody * 100}%`;
+        this.el.ambienceFill.style.width = `${dimensions.ambience * 100}%`;
+    }
+
+    async tryMicrophoneInput() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                } 
+            });
+            this.startMicrophoneInput(stream);
+            this.currentAudioTitle = '实时麦克风输入';
+            this.currentSource = 'mic';
+            this.showAudioInfo();
+            this.showStatus('麦克风输入已激活', 2000);
+            this.el.audioInputHint.innerHTML = '<i class="material-icons" style="font-size: 1.1rem;">mic</i><span>麦克风</span>';
+            this.el.audioInputHint.style.color = 'var(--dunhuang-vermilion)';
+            
+            // 自动开始播放
+            if (!this.isPlaying) {
+                this.startPlayback();
+            }
+        } catch (error) {
+            this.showStatus('麦克风权限被拒绝', 2000);
+            this.el.audioInputHint.innerHTML = '<i class="material-icons" style="font-size: 1.1rem;">mic_off</i><span>麦克风</span>';
+            this.el.audioInputHint.style.color = 'var(--text-dim)';
+            
+            // 如果没有音频输入，使用示例音频
+            if (!this.audio) {
+                this.useExampleAudio();
+            }
+        }
+        this.el.audioInputHint.classList.add('show');
+    }
+
+    startMicrophoneInput(stream) {
+        if (this.audioContext) {
+            this.audioContext.close();
+        }
+        
+        this.audioContext = new AudioContext();
+        // 移动端性能优化
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = this.isMobile ? 1024 : 2048;
+        
+        const source = this.audioContext.createMediaStreamSource(stream);
+        source.connect(this.analyser);
+        
+        this.visualizer.connect(this.analyser);
+        this.currentSource = 'mic';
+    }
+
+    useExampleAudio() {
+        // 创建示例音频（白噪音）
+        this.audioContext = new AudioContext();
+        // 移动端性能优化
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = this.isMobile ? 1024 : 2048;
+        
+        // 创建简单的音频源
+        const bufferSize = 4096;
+        const noiseGenerator = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
+        noiseGenerator.onaudioprocess = (e) => {
+            const output = e.outputBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = (Math.random() * 2 - 1) * 0.1; // 低音量白噪音
+            }
+        };
+        
+        noiseGenerator.connect(this.analyser);
+        this.analyser.connect(this.audioContext.destination);
+        
+        this.visualizer.connect(this.analyser);
+        this.currentSource = 'example';
+        this.currentAudioTitle = '情感示例音频';
+        this.showAudioInfo();
+        this.showStatus('使用示例音频', 2000);
+    }
+
+    togglePlayback() {
+        if (this.isPlaying) {
+            this.stopPlayback();
+        } else {
+            this.startPlayback();
+        }
+    }
+
+    startPlayback() {
+        if (!this.audioContext) {
+            this.useExampleAudio();
+        }
+        
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+        
+        // 如果是URL或文件音频，播放音频元素
+        if (this.audio && (this.currentSource === 'url' || this.currentSource === 'file' || this.currentSource === 'search')) {
+            this.audio.play().catch(e => {
+                console.error('播放失败:', e);
+                this.showStatus('播放失败，请检查音频文件', 2000);
+            });
+        }
+        
+        this.isPlaying = true;
+        this.el.playBtn.classList.add('playing');
+        this.el.playBtn.innerHTML = '<i class="material-icons">pause</i>';
+        this.showStatus('播放中', 1000);
+        this.el.emotionIntensity.classList.add('show');
+        
+        document.body.classList.add('emotion-active');
+    }
+
+    stopPlayback() {
+        // 如果是URL或文件音频，暂停音频元素
+        if (this.audio && (this.currentSource === 'url' || this.currentSource === 'file' || this.currentSource === 'search')) {
+            this.audio.pause();
+        }
+        
+        this.isPlaying = false;
+        this.el.playBtn.classList.remove('playing');
+        this.el.playBtn.innerHTML = '<i class="material-icons">play_arrow</i>';
+        this.showStatus('已暂停', 1000);
+        this.el.emotionIntensity.classList.remove('show');
+        
+        document.body.classList.remove('emotion-active');
+    }
+
+    switchVisualizationMode() {
+        const modes = ['dunhuang', 'aurora', 'cosmic', 'liquid'];
+        const currentIndex = modes.indexOf(this.visualizationMode);
+        this.visualizationMode = modes[(currentIndex + 1) % modes.length];
+        this.visualizer.setMode(this.visualizationMode);
+        
+        // 根据模式调整情感强度范围
+        this.setEmotionIntensity(this.emotionIntensity);
+    }
+
+    getModeName(mode) {
+        const names = {
+            'dunhuang': '敦煌',
+            'aurora': '极光', 
+            'cosmic': '宇宙',
+            'liquid': '液态'
+        };
+        return names[mode] || mode;
+    }
+
+    setEmotionIntensity(intensity) {
+        this.emotionIntensity = intensity;
+        document.documentElement.style.setProperty('--emotion-intensity', intensity);
+        this.el.emotionIntensityFill.style.width = `${intensity * 100}%`;
+        
+        // 基于情感强度调整整体体验
+        this.adjustExperienceByEmotion(intensity);
+    }
+
+    adjustExperienceByEmotion(intensity) {
+        // 调整粒子动画速度
+        const particles = document.querySelectorAll('.emotion-particles div');
+        particles.forEach(particle => {
+            const duration = 20 - (intensity * 10); // 高强度时动画更快
+            particle.style.animationDuration = `${duration}s`;
+        });
+        
+        // 调整背景纹理强度
+        const texture = document.querySelector('.dunhuang-texture');
+        texture.style.opacity = 0.3 + (intensity * 0.4);
+    }
+
+    showStatus(message, duration = 2000) {
+        this.el.statusIndicator.textContent = message;
+        this.el.statusIndicator.classList.add('show');
+        
+        clearTimeout(this.statusTimer);
+        this.statusTimer = setTimeout(() => {
+            this.el.statusIndicator.classList.remove('show');
+        }, duration);
+    }
+
+    showGestureHint(message, duration = 2000) {
+        this.el.gestureHint.textContent = message;
+        this.el.gestureHint.classList.add('show');
+        
+        clearTimeout(this.gestureTimer);
+        this.gestureTimer = setTimeout(() => {
+            this.el.gestureHint.classList.remove('show');
+        }, duration);
+    }
+
+    hideLoading() {
+        this.el.loadingState.classList.add('hidden');
+        setTimeout(() => {
+            this.el.loadingState.style.display = 'none';
+        }, 800);
+    }
+}
+
+/* ================ 情感可视化引擎 ================ */
+class EmotionVisualizer {
+    constructor(canvas, ctx) {
+        this.canvas = canvas;
+        this.ctx = ctx;
+        this.analyser = null;
+        this.mode = 'dunhuang';
+        this.data = null;
+        this.isActive = false;
+        this.gyroData = { beta: 0, gamma: 0, alpha: 0 };
+        this.audioHistory = [];
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+    }
+
+    resize() {
+        this.canvas.width = innerWidth * devicePixelRatio;
+        this.canvas.height = innerHeight * devicePixelRatio;
+        this.ctx.scale(devicePixelRatio, devicePixelRatio);
+    }
+
+    connect(analyser) {
+        this.analyser = analyser;
+        this.data = new Uint8Array(this.analyser.frequencyBinCount);
+    }
+
+    setMode(mode) { 
+        this.mode = mode; 
+    }
+
+    updateGyroData(beta, gamma, alpha) {
+        this.gyroData = { beta, gamma, alpha };
+    }
+
+    start() { 
+        this.isActive = true; 
+        this.animate();
+    }
+
+    stop() { 
+        this.isActive = false; 
+    }
+
+    animate = () => {
+        if (!this.isActive) return;
+        requestAnimationFrame(this.animate);
+
+        // 清空画布
+        this.ctx.fillStyle = 'rgba(10,10,22,0.1)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if (this.analyser && this.data) {
+            this.analyser.getByteFrequencyData(this.data);
+            
+            // 分析音频维度
+            const dimensions = this.analyzeAudioDimensions();
+            
+            // 更新全局音频维度显示
+            if (window.sonoriaApp) {
+                window.sonoriaApp.updateAudioDimensions(dimensions);
+            }
+            
+            const energy = this.data.reduce((a, b) => a + b) / this.data.length;
+            const bass = this.data.slice(0, 20).reduce((a, b) => a + b) / 20;
+            const emotionIntensity = energy / 256;
+            
+            // 更新情感强度
+            document.documentElement.style.setProperty('--emotion-intensity', emotionIntensity);
+            
+            // 根据模式渲染
+            this[`render_${this.mode}`](bass, energy, emotionIntensity, dimensions);
+        } else {
+            // 空闲状态渲染
+            this.render_idle();
+        }
+    };
+
+    analyzeAudioDimensions() {
+        if (!this.data) return { rhythm: 0.5, melody: 0.5, ambience: 0.5 };
+        
+        // 节奏分析 - 低频能量的变化率
+        const lowFreq = this.data.slice(0, 10);
+        const midFreq = this.data.slice(10, 50);
+        const highFreq = this.data.slice(50, 100);
+        
+        // 计算能量变化（模拟节奏）
+        const lowEnergy = lowFreq.reduce((a, b) => a + b) / lowFreq.length;
+        const midEnergy = midFreq.reduce((a, b) => a + b) / midFreq.length;
+        const highEnergy = highFreq.reduce((a, b) => a + b) / highFreq.length;
+        
+        // 保存历史数据用于变化检测
+        this.audioHistory.push({ lowEnergy, midEnergy, highEnergy });
+        if (this.audioHistory.length > 10) {
+            this.audioHistory.shift();
+        }
+        
+        // 计算变化率（节奏强度）
+        let rhythm = 0.5;
+        if (this.audioHistory.length > 1) {
+            const current = this.audioHistory[this.audioHistory.length - 1];
+            const previous = this.audioHistory[this.audioHistory.length - 2];
+            const change = Math.abs(current.lowEnergy - previous.lowEnergy) / 256;
+            rhythm = Math.min(1, change * 10);
+        }
+        
+        // 旋律分析 - 中高频的分布和变化
+        const melody = Math.min(1, midEnergy / 128);
+        
+        // 氛围分析 - 整体频谱的宽度和平滑度
+        const spectralCentroid = this.calculateSpectralCentroid();
+        const ambience = Math.min(1, spectralCentroid / 100);
+        
+        return {
+            rhythm: rhythm,
+            melody: melody,
+            ambience: ambience
+        };
+    }
+
+    calculateSpectralCentroid() {
+        // 计算频谱质心（音色亮度）
+        let total = 0;
+        let weightedTotal = 0;
+        
+        for (let i = 0; i < this.data.length; i++) {
+            total += this.data[i];
+            weightedTotal += this.data[i] * i;
+        }
+        
+        return total > 0 ? weightedTotal / total : 0;
+    }
+
+    render_idle() {
+        const time = Date.now() * 0.001;
+        const centerX = this.canvas.width / 2 / devicePixelRatio;
+        const centerY = this.canvas.height / 2 / devicePixelRatio;
+        
+        // 绘制呼吸光晕
+        const pulse = Math.sin(time) * 0.5 + 0.5;
+        const gradient = this.ctx.createRadialGradient(
+            centerX, centerY, 0, 
+            centerX, centerY, 200
+        );
+        gradient.addColorStop(0, `hsla(195, 65%, 55%, ${pulse * 0.1})`);
+        gradient.addColorStop(1, 'transparent');
+        
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    render_dunhuang(bass, energy, emotionIntensity, dimensions) {
+        const width = this.canvas.width / devicePixelRatio;
+        const height = this.canvas.height / devicePixelRatio;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        
+        // 基于情感强度和音频维度调整颜色
+        const hue = 195 + (emotionIntensity * 60) + (dimensions.melody * 30);
+        const color1 = `hsla(${hue}, 65%, 55%, ${0.5 + dimensions.ambience * 0.3})`;
+        const color2 = `hsla(${12 + emotionIntensity * 30}, 78%, 52%, ${0.4 + dimensions.rhythm * 0.3})`;
+        
+        // 基于节奏调整粒子数量
+        const particleCount = 30 + Math.floor(dimensions.rhythm * 30);
+        
+        // 绘制情感粒子场
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (i / particleCount) * Math.PI * 2 + Date.now() * 0.001 * (1 + dimensions.rhythm);
+            const distance = 100 + bass * 0.5 + Math.sin(angle * 3) * (50 + dimensions.melody * 50);
+            const size = 2 + energy * 0.05 + dimensions.rhythm * 3;
+            
+            const x = centerX + Math.cos(angle) * distance;
+            const y = centerY + Math.sin(angle) * distance;
+            
+            this.ctx.fillStyle = i % 2 === 0 ? color1 : color2;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, size, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        // 绘制敦煌风格的能量环 - 基于旋律强度调整
+        const ringCount = 2 + Math.floor(dimensions.melody * 3);
+        for (let i = 0; i < ringCount; i++) {
+            const radius = 80 + i * 60 + bass * 0.3 + dimensions.rhythm * 40;
+            const pulse = Math.sin(Date.now() * 0.002 + i) * 0.5 + 0.5;
+            
+            this.ctx.strokeStyle = `hsla(${hue + i * 20}, 65%, 55%, ${0.3 + pulse * 0.3 + dimensions.ambience * 0.2})`;
+            this.ctx.lineWidth = 2 + energy * 0.02 + dimensions.rhythm * 2;
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            this.ctx.stroke();
+        }
+        
+        // 陀螺仪交互 - 基于设备倾斜调整视角
+        if (this.gyroData) {
+            const tiltX = (this.gyroData.gamma || 0) / 45;
+            const tiltY = (this.gyroData.beta || 0) / 45;
+            
+            // 添加基于陀螺仪的视觉效果
+            this.ctx.save();
+            this.ctx.translate(tiltX * 20, tiltY * 20);
+            this.ctx.restore();
+        }
+    }
+
+    render_aurora(bass, energy, emotionIntensity, dimensions) {
+        // 极光模式实现 - 增强音频维度感知
+        const width = this.canvas.width / devicePixelRatio;
+        const height = this.canvas.height / devicePixelRatio;
+        
+        // 基于音频维度调整极光效果
+        const waveCount = 3 + Math.floor(dimensions.melody * 3);
+        const waveAmplitude = 30 + bass + dimensions.rhythm * 40;
+        
+        for (let i = 0; i < waveCount; i++) {
+            this.ctx.strokeStyle = `hsla(${195 + i * 20}, 70%, 60%, ${0.3 + emotionIntensity * 0.4 + dimensions.ambience * 0.2})`;
+            this.ctx.lineWidth = 3 + energy * 0.02 + dimensions.rhythm * 2;
+            this.ctx.beginPath();
+            
+            for (let x = 0; x < width; x += 10) {
+                const wave = Math.sin(x * 0.01 + Date.now() * 0.001 * (1 + dimensions.rhythm) + i) * waveAmplitude + 
+                            Math.sin(x * 0.02 + Date.now() * 0.0005) * 20;
+                const y = height * 0.3 + wave + i * 30;
+                
+                if (x === 0) {
+                    this.ctx.moveTo(x, y);
+                } else {
+                    this.ctx.lineTo(x, y);
+                }
+            }
+            this.ctx.stroke();
+        }
+    }
+
+    render_cosmic(bass, energy, emotionIntensity, dimensions) {
+        // 宇宙模式实现 - 增强音频维度感知
+        const width = this.canvas.width / devicePixelRatio;
+        const height = this.canvas.height / devicePixelRatio;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        
+        // 基于氛围强度调整星星数量
+        const starCount = 80 + Math.floor(dimensions.ambience * 70);
+        for (let i = 0; i < starCount; i++) {
+            const x = Math.random() * width;
+            const y = Math.random() * height;
+            const size = Math.random() * 2 + 0.5;
+            const brightness = Math.random() * 100 + 155;
+            
+            this.ctx.fillStyle = `rgba(${brightness}, ${brightness}, 255, ${0.5 + emotionIntensity * 0.3 + dimensions.melody * 0.2})`;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, size, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        // 基于节奏调整行星脉动
+        const planetPulse = Math.sin(Date.now() * 0.005) * 0.5 + 0.5;
+        const planetSize = 60 + bass * 0.2 + dimensions.rhythm * 20;
+        const gradient = this.ctx.createRadialGradient(
+            centerX, centerY, 0, 
+            centerX, centerY, planetSize
+        );
+        gradient.addColorStop(0, `hsla(195, 70%, 70%, 1)`);
+        gradient.addColorStop(1, `hsla(12, 70%, 40%, 1)`);
+        
+        this.ctx.fillStyle = gradient;
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, planetSize, 0, Math.PI * 2);
+        this.ctx.fill();
+    }
+
+    render_liquid(bass, energy, emotionIntensity, dimensions) {
+        // 液态模式实现 - 增强音频维度感知
+        const width = this.canvas.width / devicePixelRatio;
+        const height = this.canvas.height / devicePixelRatio;
+        
+        // 基于氛围强度调整液体透明度
+        const liquidOpacity = 0.2 + emotionIntensity * 0.2 + dimensions.ambience * 0.3;
+        this.ctx.fillStyle = `hsla(195, 65%, 40%, ${liquidOpacity})`;
+        this.ctx.fillRect(0, height * 0.6, width, height * 0.4);
+        
+        // 基于节奏调整波浪强度
+        const waveIntensity = 20 + bass * 0.2 + dimensions.rhythm * 30;
+        this.ctx.strokeStyle = `hsla(195, 65%, 65%, ${0.6 + emotionIntensity * 0.2 + dimensions.melody * 0.2})`;
+        this.ctx.lineWidth = 3 + dimensions.rhythm * 2;
+        this.ctx.beginPath();
+        
+        for (let x = 0; x < width; x += 5) {
+            const wave = Math.sin(x * 0.01 + Date.now() * 0.001 * (1 + dimensions.rhythm)) * waveIntensity + 
+                        Math.sin(x * 0.02 + Date.now() * 0.0007) * 10;
+            const y = height * 0.6 + wave * (1 + emotionIntensity * 0.5);
+            
+            if (x === 0) {
+                this.ctx.moveTo(x, y);
+            } else {
+                this.ctx.lineTo(x, y);
+            }
+        }
+        this.ctx.stroke();
+    }
+}
+
+/* ================ 启动应用 ================ */
+document.addEventListener('DOMContentLoaded', () => {
+    const app = new SonoriaRevolution();
+    window.sonoriaApp = app; // 暴露给全局以便可视化器调用
+});
+</script>
+</body>
+</html>
