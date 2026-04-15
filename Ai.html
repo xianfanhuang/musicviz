@@ -10,19 +10,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎐</text></svg>">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<!-- Puter SDK - 异步加载优化 -->
-<script>
-    (function() {
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://js.puter.com/v2/';
-        script.onerror = function() {
-            console.warn('[Sonoria] Puter SDK加载失败，使用本地模式');
-            window.puterUnavailable = true;
-        };
-        document.head.appendChild(script);
-    })();
-</script>
+<script src="https://js.puter.com/v2/"></script>
 <style>
 :root{
 --primary:#8E2DE2;--ai-primary:#7C3AED;--accent:#00d2ff;
@@ -802,18 +790,10 @@ el.onloadedmetadata=()=>ui.tTime.innerText=this.fmt(el.duration);
 renderPlaylist(){
 if(!S.playlist.length){ui.plView.innerHTML=`<div style="text-align:center;color:var(--text-sub);padding:10px">${t('plEmpty')}</div>`;return}
 ui.plView.innerHTML=S.playlist.map((t,i)=>`
-<div class="pl-item ${i===S.trackIdx?'active':''}" data-index="${i}">
+<div class="pl-item ${i===S.trackIdx?'active':''}" onclick="engine.playTrack(${i})">
 <i class="material-icons-round" style="font-size:16px">${i===S.trackIdx?'equalizer':'music_note'}</i>
 <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</span>
 </div>`).join('');
-// 绑定事件修复按钮响应问题
-ui.plView.querySelectorAll('.pl-item').forEach(item => {
-	const idx = parseInt(item.dataset.index);
-	item.addEventListener('click', (e) => {
-		e.stopPropagation();
-		engine.playTrack(idx);
-	});
-});
 }
 
 updateMeta(title,artist){ui.title.innerText=title;ui.cText.innerText=title;ui.artist.innerText=artist}
