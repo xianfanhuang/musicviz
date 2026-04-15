@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sonoria AI | 生成式音乐感知引擎</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #8E2DE2;
+            --accent: #00d2ff;
+            --ai-glow: #00f2ff;
+            --bg-deep: #000000;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-strong: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.06);
+            --highlight: rgba(255, 255, 255, 0.15);
+            --text-main: rgba(255, 255, 255, 0.95);
+            --text-sub: rgba(255, 255, 255, 0.55);
+            --ease-smooth: cubic-bezier(0.23, 1, 0.32, 1);
+            --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        body {
+            background: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+        }
+        .ai-status {
+            position: fixed; top: 20px; right: 20px; z-index: 1000;
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.2);
+            padding: 8px 16px; border-radius: 100px; font-size: 0.75rem;
+            color: var(--ai-glow); opacity: 0; transform: translateY(-20px);
+            transition: all 0.4s var(--ease-elastic); font-family: 'Space Grotesk', monospace;
+            backdrop-filter: blur(10px);
+        }
+        .ai-status.active { opacity: 1; transform: translateY(0); }
+        .ai-pulse { width: 8px; height: 8px; background: var(--ai-glow); border-radius: 50%; animation: ai-breathe 2s infinite; }
+        @keyframes ai-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        #visualizer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .vignette { position: fixed; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.6) 100%); }
+        #ai-particles { position: fixed; inset: 0; z-index: 3; pointer-events: none; mix-blend-mode: screen; }
+        .app-shell {
+            position: relative; z-index: 10; height: 100vh; width: 100vw;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: var(--safe-top) 20px calc(20px + var(--safe-bottom));
+            transition: all 0.6s var(--ease-smooth);
+        }
+        .lens-card {
+            width: 100%; max-width: 440px;
+            background: var(--glass);
+            backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--border);
+            border-top: 1px solid var(--highlight);
+            border-radius: 32px;
+            padding: 28px;
+            display: flex; flex-direction: column; gap: 20px;
+            box-shadow: 0 30px 80px -20px rgba(0,0,0,0.6);
+            transform-style: preserve-3d;
+            transition: all 0.5s var(--ease-smooth);
+            position: relative; overflow: hidden;
+        }
+        .lens-card::before {
+            content: ''; position: absolute; inset: 0; border-radius: inherit;
+            background: linear-gradient(135deg, rgba(0, 210, 255, 0.05), transparent 50%);
+            pointer-events: none;
+        }
+        .ai-insight {
+            position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); border: 1px solid rgba(0, 210, 255, 0.3);
+            padding: 12px 20px; border-radius: 16px; font-size: 0.8rem;
+            color: var(--ai-glow); max-width: 90%; text-align: center;
+            opacity: 0; pointer-events: none; transition: all 0.4s;
+            backdrop-filter: blur(20px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .ai-insight.show { opacity: 1; top: -50px; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .brand { font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem; letter-spacing: 3px; font-weight: 700; color: var(--text-sub); display: flex; align-items: center; gap: 8px; }
+        .ai-badge { background: linear-gradient(90deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
+        .icon-btn {
+            background: transparent; border: none; color: var(--text-main);
+            width: 40px; height: 40px; border-radius: 50%;
+            display: grid; place-items: center; cursor: pointer;
+            transition: all 0.2s; position: relative;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+        .icon-btn.ai-active { color: var(--ai-glow); text-shadow: 0 0 20px var(--ai-glow); }
+        .hero-text { text-align: center; margin: 8px 0; position: relative; }
+        .mood-indicator {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.7rem; color: var(--ai-glow); margin-bottom: 8px;
+            opacity: 0; transition: opacity 0.5s; font-family: 'Space Grotesk', monospace;
+            border: 1px solid rgba(0, 242, 255, 0.2); padding: 4px 12px; border-radius: 100px;
+            background: rgba(0, 242, 255, 0.05);
+        }
+        .mood-indicator.active { opacity: 1; }
+        .title { font-size: 1.3rem; font-weight: 700; line-height: 1.4; color: var(--text-main); margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .artist { font-size: 0.9rem; color: var(--text-sub); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .ai-drawer { max-height: 0; overflow: hidden; transition: all 0.4s var(--ease-smooth); background: rgba(0,0,0,0.4); border-radius: 20px; margin-top: 0; }
+        .ai-drawer.open { max-height: 300px; margin-top: 16px; border: 1px solid rgba(0, 210, 255, 0.2); }
+        .chat-container { padding: 16px; display: flex; flex-direction: column; gap: 12px; height: 300px; }
+        .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .chat-message { padding: 10px 14px; border-radius: 12px; max-width: 85%; font-size: 0.85rem; animation: message-in 0.3s var(--ease-elastic); }
+        @keyframes message-in { from { opacity: 0; transform: translateY(10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .chat-message.user { background: rgba(255,255,255,0.1); align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-message.ai { background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.2); align-self: flex-start; border-bottom-left-radius: 4px; color: var(--ai-glow); }
+        .chat-input-row { display: flex; gap: 8px; }
+        .chat-input { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); padding: 12px 16px; border-radius: 100px; color: #fff; outline: none; }
+        .chat-input:focus { border-color: var(--ai-glow); }
+        .chat-send { width: 40px; height: 40px; border-radius: 50%; background: var(--ai-glow); border: none; color: #000; display: grid; place-items: center; cursor: pointer; transition: transform 0.2s; }
+        .chat-send:hover { transform: scale(1.1); }
+        .chat-send:active { transform: scale(0.95); }
+        .progress-container { padding: 16px 0; cursor: pointer; touch-action: none; }
+        .progress-rail { height: 4px; background: rgba(255,255,255,0.1); width: 100%; border-radius: 2px; overflow: hidden; position: relative; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); width: 0%; border-radius: 2px; transition: width 0.1s linear; box-shadow: 0 0 10px var(--accent); }
+        .time-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-sub); margin-top: 8px; font-variant-numeric: tabular-nums; }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 32px; padding: 10px 0; }
+        .play-btn {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; display: grid; place-items: center; cursor: pointer;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(0, 210, 255, 0.1);
+            transition: all 0.3s var(--ease-elastic); backdrop-filter: blur(10px);
+            -webkit-user-select: none; user-select: none;
+        }
+        .play-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(0, 210, 255, 0.3); }
+        .play-btn:active { transform: scale(0.95); }
+        .play-btn.ai-listening { animation: ai-pulse-border 2s infinite; border-color: var(--ai-glow); }
+        @keyframes ai-pulse-border { 0%, 100% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.4); } 50% { box-shadow: 0 0 20px 5px rgba(0, 242, 255, 0.2); } }
+        .control-btn { background: none; border: none; color: var(--text-sub); cursor: pointer; transition: all 0.2s; display: grid; place-items: center; }
+        .control-btn:hover { color: #fff; transform: scale(1.1); }
+        .control-btn:active { transform: scale(0.9); }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 20px; gap: 8px; }
+        .toolbar-group { display: flex; gap: 8px; }
+        .pill {
+            height: 36px; padding: 0 16px; border-radius: 100px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-main); font-size: 0.8rem; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+            -webkit-user-select: none; user-select: none;
+        }
+        .pill:hover { background: rgba(255,255,255,0.1); }
+        .pill:active { transform: scale(0.95); }
+        .pill.ai-mode { background: rgba(0, 210, 255, 0.15); border-color: rgba(0, 210, 255, 0.3); color: var(--ai-glow); }
+        .phantom-capsule {
+            position: fixed; bottom: calc(24px + var(--safe-bottom)); left: 50%;
+            transform: translateX(-50%) translateY(200px);
+            background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(40px);
+            border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 100px;
+            padding: 8px; display: flex; align-items: center; gap: 12px;
+            z-index: 100; opacity: 0; pointer-events: none;
+            transition: all 0.6s var(--ease-elastic);
+        }
+        .app-shell.zen ~ .phantom-capsule { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+        .capsule-core { width: 44px; height: 44px; position: relative; display: grid; place-items: center; border-radius: 50%; border: 2px solid rgba(0, 210, 255, 0.3); }
+        .capsule-ai-indicator { position: absolute; inset: -4px; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--ai-glow); animation: spin 3s linear infinite; opacity: 0; transition: opacity 0.3s; }
+        .capsule-core.ai-active .capsule-ai-indicator { opacity: 1; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .toast {
+            position: fixed; top: calc(20px + var(--safe-top)); left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(0,0,0,0.9); border: 1px solid rgba(0, 210, 255, 0.3);
+            padding: 12px 24px; border-radius: 100px; color: var(--ai-glow);
+            font-size: 0.9rem; z-index: 2000; opacity: 0; transition: all 0.4s var(--ease-elastic);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .puter-auth-btn {
+            position: fixed; top: 20px; left: 20px; z-index: 1000;
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 16px; border-radius: 100px; cursor: pointer;
+            font-size: 0.8rem; display: flex; align-items: center; gap: 8px;
+            transition: all 0.3s; -webkit-user-select: none; user-select: none;
+        }
+        .puter-auth-btn:hover { background: rgba(255,255,255,0.2); }
+        .puter-auth-btn:active { transform: scale(0.95); }
+        .puter-auth-btn.authenticated { background: rgba(46, 213, 115, 0.2); border-color: rgba(46, 213, 115, 0.4); color: #2ed573; }
+        .loading-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            z-index: 3000; display: none; align-items: center; justify-content: center;
+            flex-direction: column; gap: 16px;
+        }
+        .loading-overlay.active { display: flex; }
+        .loading-spinner { width: 40px; height: 40px; border: 3px solid rgba(0, 242, 255, 0.2); border-top-color: var(--ai-glow); border-radius: 50%; animation: spin 1s linear infinite; }
+        /* Playlist Panel */
+        .playlist-panel {
+            position: fixed; top: 0; right: -320px; width: 300px; height: 100%;
+            background: rgba(10,10,15,0.95); backdrop-filter: blur(20px);
+            z-index: 500; transition: right 0.4s var(--ease-smooth);
+            border-left: 1px solid var(--border); padding: 20px;
+        }
+        .playlist-panel.open { right: 0; }
+        .playlist-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .playlist-title { font-family: 'Space Grotesk', sans-serif; font-size: 1rem; color: var(--ai-glow); }
+        .playlist-close { background: none; border: none; color: var(--text-main); cursor: pointer; }
+        .playlist-items { display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 100px); overflow-y: auto; }
+        .playlist-item {
+            padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05);
+            border: 1px solid transparent; cursor: pointer; transition: all 0.2s;
+        }
+        .playlist-item:hover { background: rgba(255,255,255,0.1); }
+        .playlist-item.active { border-color: var(--ai-glow); background: rgba(0, 242, 255, 0.1); }
+        .playlist-item-title { font-size: 0.9rem; color: var(--text-main); margin-bottom: 4px; }
+        .playlist-item-meta { font-size: 0.75rem; color: var(--text-sub); }
+        .playlist-empty { text-align: center; padding: 40px 20px; color: var(--text-sub); font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <button class="puter-auth-btn" id="puter-auth">
+        <i class="material-icons-round" style="font-size:18px;">account_circle</i>
+        <span id="auth-text">连接 Puter</span>
+    </button>
+    <div class="ai-status" id="ai-status">
+        <span class="ai-pulse"></span>
+        <span>AI 感知引擎运行中</span>
+    </div>
+    <canvas id="visualizer"></canvas>
+    <canvas id="ai-particles"></canvas>
+    <div class="vignette"></div>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div style="color: var(--ai-glow); font-size: 0.9rem;">AI 正在分析...</div>
+    </div>
+    <main class="app-shell" id="app-shell">
+        <div class="lens-card" id="card">
+            <div class="ai-insight" id="ai-insight">正在分析音频特征...</div>
+            <div class="header">
+                <button class="icon-btn" id="zen-btn">
+                    <i class="material-icons-round">keyboard_arrow_down</i>
+                </button>
+                <div class="brand"><span class="ai-badge">AI</span> SONORIA</div>
+                <button class="icon-btn ai-active" id="ai-chat-toggle">
+                    <i class="material-icons-round">psychology</i>
+                </button>
+            </div>
+            <div class="hero-text">
+                <div class="mood-indicator" id="mood-indicator">
+                    <i class="material-icons-round" style="font-size:14px;">auto_awesome</i>
+                    <span id="mood-text">分析中...</span>
+                </div>
+                <div class="title" id="track-title">导入音乐或连接麦克风</div>
+                <div class="artist" id="track-artist">AI 将实时分析音频特征</div>
+            </div>
+            <div class="ai-drawer" id="ai-drawer">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-message ai">
+                            我是 Sonoria AI。我可以帮你：<br>
+                            • "分析这首歌的情绪"<br>
+                            • "生成迷幻视觉"<br>
+                            • "推荐相似音乐"<br>
+                            • "解释歌词含义"
+                        </div>
+                    </div>
+                    <div class="chat-input-row">
+                        <input type="text" class="chat-input" id="chat-input" placeholder="输入指令或提问...">
+                        <button class="chat-send" id="chat-send">
+                            <i class="material-icons-round">send</i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="progress-container" id="progress-container">
+                <div class="progress-rail"><div class="progress-fill" id="progress-fill"></div></div>
+                <div class="time-meta">
+                    <span id="curr-time">0:00</span>
+                    <span id="total-time">0:00</span>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="control-btn" id="prev-btn">
+                    <i class="material-icons-round" style="font-size:32px;">skip_previous</i>
+                </button>
+                <button class="play-btn" id="main-play">
+                    <i class="material-icons-round" style="font-size:32px;">play_arrow</i>
+                </button>
+                <button class="control-btn" id="next-btn">
+                    <i class="material-icons-round" style="font-size:32px;">skip_next</i>
+                </button>
+            </div>
+            <div class="toolbar">
+                <button class="pill" id="import-btn">
+                    <i class="material-icons-round">add</i> 导入
+                </button>
+                <div class="toolbar-group">
+                    <button class="pill ai-mode" id="analyze-btn">
+                        <i class="material-icons-round">analytics</i> 分析
+                    </button>
+                    <button class="icon-btn" id="mic-btn">
+                        <i class="material-icons-round">mic</i>
+                    </button>
+                    <button class="icon-btn" id="playlist-btn">
+                        <i class="material-icons-round">queue_music</i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    <div class="phantom-capsule" id="capsule">
+        <div class="capsule-core" id="capsule-core">
+            <div class="capsule-ai-indicator"></div>
+            <i class="material-icons-round" style="color:#fff;">graphic_eq</i>
+        </div>
+        <div style="width:120px;">
+            <div style="font-size:0.85rem;font-weight:600;color:#fff;" id="capsule-title">就绪</div>
+        </div>
+        <button class="icon-btn" id="capsule-play-btn" style="color:#fff;">
+            <i class="material-icons-round" id="capsule-play-icon">play_arrow</i>
+        </button>
+    </div>
+    <div class="playlist-panel" id="playlist-panel">
+        <div class="playlist-header">
+            <span class="playlist-title">播放列表</span>
+            <button class="playlist-close" id="playlist-close">
+                <i class="material-icons-round">close</i>
+            </button>
+        </div>
+        <div class="playlist-items" id="playlist-items">
+            <div class="playlist-empty">暂无歌曲，导入音乐开始播放</div>
+        </div>
+    </div>
+    <div class="toast" id="toast">Sonoria AI 已就绪</div>
+    <input type="file" id="file-input" accept="audio/mp3,audio/m4a,audio/wav,audio/flac,audio/*" multiple style="display:none">
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ==========================================
+        // IndexedDB Playlist Storage
+        // ==========================================
+        const DB_NAME = 'sonoria_db';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'playlist';
+
+        class PlaylistDB {
+            constructor() {
+                this.db = null;
+                this.initPromise = this.init();
+            }
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(DB_NAME, DB_VERSION);
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve(this.db);
+                    };
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(STORE_NAME)) {
+                            db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        }
+                    };
+                });
+            }
+
+            async ensureReady() {
+                await this.initPromise;
+            }
+
+            async addTrack(track) {
+                await this.ensureReady();
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.add({
+                        name: track.name,
+                        title: track.title || track.name,
+                        addedAt: new Date().toISOString()
+                    });
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async getAllTracks() {
+                await this.ensureReady();
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async removeTrack(id) {
+                await this.ensureReady();
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.delete(id);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async clearAll() {
+                await this.ensureReady();
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.clear();
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+        }
+
+        const playlistDB = new PlaylistDB();
+
+        // ==========================================
+        // App State
+        // ==========================================
+        const AppState = {
+            playing: false,
+            aiActive: false,
+            zenMode: false,
+            currentTrack: null,
+            currentTrackId: null,
+            audioContext: null,
+            analyser: null,
+            source: null,
+            audioEl: null,
+            playlist: [],
+            currentIndex: 0,
+            aiHistory: [],
+            puterReady: false,
+            animationFrameId: null,
+            puterScriptLoaded: false,
+            visualParams: {
+                hue: 0,
+                energy: 0,
+                mood: 'neutral',
+                complexity: 0.5,
+                colorPalette: ['#00d2ff', '#8E2DE2']
+            }
+        };
+
+        // ==========================================
+        // BPM Detection (Onset-based Algorithm)
+        // ==========================================
+        class BPMDetector {
+            constructor() {
+                this.onsetTimestamps = [];
+                this.minInterval = 300; // 200 BPM
+                this.maxInterval = 1500; // 40 BPM
+                this.energyHistory = [];
+                this.threshold = 0.3;
+            }
+
+            reset() {
+                this.onsetTimestamps = [];
+                this.energyHistory = [];
+            }
+
+            process(energy) {
+                this.energyHistory.push(energy);
+                if (this.energyHistory.length > 43) { // ~1 second at 60fps
+                    this.energyHistory.shift();
+                }
+
+                // Simple onset detection: energy spike
+                if (this.energyHistory.length >= 2) {
+                    const prev = this.energyHistory[this.energyHistory.length - 2];
+                    const curr = this.energyHistory[this.energyHistory.length - 1];
+                    const diff = curr - prev;
+
+                    if (diff > this.threshold * 0.5) {
+                        const now = performance.now();
+                        // Avoid duplicate onsets
+                        const lastOnset = this.onsetTimestamps[this.onsetTimestamps.length - 1];
+                        if (!lastOnset || now - lastOnset > this.minInterval) {
+                            this.onsetTimestamps.push(now);
+                            // Keep only last 10 seconds of onsets
+                            this.onsetTimestamps = this.onsetTimestamps.filter(t => now - t < 10000);
+                        }
+                    }
+                }
+            }
+
+            detectBPM() {
+                if (this.onsetTimestamps.length < 4) return 120;
+
+                // Calculate intervals between onsets
+                const intervals = [];
+                for (let i = 1; i < this.onsetTimestamps.length; i++) {
+                    const interval = this.onsetTimestamps[i] - this.onsetTimestamps[i - 1];
+                    if (interval >= this.minInterval && interval <= this.maxInterval) {
+                        intervals.push(interval);
+                    }
+                }
+
+                if (intervals.length < 2) return 120;
+
+                // Use median interval for robustness
+                intervals.sort((a, b) => a - b);
+                const medianInterval = intervals[Math.floor(intervals.length / 2)];
+                const bpm = Math.round(60000 / medianInterval);
+
+                // Clamp to reasonable range
+                return Math.max(60, Math.min(200, bpm));
+            }
+        }
+
+        const bpmDetector = new BPMDetector();
+
+        // ==========================================
+        // Audio Analyzer with Offscreen Canvas
+        // ==========================================
+        class AudioAnalyzer {
+            constructor() {
+                this.features = {
+                    bpm: 120,
+                    energy: 0,
+                    spectralCentroid: 0,
+                    onsetDetected: false
+                };
+                this.history = [];
+                this.lastOnset = 0;
+                this.maxHistorySize = 100;
+            }
+
+            analyze() {
+                if (!AppState.analyser) return this.features;
+
+                const dataArray = new Uint8Array(AppState.analyser.frequencyBinCount);
+                AppState.analyser.getByteFrequencyData(dataArray);
+
+                let bass = 0, treble = 0;
+                for (let i = 0; i < 20; i++) bass += dataArray[i];
+                for (let i = 100; i < 200; i++) treble += dataArray[i];
+
+                const totalEnergy = bass / 20 / 255;
+                this.features.energy = totalEnergy;
+                this.features.spectralCentroid = this.calculateSpectralCentroid(dataArray);
+
+                // BPM detection
+                bpmDetector.process(totalEnergy);
+                this.features.bpm = bpmDetector.detectBPM();
+
+                // Onset detection
+                if (totalEnergy > 0.6 && Date.now() - this.lastOnset > 300) {
+                    this.features.onsetDetected = true;
+                    this.lastOnset = Date.now();
+                    this.onBeat();
+                } else {
+                    this.features.onsetDetected = false;
+                }
+
+                this.history.push({...this.features});
+                if (this.history.length > this.maxHistorySize) {
+                    this.history.shift();
+                }
+
+                return this.features;
+            }
+
+            calculateSpectralCentroid(data) {
+                let numerator = 0, denominator = 0;
+                for (let i = 0; i < data.length; i++) {
+                    numerator += i * data[i];
+                    denominator += data[i];
+                }
+                return denominator === 0 ? 0 : numerator / denominator;
+            }
+
+            onBeat() {
+                AppState.visualParams.energy = 1.0;
+                const capsuleCore = document.getElementById('capsule-core');
+                if (capsuleCore) {
+                    capsuleCore.style.transform = 'scale(1.2)';
+                    setTimeout(() => capsuleCore.style.transform = 'scale(1)', 100);
+                }
+            }
+
+            clearHistory() {
+                this.history = [];
+                bpmDetector.reset();
+            }
+        }
+
+        const analyzer = new AudioAnalyzer();
+
+        // ==========================================
+        // Generative Visualizer with Offscreen Rendering
+        // ==========================================
+        class GenerativeVisualizer {
+            constructor() {
+                this.canvas = document.getElementById('visualizer');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Create offscreen canvas for double buffering
+                this.offscreen = document.createElement('canvas');
+                this.offCtx = this.offscreen.getContext('2d');
+                
+                this.particles = [];
+                this.resize();
+                
+                window.addEventListener('resize', () => this.resize());
+
+                this.params = {
+                    particleCount: 100,
+                    connectionDistance: 100,
+                    turbulence: 0.5,
+                    colorShift: 0
+                };
+
+                this.gridSize = 50;
+                this.grid = {};
+                
+                // Visibility change optimization
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && AppState.playing) {
+                        pauseAudio();
+                        showToast('后台播放已暂停');
+                    }
+                });
+            }
+
+            resize() {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                this.canvas.width = w;
+                this.canvas.height = h;
+                this.offscreen.width = w;
+                this.offscreen.height = h;
+            }
+
+            updateParams(aiAnalysis) {
+                if (!aiAnalysis) return;
+                switch(aiAnalysis.mood) {
+                    case 'energetic':
+                        this.params.particleCount = 150;
+                        this.params.turbulence = 0.8;
+                        break;
+                    case 'calm':
+                        this.params.particleCount = 60;
+                        this.params.turbulence = 0.2;
+                        break;
+                    case 'intense':
+                        this.params.particleCount = 200;
+                        this.params.turbulence = 1.2;
+                        break;
+                }
+                AppState.visualParams.colorPalette = aiAnalysis.colorScheme || ['#00d2ff', '#8E2DE2'];
+            }
+
+            buildGrid() {
+                this.grid = {};
+                this.particles.forEach((p, i) => {
+                    const gx = Math.floor(p.x / this.gridSize);
+                    const gy = Math.floor(p.y / this.gridSize);
+                    const key = `${gx},${gy}`;
+                    if (!this.grid[key]) this.grid[key] = [];
+                    this.grid[key].push(i);
+                });
+            }
+
+            getNearbyParticles(x, y) {
+                const nearby = [];
+                const gx = Math.floor(x / this.gridSize);
+                const gy = Math.floor(y / this.gridSize);
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const key = `${gx + dx},${gy + dy}`;
+                        if (this.grid[key]) nearby.push(...this.grid[key]);
+                    }
+                }
+                return nearby;
+            }
+
+            render() {
+                if (!AppState.playing) return;
+
+                const features = analyzer.analyze();
+                const energy = features.energy;
+                const ctx = this.offCtx; // Use offscreen context
+                const w = this.offscreen.width;
+                const h = this.offscreen.height;
+
+                // Fade effect on offscreen canvas
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillRect(0, 0, w, h);
+
+                AppState.visualParams.hue += 0.5 + energy;
+                const [c1, c2] = AppState.visualParams.colorPalette;
+
+                this.renderNeuralNetwork(features, c1, c2, ctx, w, h);
+
+                // Copy to main canvas
+                this.ctx.drawImage(this.offscreen, 0, 0);
+                
+                AppState.visualParams.energy *= 0.95;
+            }
+
+            renderNeuralNetwork(features, color1, color2, ctx, width, height) {
+                const cx = width / 2, cy = height / 2;
+                const count = this.params.particleCount;
+
+                while (this.particles.length < count) {
+                    this.particles.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        vx: 0, vy: 0,
+                        size: Math.random() * 3 + 1
+                    });
+                }
+
+                while (this.particles.length > count) {
+                    this.particles.pop();
+                }
+
+                const data = new Uint8Array(AppState.analyser.frequencyBinCount);
+                AppState.analyser.getByteFrequencyData(data);
+
+                this.buildGrid();
+
+                this.particles.forEach((p, i) => {
+                    const freq = data[i % data.length] / 255;
+                    const angle = (i / count) * Math.PI * 2 + AppState.visualParams.hue * 0.01;
+                    const radius = 100 + freq * 200;
+
+                    const targetX = cx + Math.cos(angle) * radius;
+                    const targetY = cy + Math.sin(angle) * radius;
+
+                    p.x += (targetX - p.x) * 0.05 * this.params.turbulence;
+                    p.y += (targetY - p.y) * 0.05 * this.params.turbulence;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * (1 + features.energy), 0, Math.PI * 2);
+                    ctx.fillStyle = color1;
+                    ctx.fill();
+
+                    const nearbyIndices = this.getNearbyParticles(p.x, p.y);
+                    const maxConnections = 10;
+
+                    nearbyIndices.slice(0, maxConnections).forEach(j => {
+                        if (j <= i) return;
+                        const p2 = this.particles[j];
+                        const dx = p.x - p2.x;
+                        const dy = p.y - p2.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+
+                        if (dist < this.params.connectionDistance * (1 + features.energy)) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            const alpha = (1 - dist / this.params.connectionDistance) * 0.5;
+                            ctx.strokeStyle = color2 + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                            ctx.stroke();
+                        }
+                    });
+                });
+            }
+
+            clearParticles() {
+                this.particles = [];
+                this.grid = {};
+            }
+        }
+
+        const viz = new GenerativeVisualizer();
+
+        // ==========================================
+        // AI Service
+        // ==========================================
+        const AIService = {
+            async analyzeAudio(features) {
+                if (AppState.puterReady && typeof puter !== 'undefined' && puter.auth?.isSignedIn()) {
+                    try {
+                        const prompt = `分析音频特征返回JSON：{"mood":"情绪(energetic/calm/melancholic/intense)","colorScheme":["主色","辅色"],"description":"描述","visualStyle":"风格"} 特征：BPM${features.bpm} 能量${features.energy.toFixed(2)} 频谱${features.spectralCentroid.toFixed(0)}`;
+                        const response = await puter.ai.chat(prompt);
+                        return JSON.parse(response.message.content);
+                    } catch (e) {
+                        console.warn('[AI] Puter分析失败:', e);
+                    }
+                }
+                return this.localAnalysis(features);
+            },
+
+            localAnalysis(features) {
+                const moods = ['energetic', 'calm', 'intense', 'melancholic'];
+                let mood;
+                if (features.energy > 0.7) mood = 'intense';
+                else if (features.energy > 0.4) mood = 'energetic';
+                else if (features.energy < 0.2) mood = 'melancholic';
+                else mood = 'calm';
+
+                const colors = {
+                    energetic: ['#ff006e', '#fb5607'],
+                    calm: ['#00d2ff', '#8E2DE2'],
+                    intense: ['#ff0000', '#ff8800'],
+                    melancholic: ['#3a86ff', '#8338ec']
+                };
+
+                return {
+                    mood,
+                    colorScheme: colors[mood],
+                    description: `检测到${mood === 'intense' ? '高强度' : mood === 'energetic' ? '活跃' : mood === 'calm' ? '平静' : '忧郁'}氛围 · BPM ${features.bpm}`,
+                    visualStyle: mood
+                };
+            },
+
+            async chat(message) {
+                if (AppState.puterReady && typeof puter !== 'undefined' && puter.auth?.isSignedIn()) {
+                    try {
+                        const response = await puter.ai.chat([
+                            { role: 'system', content: `你是 Sonoria AI，懂音乐艺术。当前播放：${AppState.currentTrack?.title || '无'}` },
+                            { role: 'user', content: message }
+                        ]);
+                        return response.message.content;
+                    } catch (e) {
+                        console.warn('[AI] Puter对话失败:', e);
+                    }
+                }
+                return this.localChatResponse(message);
+            },
+
+            localChatResponse(msg) {
+                const lower = msg.toLowerCase();
+                if (lower.includes('分析') || lower.includes('情绪') || lower.includes('mood')) {
+                    return `正在分析当前音频...检测到BPM ${analyzer.features.bpm}，建议切换量子可视化模式。`;
+                }
+                if (lower.includes('视觉') || lower.includes('画面')) {
+                    return '已调整生成参数：增加粒子密度，启用流体动力学模拟。';
+                }
+                if (lower.includes('推荐') || lower.includes('recommend')) {
+                    return '基于当前风格，推荐探索：Porter Robinson《Virtual Self》、Kavinsky《Outrun》系列。';
+                }
+                if (lower.includes('歌词') || lower.includes('lyrics')) {
+                    return '当前版本暂不支持歌词分析。连接 Puter 可解锁完整 AI 能力。';
+                }
+                if (lower.includes('播放') || lower.includes('play')) { playAudio(); return '已开始播放'; }
+                if (lower.includes('暂停') || lower.includes('pause')) { pauseAudio(); return '已暂停'; }
+                if (lower.includes('禅') || lower.includes('zen')) { enterZen(); return '已进入禅模式'; }
+                return '理解。要解锁完整 AI 能力，点击左上角连接 Puter 账户。';
+            }
+        };
+
+        // ==========================================
+        // Puter Integration (Non-blocking)
+        // ==========================================
+        let puterCheckInterval = null;
+
+        async function initPuter() {
+            // Non-blocking: set a flag and check periodically
+            AppState.puterScriptLoaded = true;
+            
+            // Wait a bit for script to load
+            setTimeout(async () => {
+                if (typeof puter === 'undefined') {
+                    console.warn('[Puter] SDK未加载，使用本地模式');
+                    showToast('本地模式运行');
+                    return;
+                }
+
+                try {
+                    await puter.init();
+                    AppState.puterReady = true;
+                    console.log('[Puter] Initialized');
+
+                    if (puter.auth.isSignedIn()) {
+                        updateAuthUI(true);
+                        showToast('已连接到 Puter AI');
+                    }
+
+                    // Load saved playlist
+                    loadFromPuterFS();
+                } catch (e) {
+                    console.warn('[Puter] 初始化失败:', e);
+                    showToast('Puter 离线模式');
+                }
+            }, 500);
+        }
+
+        function togglePuterAuth() {
+            if (!AppState.puterReady || typeof puter === 'undefined') {
+                showToast('Puter 不可用');
+                return;
+            }
+            if (puter.auth.isSignedIn()) {
+                puter.auth.signOut();
+                updateAuthUI(false);
+            } else {
+                puter.auth.signIn();
+                updateAuthUI(true);
+            }
+        }
+
+        function updateAuthUI(authed) {
+            const btn = document.getElementById('puter-auth');
+            const text = document.getElementById('auth-text');
+            if (authed) {
+                btn.classList.add('authenticated');
+                text.textContent = '已连接';
+            } else {
+                btn.classList.remove('authenticated');
+                text.textContent = '连接 Puter';
+            }
+        }
+
+        async function loadFromPuterFS() {
+            // Placeholder for Puter FS loading
+        }
+
+        // ==========================================
+        // UI Helpers
+        // ==========================================
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function enterZen() {
+            document.getElementById('app-shell').classList.add('zen');
+            AppState.zenMode = true;
+        }
+
+        function exitZen() {
+            document.getElementById('app-shell').classList.remove('zen');
+            AppState.zenMode = false;
+        }
+
+        function toggleAIChat() {
+            const drawer = document.getElementById('ai-drawer');
+            drawer.classList.toggle('open');
+            if (drawer.classList.contains('open')) {
+                setTimeout(() => document.getElementById('chat-input').focus(), 100);
+            }
+        }
+
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            input.value = '';
+            addChatMessage(message, 'user');
+
+            const aiStatus = document.getElementById('ai-status');
+            aiStatus.classList.add('active');
+
+            try {
+                const response = await AIService.chat(message);
+                addChatMessage(response, 'ai');
+                processAICommand(message.toLowerCase());
+            } catch (e) {
+                addChatMessage('处理请求时出错。', 'ai');
+            } finally {
+                setTimeout(() => aiStatus.classList.remove('active'), 1000);
+            }
+        }
+
+        function addChatMessage(text, sender) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `chat-message ${sender}`;
+            div.textContent = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function processAICommand(cmd) {
+            if (cmd.includes('禅') || cmd.includes('zen')) enterZen();
+            if (cmd.includes('分析')) analyzeCurrentTrack();
+            if (cmd.includes('停止') || cmd.includes('暂停')) pauseAudio();
+            if (cmd.includes('播放')) playAudio();
+        }
+
+        // ==========================================
+        // Audio Control
+        // ==========================================
+        async function initAudio() {
+            if (AppState.audioContext) return;
+            AppState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            AppState.analyser = AppState.audioContext.createAnalyser();
+            AppState.analyser.fftSize = 2048;
+            AppState.analyser.smoothingTimeConstant = 0.8;
+        }
+
+        async function handleFiles(files) {
+            if (!files || files.length === 0) return;
+
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.add('active');
+
+            await initAudio();
+
+            // Add all files to playlist
+            for (const file of files) {
+                const id = await playlistDB.addTrack({
+                    name: file.name,
+                    title: file.name.replace(/\.[^/.]+$/, "")
+                });
+                AppState.playlist.push({ id, file, name: file.name.replace(/\.[^/.]+$/, "") });
+            }
+
+            // Load first track
+            loadTrack(0);
+            updatePlaylistUI();
+
+            loadingOverlay.classList.remove('active');
+        }
+
+        function loadTrack(index) {
+            if (index < 0 || index >= AppState.playlist.length) return;
+            
+            const track = AppState.playlist[index];
+            AppState.currentIndex = index;
+            AppState.currentTrackId = track.id;
+            
+            if (AppState.audioEl) {
+                AppState.audioEl.pause();
+                AppState.audioEl.src = null;
+            }
+
+            const url = URL.createObjectURL(track.file);
+            AppState.audioEl = new Audio(url);
+            AppState.audioEl.onended = () => {
+                if (AppState.currentIndex < AppState.playlist.length - 1) {
+                    loadTrack(AppState.currentIndex + 1);
+                    playAudio();
+                } else {
+                    pauseAudio();
+                }
+            };
+
+            const source = AppState.audioContext.createMediaStreamSource
+                ? AppState.audioContext.createMediaStreamSource(AppState.audioEl)
+                : AppState.audioContext.createMediaElementSource(AppState.audioEl);
+            source.connect(AppState.analyser);
+            AppState.analyser.connect(AppState.audioContext.destination);
+
+            AppState.currentTrack = { title: track.name };
+            document.getElementById('track-title').textContent = track.name;
+            document.getElementById('track-artist').textContent = '本地文件';
+
+            updatePlaylistUI();
+            showToast(`已加载: ${track.name}`);
+        }
+
+        async function analyzeCurrentTrack() {
+            if (!AppState.analyser) return;
+
+            const insight = document.getElementById('ai-insight');
+            const moodIndicator = document.getElementById('mood-indicator');
+            const moodText = document.getElementById('mood-text');
+
+            insight.textContent = '正在分析音频特征与情绪...';
+            insight.classList.add('show');
+            moodIndicator.classList.add('active');
+
+            document.getElementById('loading-overlay').classList.add('active');
+
+            // Ensure audio is playing for analysis
+            if (!AppState.playing && AppState.audioEl) {
+                AppState.audioEl.play();
+            }
+
+            const samples = [];
+            for (let i = 0; i < 30; i++) {
+                samples.push(analyzer.analyze());
+                await new Promise(r => setTimeout(r, 100));
+            }
+
+            const avgEnergy = samples.reduce((a, s) => a + s.energy, 0) / samples.length;
+            const avgBpm = samples.reduce((a, s) => a + s.bpm, 0) / samples.length;
+            const features = { energy: avgEnergy, bpm: Math.round(avgBpm), spectralCentroid: 2000 };
+
+            const analysis = await AIService.analyzeAudio(features);
+
+            document.getElementById('loading-overlay').classList.remove('active');
+
+            AppState.visualParams.mood = analysis.mood;
+            viz.updateParams(analysis);
+
+            insight.textContent = analysis.description;
+            moodText.textContent = `${analysis.mood.toUpperCase()} · ${features.bpm} BPM`;
+
+            document.getElementById('ai-status').classList.add('active');
+            AppState.aiActive = true;
+
+            setTimeout(() => insight.classList.remove('show'), 5000);
+        }
+
+        function togglePlay() {
+            if (!AppState.audioEl) {
+                document.getElementById('file-input').click();
+                return;
+            }
+            if (AppState.playing) pauseAudio();
+            else playAudio();
+        }
+
+        function playAudio() {
+            if (AppState.audioEl) {
+                AppState.audioEl.play().catch(e => console.warn('播放失败:', e));
+                AppState.playing = true;
+                updatePlayButton();
+                animate();
+                document.getElementById('ai-status').classList.add('active');
+            }
+        }
+
+        function pauseAudio() {
+            if (AppState.audioEl) {
+                AppState.audioEl.pause();
+                AppState.playing = false;
+                updatePlayButton();
+                if (AppState.animationFrameId) {
+                    cancelAnimationFrame(AppState.animationFrameId);
+                    AppState.animationFrameId = null;
+                }
+            }
+        }
+
+        function updatePlayButton() {
+            const icon = AppState.playing ? 'pause' : 'play_arrow';
+            document.querySelector('#main-play i').textContent = icon;
+            document.getElementById('capsule-play-icon').textContent = icon;
+        }
+
+        function playNext() {
+            if (AppState.currentIndex < AppState.playlist.length - 1) {
+                loadTrack(AppState.currentIndex + 1);
+                playAudio();
+            } else {
+                showToast('播放列表已结束');
+            }
+        }
+
+        function playPrev() {
+            if (AppState.currentIndex > 0) {
+                loadTrack(AppState.currentIndex - 1);
+                playAudio();
+            }
+        }
+
+        async function toggleMic() {
+            await initAudio();
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const source = AppState.audioContext.createMediaStreamSource(stream);
+                source.connect(AppState.analyser);
+                AppState.playing = true;
+                animate();
+                document.getElementById('mic-btn').classList.add('ai-active');
+                showToast('AI 正在实时聆听环境音');
+            } catch (e) {
+                showToast('无法访问麦克风');
+            }
+        }
+
+        // ==========================================
+        // Playlist UI
+        // ==========================================
+        function togglePlaylist() {
+            document.getElementById('playlist-panel').classList.toggle('open');
+        }
+
+        async function updatePlaylistUI() {
+            const container = document.getElementById('playlist-items');
+            if (AppState.playlist.length === 0) {
+                container.innerHTML = '<div class="playlist-empty">暂无歌曲，导入音乐开始播放</div>';
+                return;
+            }
+
+            container.innerHTML = AppState.playlist.map((track, i) => `
+                <div class="playlist-item ${i === AppState.currentIndex ? 'active' : ''}" data-index="${i}">
+                    <div class="playlist-item-title">${track.name}</div>
+                    <div class="playlist-item-meta">本地文件</div>
+                </div>
+            `).join('');
+
+            // Add click handlers
+            container.querySelectorAll('.playlist-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const index = parseInt(item.dataset.index);
+                    loadTrack(index);
+                    playAudio();
+                });
+            });
+        }
+
+        async function loadSavedPlaylist() {
+            try {
+                const tracks = await playlistDB.getAllTracks();
+                // Note: Blob files can't be persisted in IndexedDB, so we just show track names
+                // In production, you'd use a file storage solution
+                console.log('[Sonoria] 加载播放列表:', tracks.length, '首');
+            } catch (e) {
+                console.warn('[Sonoria] 播放列表加载失败:', e);
+            }
+        }
+
+        // ==========================================
+        // Animation Loop
+        // ==========================================
+        function animate() {
+            if (!AppState.playing) return;
+            viz.render();
+            AppState.animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // ==========================================
+        // Event Binding (Fixed: Using addEventListener)
+        // ==========================================
+        function bindEvents() {
+            // All button clicks via event delegation or direct binding
+            document.getElementById('puter-auth').addEventListener('click', togglePuterAuth);
+            document.getElementById('zen-btn').addEventListener('click', enterZen);
+            document.getElementById('ai-chat-toggle').addEventListener('click', toggleAIChat);
+            document.getElementById('chat-send').addEventListener('click', sendChat);
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendChat();
+            });
+            document.getElementById('main-play').addEventListener('click', togglePlay);
+            document.getElementById('prev-btn').addEventListener('click', playPrev);
+            document.getElementById('next-btn').addEventListener('click', playNext);
+            document.getElementById('analyze-btn').addEventListener('click', analyzeCurrentTrack);
+            document.getElementById('mic-btn').addEventListener('click', toggleMic);
+            document.getElementById('playlist-btn').addEventListener('click', togglePlaylist);
+            document.getElementById('playlist-close').addEventListener('click', togglePlaylist);
+            document.getElementById('capsule-play-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePlay();
+            });
+            document.getElementById('capsule').addEventListener('click', exitZen);
+            document.getElementById('import-btn').addEventListener('click', () => {
+                document.getElementById('file-input').click();
+            });
+            document.getElementById('file-input').addEventListener('change', (e) => handleFiles(e.target.files));
+
+            // Progress bar
+            document.getElementById('progress-container').addEventListener('click', (e) => {
+                if (!AppState.audioEl) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pct = (e.clientX - rect.left) / rect.width;
+                AppState.audioEl.currentTime = pct * AppState.audioEl.duration;
+            });
+
+            // Progress update
+            setInterval(() => {
+                if (AppState.audioEl && AppState.playing) {
+                    const pct = AppState.audioEl.currentTime / AppState.audioEl.duration;
+                    document.getElementById('progress-fill').style.width = (pct * 100) + '%';
+                    document.getElementById('curr-time').textContent = formatTime(AppState.audioEl.currentTime);
+                    document.getElementById('total-time').textContent = formatTime(AppState.audioEl.duration || 0);
+                }
+            }, 100);
+        }
+
+        function formatTime(s) {
+            if (!s || isNaN(s)) return '0:00';
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+            if (AppState.animationFrameId) cancelAnimationFrame(AppState.animationFrameId);
+            analyzer.clearHistory();
+            viz.clearParticles();
+        });
+
+        // ==========================================
+        // Initialization
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            bindEvents();
+            initPuter();
+            loadSavedPlaylist();
+            showToast('Sonoria AI 已就绪');
+        });
+
+    })();
+    </script>
+</body>
+</html>
